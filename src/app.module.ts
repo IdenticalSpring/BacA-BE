@@ -12,7 +12,10 @@ import { LessonModule } from './lesson/lesson.module';
 import { TestResultModule } from './testresult/testresult.module';
 import { TestTypeModule } from './testtype/testtype.module';
 import { TeacherTestCommentModule } from './teachertestcomment/teachertestcomment.module';
-
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UploadController } from './upload/upload.controller';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -37,6 +40,9 @@ import { TeacherTestCommentModule } from './teachertestcomment/teachertestcommen
     TestResultModule,
     TestTypeModule,
     TeacherTestCommentModule,
+    CloudinaryModule,
   ],
+  controllers: [AppController, UploadController],
+  providers: [AppService],
 })
 export class AppModule {}
