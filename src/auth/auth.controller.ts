@@ -2,6 +2,7 @@ import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
+import { CreateAdminDto } from 'src/admin/admin.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -19,6 +20,15 @@ export class AuthController {
       body.password,
     );
     const token = await this.authService.generateToken(user);
+    return { token };
+  }
+  @Post('admin/login')
+  async adminLogin(@Body() body: CreateAdminDto) {
+    const admin = await this.authService.validateAdmin(
+      body.username,
+      body.password,
+    );
+    const token = await this.authService.generateToken(admin);
     return { token };
   }
 
