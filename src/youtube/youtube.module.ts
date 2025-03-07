@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
-import { YoutubeUploadService } from './youtube.service';
+import { YoutubeService } from './youtube.service';
+import { YoutubeController } from './youtube.controller';
 
 @Module({
-  providers: [YoutubeUploadService],
-  exports: [YoutubeUploadService],
+  providers: [YoutubeService],
+  exports: [YoutubeService],
+  controllers: [YoutubeController],
 })
 export class YoutubeModule {}

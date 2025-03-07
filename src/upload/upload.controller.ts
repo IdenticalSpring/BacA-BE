@@ -3,18 +3,13 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { YoutubeUploadService } from '../youtube/youtube.service';
 
 @Controller('upload')
 export class UploadController {
-  constructor(
-    private readonly cloudinaryService: CloudinaryService,
-    private readonly youtubeService: YoutubeUploadService,
-  ) {}
+  constructor(private readonly cloudinaryService: CloudinaryService) {}
 
   @Post('cloudinary')
   @UseInterceptors(FileInterceptor('file'))
@@ -34,26 +29,6 @@ export class UploadController {
     } catch (error) {
       console.error('Lỗi trong upload.controller.ts:', error);
       throw new Error(`Upload failed: ${error.message}`);
-    }
-  }
-
-  @Post('youtube')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadToYoutube(@UploadedFile() file: any) {
-    try {
-      if (!file) {
-        throw new BadRequestException('No file uploaded');
-      }
-
-      console.log('Uploading to YouTube:', file.originalname);
-
-      const { videoId } = await this.youtubeService.uploadVideo(file);
-
-      console.log('Upload YouTube thành công, Video ID:', videoId);
-      return { videoId };
-    } catch (error) {
-      console.error('Lỗi upload lên YouTube:', error);
-      throw new BadRequestException(`YouTube upload failed: ${error.message}`);
     }
   }
 }
