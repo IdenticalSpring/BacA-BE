@@ -13,20 +13,43 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class YoutubeController {
     constructor(private readonly youtubeService: YoutubeService) { }
 
+    // DEBUGGING
+    // @Post('upload')
+    // @UseInterceptors(FileInterceptor('file'))
+    // async uploadToYoutube(@UploadedFile() file: any) {
+    //     try {
+
+    //         const filepath = 'D:\\Videos\\5949418770864994145.mp4';
+
+    //         console.log('Uploading fixed video:', filepath);
+
+    //         const file = {
+    //             path: filepath,
+    //             originalname: 'sample_video.mp4',
+    //         };
+
+    //         const uploadedVideo = await this.youtubeService.uploadVideo(file);
+
+    //         return { message: 'Upload thành công', videoId: uploadedVideo.id };
+    //     } catch (error) {
+    //         console.error('Lỗi upload lên YouTube:', error);
+    //         throw new BadRequestException(`YouTube upload failed: ${error.message}`);
+    //     }
+    // }
+
     @Post('upload')
     @UseInterceptors(FileInterceptor('file'))
     async uploadToYoutube(@UploadedFile() file: any) {
         try {
             if (!file) {
-                throw new BadRequestException('No file uploaded');
+                throw new BadRequestException('File không được để trống!');
             }
 
-            console.log('Uploading to YouTube:', file.originalname);
+            console.log('Uploading video:', file.originalname);
 
-            const isUploaded = await this.youtubeService.uploadVideo(file);
+            const uploadedVideo = await this.youtubeService.uploadVideo(file);
 
-            console.log('Upload YouTube thành công, Video ID:', isUploaded);
-            return isUploaded;
+            return { message: 'Upload thành công', videoId: uploadedVideo.id };
         } catch (error) {
             console.error('Lỗi upload lên YouTube:', error);
             throw new BadRequestException(`YouTube upload failed: ${error.message}`);
