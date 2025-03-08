@@ -5,7 +5,8 @@ import {
     UploadedFile,
     UseInterceptors,
     BadRequestException,
-    Get,
+    Body,
+    Get
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -38,16 +39,29 @@ export class YoutubeController {
     // }
 
     @Post('upload')
-    @UseInterceptors(FileInterceptor('file'))
-    async uploadToYoutube(@UploadedFile() file: any) {
+    @UseInterceptors(FileInterceptor('file', { dest: './uploads' }))
+    async uploadToYoutube(
+        @UploadedFile() file: any,
+        @Body('title') title: string,
+        @Body('description') description: string,
+        @Body('status') status: boolean
+    ) {
         try {
             if (!file) {
                 throw new BadRequestException('File không được để trống!');
             }
 
-            console.log('Uploading video:', file.originalname);
+            console.log('File nhận được:', file);
+            console.log('Title:', title);
+            console.log('Description:', description);
+            console.log('Status:', status);
 
-            const uploadedVideo = await this.youtubeService.uploadVideo(file);
+            const uploadedVideo = await this.youtubeService.uploadVideo(
+                file,
+                title,
+                description,
+                status === 'true'
+            );
 
             return { message: 'Upload thành công', videoId: uploadedVideo.id };
         } catch (error) {

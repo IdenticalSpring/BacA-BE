@@ -18,12 +18,30 @@ export class YoutubeService {
   constructor() {
     this.oauth2Client.setCredentials({
       refresh_token: process.env.REFRESH_TOKEN,
-      access_token: process.env.ACCESS_TOKEN,
     });
   }
 
-  async uploadVideo(file: any) {
+  private async refreshAccessToken() {
+    try {
+      const { credentials } = await this.oauth2Client.refreshAccessToken();
+      this.oauth2Client.setCredentials(credentials);
+      console.log('Access Token refreshed');
+    } catch (error) {
+      console.error('Error refreshing Access Token:', error);
+      throw error;
+    }
+  }
+
+  async uploadVideo(file: any, title: string, description: string, status: boolean) {
+    await this.refreshAccessToken();
+
+    if (!file.path) {
+      throw new Error('File path is undefined! Kiểm tra lại multer dest.');
+    }
+
     const filePath = file.path;
+    console.log('Uploading file from:', filePath);
+
     const fileStream = fs.createReadStream(filePath);
     const fileSize = fs.statSync(filePath).size;
 
@@ -36,11 +54,11 @@ export class YoutubeService {
           part: ['snippet', 'status'],
           requestBody: {
             snippet: {
-              title: 'Video title',
-              description: 'Test Video',
+              title: title,
+              description: description,
             },
             status: {
-              privacyStatus: 'private',
+              privacyStatus: status ? 'public' : 'private',
             },
           },
           media: {
@@ -57,8 +75,10 @@ export class YoutubeService {
 
       console.log('Video uploaded successfully:', res.data);
 
-      fs.unlinkSync(filePath);
-      console.log('Temp file deleted.');
+      if (res.data.id) {
+        fs.unlinkSync(filePath);
+        console.log('Temp file deleted.');
+      }
 
       return res.data;
     } catch (error) {
@@ -66,6 +86,7 @@ export class YoutubeService {
       throw error;
     }
   }
+
 
   async showHello() {
     console.log('Hello');
