@@ -16,7 +16,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UploadController } from './upload/upload.controller';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
-import { YoutubeModule } from './youtube/youtube.module';
 
 @Module({
   imports: [
@@ -43,7 +42,6 @@ import { YoutubeModule } from './youtube/youtube.module';
     TestTypeModule,
     TeacherTestCommentModule,
     CloudinaryModule,
-    YoutubeModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],

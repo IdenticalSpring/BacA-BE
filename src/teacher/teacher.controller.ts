@@ -43,4 +43,9 @@ export class TeacherController {
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.teacherService.remove(id);
   }
+
+  @Get(':name')
+  async findByName(@Param('name') name: string): Promise<Teacher[]> {
+    return await this.teacherService.findTeacherByName(name);
+  }
 }

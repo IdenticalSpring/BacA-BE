@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Teacher } from './teacher.entity';
 import { CreateTeacherDto, UpdateTeacherDto } from './teacher.dto';
 
@@ -42,5 +42,12 @@ export class TeacherService {
     if (result.affected === 0) {
       throw new NotFoundException(`Teacher with ID ${id} not found`);
     }
+  }
+
+  async findTeacherByName(name: string): Promise<Teacher[]> {
+    return await this.teacherRepository.find({
+      where: { name: Like(`%${name}%`) },
+      select: ['id', 'name'],
+    });
   }
 }

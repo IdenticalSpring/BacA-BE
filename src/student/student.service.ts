@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Student } from './student.entity';
 import { CreateStudentDto, UpdateStudentDto } from './student.dto';
 
@@ -43,4 +43,11 @@ export class StudentService {
       throw new NotFoundException(`Student with ID ${id} not found`);
     }
   }
+
+  async findStudentByName(name: string): Promise<Student[]> {
+      return await this.studentRepository.find({
+        where: { name: Like(`%${name}%`) },
+        select: ['id', 'name'],
+      });
+    }
 }

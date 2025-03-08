@@ -7,10 +7,14 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  UploadedFile,
+  BadRequestException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { LessonService } from './lesson.service';
 import { CreateLessonDto, UpdateLessonDto } from './lesson.dto';
 import { Lesson } from './lesson.entity';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('lessons')
 export class LessonController {
@@ -42,5 +46,37 @@ export class LessonController {
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.lessonService.remove(id);
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', { dest: './uploads' }))
+  async uploadToYoutube(
+    @UploadedFile() file: any,
+    @Body('title') title: string,
+    @Body('description') description: string,
+    @Body('status') status: boolean,
+  ) {
+    try {
+      if (!file) {
+        throw new BadRequestException('File không được để trống!');
+      }
+
+      console.log('File nhận được:', file);
+      console.log('Title:', title);
+      console.log('Description:', description);
+      console.log('Status:', status);
+
+      const uploadedVideo = await this.lessonService.uploadVideo(
+        file,
+        title,
+        description,
+        status == status,
+      );
+
+      return { message: 'Upload thành công', videoId: uploadedVideo.id };
+    } catch (error) {
+      console.error('Lỗi upload lên YouTube:', error);
+      throw new BadRequestException(`YouTube upload failed: ${error.message}`);
+    }
   }
 }
