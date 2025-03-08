@@ -4,11 +4,13 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { User } from './user.entity';
+import { Admin } from 'src/admin/admin.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Admin) private adminRepository: Repository<Admin>,
     private jwtService: JwtService,
   ) {}
 
@@ -58,6 +60,25 @@ export class AuthService {
     }
 
     return { userId: user.id, username: user.username };
+  }
+
+  async validateAdmin(username: string, password: string): Promise<any> {
+    console.log(`Validating admin: ${username}`); // Add logging
+
+    const admin = await this.adminRepository.findOne({
+      where: { username },
+    });
+
+    if (!admin) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    // So sánh mật khẩu trực tiếp mà không cần mã hóa
+    if (password !== admin.password) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    return { adminId: admin.id, username: admin.username };
   }
 
   async generateToken(payload: any): Promise<string> {

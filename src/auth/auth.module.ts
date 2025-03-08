@@ -6,6 +6,7 @@ import { User } from './user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy'; // ✅ Import strategy
+import { AdminModule } from 'src/admin/admin.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { JwtStrategy } from './jwt.strategy'; // ✅ Import strategy
       secret: process.env.JWT_SECRET || 'your_secret_key', // ✅ Đảm bảo secret đúng
       signOptions: { expiresIn: '1h' },
     }),
+    AdminModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy], // ✅ Đăng ký JwtStrategy
