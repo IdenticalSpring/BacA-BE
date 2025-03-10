@@ -7,16 +7,19 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ClassService } from './class.service';
 import { CreateClassDto, UpdateClassDto } from './class.dto';
 import { Class } from './class.entity';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('classes')
 export class ClassController {
   constructor(private readonly classService: ClassService) {}
 
   @Get()
+  @UseGuards(AuthGuard)
   async findAll(): Promise<Class[]> {
     return await this.classService.findAll();
   }

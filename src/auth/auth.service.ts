@@ -59,7 +59,7 @@ export class AuthService {
       throw new BadRequestException('Invalid credentials');
     }
 
-    return { userId: user.id, username: user.username };
+    return { userId: user.id, username: user.username, role: 'user' };
   }
 
   async validateAdmin(username: string, password: string): Promise<any> {
@@ -77,8 +77,8 @@ export class AuthService {
     if (password !== admin.password) {
       throw new BadRequestException('Invalid credentials');
     }
-
-    return { adminId: admin.id, username: admin.username };
+    // console.log('JWT_SECRET:', process.env.JWT_SECRET);
+    return { userId: admin.id, username: admin.username, role: 'admin' };
   }
 
   async generateToken(payload: any): Promise<string> {

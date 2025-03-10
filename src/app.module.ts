@@ -28,7 +28,7 @@ import { Lesson } from './lesson/lesson.entity';
       host: 'schooldb-bac-a.h.aivencloud.com',
       port: 10975,
       username: 'avnadmin',
-      password: 'AVNS_6Nx1CB-xoZSPRDVA-Im',
+      password: process.env.DB_PASSWORD,
       database: 'schooldb',
       entities: [
         Lesson,

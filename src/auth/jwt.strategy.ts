@@ -7,7 +7,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // ✅ Lấy token từ header
-      secretOrKey: process.env.JWT_SECRET || 'your_secret_key', // ✅ Đảm bảo secret trùng với auth.module.ts
+      secretOrKey: process.env.JWT_SECRET || 'secretKey', // ✅ Đảm bảo secret trùng với auth.module.ts
     });
   }
 
