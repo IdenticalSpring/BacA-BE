@@ -1,4 +1,4 @@
-import { IsString, IsDateString } from 'class-validator';
+import { IsString, IsDateString, IsNumber } from 'class-validator';
 
 export class CreateScheduleDto {
   @IsString() // Sửa lại từ @IsTime()
@@ -7,10 +7,13 @@ export class CreateScheduleDto {
   @IsString() // Sửa lại từ @IsTime()
   endTime: string;
 
-  @IsDateString()
-  date: string;
+  @IsNumber()
+  dayOfWeek: number;
 }
-
+export class dayOfWeekScheduleDto {
+  @IsNumber() // Sửa lại từ @IsTime()
+  dayOfWeek: number;
+}
 export class UpdateScheduleDto {
   @IsString()
   startTime?: string;

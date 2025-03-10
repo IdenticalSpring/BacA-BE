@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { ClassSchedule } from '../classSchedule/classSchedule.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 
 @Entity('lesson')
 export class Lesson {
@@ -13,4 +14,6 @@ export class Lesson {
 
   @Column({ type: 'text', nullable: true })
   description: string;
+  @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.lesson)
+  classSchedules: ClassSchedule[];
 }

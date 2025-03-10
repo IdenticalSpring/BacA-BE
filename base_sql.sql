@@ -46,13 +46,11 @@ CREATE TABLE IF NOT EXISTS `class` (
   `startDate` date NOT NULL,
   `endDate` date DEFAULT NULL,
   `teacherID` int NOT NULL,
-  `scheduleID` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `teacherID` (`teacherID`),
-  KEY `scheduleID` (`scheduleID`),
-  CONSTRAINT `class_ibfk_1` FOREIGN KEY (`teacherID`) REFERENCES `teacher` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `class_ibfk_2` FOREIGN KEY (`scheduleID`) REFERENCES `schedule` (`id`) ON DELETE CASCADE
+  CONSTRAINT `class_ibfk_1` FOREIGN KEY (`teacherID`) REFERENCES `teacher` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 -- Data exporting was unselected.
 
@@ -72,13 +70,23 @@ CREATE TABLE IF NOT EXISTS `schedule` (
   `id` int NOT NULL AUTO_INCREMENT,
   `startTime` time NOT NULL,
   `endTime` time NOT NULL,
-  `date` date NOT NULL,
-  `lessonID` int NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `lessonID` (`lessonID`),
-  CONSTRAINT `schedule_ibfk_1` FOREIGN KEY (`lessonID`) REFERENCES `lesson` (`id`) ON DELETE CASCADE
+  `dayOfWeek` TINYINT NOT NULL CHECK (`dayOfWeek` BETWEEN 1 AND 7),
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE IF NOT EXISTS `class_schedule` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `classID` INT NOT NULL,
+  `scheduleID` INT NOT NULL,
+  `lessonID` INT NOT NULL, -- Thêm lessonID vào để đảm bảo mỗi lịch học của lớp có một bài giảng
+  PRIMARY KEY (`id`),
+  KEY `classID` (`classID`),
+  KEY `scheduleID` (`scheduleID`),
+  KEY `lessonID` (`lessonID`),
+  CONSTRAINT `class_schedule_ibfk_1` FOREIGN KEY (`classID`) REFERENCES `class` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `class_schedule_ibfk_2` FOREIGN KEY (`scheduleID`) REFERENCES `schedule` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `class_schedule_ibfk_3` FOREIGN KEY (`lessonID`) REFERENCES `lesson` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 -- Data exporting was unselected.
 
 -- Dumping structure for table schooldb.student

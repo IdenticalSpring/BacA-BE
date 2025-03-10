@@ -7,8 +7,8 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Teacher } from '../teacher/teacher.entity';
-import { Schedule } from '../schedule/schedule.entity';
 import { TestResult } from '../testresult/testresult.entity';
+import { ClassSchedule } from '../classSchedule/classSchedule.entity';
 
 @Entity('class')
 export class Class {
@@ -30,11 +30,8 @@ export class Class {
   @JoinColumn({ name: 'teacherID' })
   teacher: Teacher;
 
-  @ManyToOne(() => Schedule, (schedule) => schedule.classes, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'scheduleID' })
-  schedule: Schedule;
+  @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.class)
+  classSchedules: ClassSchedule[];
 
   @OneToMany(() => TestResult, (testResult) => testResult.classEntity)
   testResults: TestResult[];

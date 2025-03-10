@@ -12,9 +12,6 @@ export class CreateClassDto {
 
   @IsInt()
   teacherID: number;
-
-  @IsInt()
-  scheduleID: number;
 }
 
 export class UpdateClassDto {
@@ -29,7 +26,4 @@ export class UpdateClassDto {
 
   @IsInt()
   teacherID?: number;
-
-  @IsInt()
-  scheduleID?: number;
 }

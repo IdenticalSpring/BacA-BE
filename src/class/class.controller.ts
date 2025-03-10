@@ -28,6 +28,7 @@ export class ClassController {
 
   @Post()
   async create(@Body() createClassDto: CreateClassDto): Promise<Class> {
+    console.log('createClassDto', createClassDto);
     return await this.classService.create(createClassDto);
   }
 

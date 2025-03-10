@@ -14,7 +14,10 @@ export class ScheduleService {
   async findAll(): Promise<Schedule[]> {
     return await this.scheduleRepository.find();
   }
-
+  async findByDayOfWeek(dayOfWeek: number): Promise<Schedule[]> {
+    console.log('dayOfWeek', dayOfWeek);
+    return await this.scheduleRepository.find({ where: { dayOfWeek } });
+  }
   async findOne(id: number): Promise<Schedule> {
     const schedule = await this.scheduleRepository.findOne({ where: { id } });
     if (!schedule) {
