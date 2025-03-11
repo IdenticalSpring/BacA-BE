@@ -26,7 +26,7 @@ export class AuthGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify(token);
-      if (payload.role !== 'admin') {
+      if (payload.username !== 'admin') {
         throw new UnauthorizedException('Bạn không có quyền truy cập');
       }
       request.user = payload;

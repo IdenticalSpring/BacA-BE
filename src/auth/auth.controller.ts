@@ -3,6 +3,8 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { CreateAdminDto } from 'src/admin/admin.dto';
+import { TeacherLoginDto } from 'src/teacher/teacherlogin.dto';
+import { StudentLoginDto } from 'src/student/studentLogin.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -29,6 +31,25 @@ export class AuthController {
       body.password,
     );
     const token = await this.authService.generateToken(admin);
+    return { token };
+  }
+  @Post('teacher/login')
+  async teacherLogin(@Body() body: TeacherLoginDto) {
+    const teacher = await this.authService.validateTeacher(
+      body.username,
+      body.password,
+    );
+    const token = await this.authService.generateToken(teacher);
+    return { token };
+  }
+
+  @Post('student/login')
+  async studentLogin(@Body() body: StudentLoginDto) {
+    const student = await this.authService.validateStudent(
+      body.username,
+      body.password,
+    );
+    const token = await this.authService.generateToken(student);
     return { token };
   }
 

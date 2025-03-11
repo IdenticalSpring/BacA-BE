@@ -29,6 +29,12 @@ export class Student {
   @Column({ type: 'text', nullable: true })
   note: string;
 
+  @Column({ length: 50, unique: true, nullable: false })
+  username: string;
+
+  @Column({ length: 255, nullable: false })
+  password: string;
+
   @OneToMany(() => TestResult, (testResult) => testResult.student)
   testResults: TestResult[]; // Đã sửa thành mảng []
 
