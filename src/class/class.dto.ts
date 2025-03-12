@@ -1,4 +1,10 @@
-import { IsString, IsDateString, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateClassDto {
   @IsString()
@@ -12,6 +18,13 @@ export class CreateClassDto {
 
   @IsInt()
   teacherID: number;
+  @IsOptional()
+  @IsString()
+  level?: string; // Thêm level (có thể không bắt buộc)
+
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }
 
 export class UpdateClassDto {
@@ -26,4 +39,11 @@ export class UpdateClassDto {
 
   @IsInt()
   teacherID?: number;
+  @IsOptional()
+  @IsString()
+  level?: string; // Thêm level vào Update DTO
+
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }

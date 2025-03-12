@@ -12,11 +12,13 @@ export class TeacherService {
   ) {}
 
   async findAll(): Promise<Teacher[]> {
-    return await this.teacherRepository.find();
+    return await this.teacherRepository.find({ where: { isDelete: false } });
   }
 
   async findOne(id: number): Promise<Teacher> {
-    const teacher = await this.teacherRepository.findOne({ where: { id } });
+    const teacher = await this.teacherRepository.findOne({
+      where: { id, isDelete: false },
+    });
     if (!teacher) {
       throw new NotFoundException(`Teacher with ID ${id} not found`);
     }
@@ -38,9 +40,17 @@ export class TeacherService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.teacherRepository.delete(id);
-    if (result.affected === 0) {
+    // const result = await this.teacherRepository.delete(id);
+    // if (result.affected === 0) {
+    //   throw new NotFoundException(`Teacher with ID ${id} not found`);
+    // }
+    const Teacher = await this.teacherRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!Teacher) {
       throw new NotFoundException(`Teacher with ID ${id} not found`);
     }
+    Teacher.isDelete = true;
+    await this.teacherRepository.save(Teacher);
   }
 }

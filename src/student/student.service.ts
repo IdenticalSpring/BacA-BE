@@ -12,11 +12,13 @@ export class StudentService {
   ) {}
 
   async findAll(): Promise<Student[]> {
-    return await this.studentRepository.find();
+    return await this.studentRepository.find({ where: { isDelete: false } });
   }
 
   async findOne(id: number): Promise<Student> {
-    const student = await this.studentRepository.findOne({ where: { id } });
+    const student = await this.studentRepository.findOne({
+      where: { id, isDelete: false },
+    });
     if (!student) {
       throw new NotFoundException(`Student with ID ${id} not found`);
     }
@@ -38,9 +40,17 @@ export class StudentService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.studentRepository.delete(id);
-    if (result.affected === 0) {
+    // const result = await this.studentRepository.delete(id);
+    // if (result.affected === 0) {
+    //   throw new NotFoundException(`Student with ID ${id} not found`);
+    // }
+    const Student = await this.studentRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!Student) {
       throw new NotFoundException(`Student with ID ${id} not found`);
     }
+    Student.isDelete = true;
+    await this.studentRepository.save(Student);
   }
 }

@@ -21,6 +21,8 @@ import { Schedule } from './schedule/schedule.entity';
 import { Class } from './class/class.entity';
 import { ClassSchedule } from './classSchedule/classSchedule.entity';
 import { Lesson } from './lesson/lesson.entity';
+import { LessonByScheduleModule } from './lesson_by_schedule/lesson_by_schedule.module';
+import { LessonBySchedule } from './lesson_by_schedule/lesson_by_schedule.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -35,6 +37,7 @@ import { Lesson } from './lesson/lesson.entity';
         ClassSchedule,
         Class,
         Schedule,
+        LessonBySchedule,
         __dirname + '/**/*.entity{.ts,.js}',
       ], // Tự động quét tất cả entity
       synchronize: true, // Chỉ dùng trong dev, tránh dùng production
@@ -48,6 +51,7 @@ import { Lesson } from './lesson/lesson.entity';
     TeacherCommentOnStudentModule,
     AdminModule,
     ClassScheduleModule,
+    LessonByScheduleModule,
     LessonModule,
     TestResultModule,
     TestTypeModule,

@@ -20,12 +20,13 @@ export class TestResultService {
         'assessments',
         'teacherComment',
       ],
+      where: { isDelete: false },
     });
   }
 
   async findOne(id: number): Promise<TestResult> {
     const testResult = await this.testResultRepository.findOne({
-      where: { id },
+      where: { id, isDelete: false },
       relations: [
         'student',
         'classEntity',
@@ -55,9 +56,17 @@ export class TestResultService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.testResultRepository.delete(id);
-    if (result.affected === 0) {
+    // const result = await this.testResultRepository.delete(id);
+    // if (result.affected === 0) {
+    //   throw new NotFoundException(`TestResult with ID ${id} not found`);
+    // }
+    const TestResult = await this.testResultRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!TestResult) {
       throw new NotFoundException(`TestResult with ID ${id} not found`);
     }
+    TestResult.isDelete = true;
+    await this.testResultRepository.save(TestResult);
   }
 }

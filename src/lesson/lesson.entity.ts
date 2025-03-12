@@ -14,6 +14,10 @@ export class Lesson {
 
   @Column({ type: 'text', nullable: true })
   description: string;
+  @Column({ length: 50, nullable: true })
+  level: string;
+  @Column({ type: 'boolean', default: false })
+  isDelete: boolean;
   @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.lesson)
   classSchedules: ClassSchedule[];
 }

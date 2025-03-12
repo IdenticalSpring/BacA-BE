@@ -19,7 +19,7 @@ export class ClassController {
   constructor(private readonly classService: ClassService) {}
 
   @Get()
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   async findAll(): Promise<Class[]> {
     return await this.classService.findAll();
   }

@@ -12,11 +12,13 @@ export class LessonService {
   ) {}
 
   async findAll(): Promise<Lesson[]> {
-    return await this.lessonRepository.find();
+    return await this.lessonRepository.find({ where: { isDelete: false } });
   }
 
   async findOne(id: number): Promise<Lesson> {
-    const lesson = await this.lessonRepository.findOne({ where: { id } });
+    const lesson = await this.lessonRepository.findOne({
+      where: { id, isDelete: false },
+    });
     if (!lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
     }
@@ -35,9 +37,17 @@ export class LessonService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.lessonRepository.delete(id);
-    if (result.affected === 0) {
+    // const result = await this.lessonRepository.delete(id);
+    // if (result.affected === 0) {
+    //   throw new NotFoundException(`Lesson with ID ${id} not found`);
+    // }
+    const Lesson = await this.lessonRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!Lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
     }
+    Lesson.isDelete = true;
+    await this.lessonRepository.save(Lesson);
   }
 }

@@ -39,9 +39,17 @@ export class TestTypeService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.testTypeRepository.delete(id);
-    if (result.affected === 0) {
+    // const result = await this.testTypeRepository.delete(id);
+    // if (result.affected === 0) {
+    //   throw new NotFoundException(`TestType with ID ${id} not found`);
+    // }
+    const TestType = await this.testTypeRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!TestType) {
       throw new NotFoundException(`TestType with ID ${id} not found`);
     }
+    TestType.isDelete = true;
+    await this.testTypeRepository.save(TestType);
   }
 }

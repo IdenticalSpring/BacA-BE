@@ -28,7 +28,8 @@ export class Student {
 
   @Column({ type: 'text', nullable: true })
   note: string;
-
+  @Column({ type: 'boolean', default: false })
+  isDelete: boolean;
   @OneToMany(() => TestResult, (testResult) => testResult.student)
   testResults: TestResult[]; // Đã sửa thành mảng []
 
