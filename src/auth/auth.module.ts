@@ -9,6 +9,8 @@ import { JwtStrategy } from './jwt.strategy'; // ✅ Import strategy
 import { AdminModule } from 'src/admin/admin.module';
 import { AuthGuard } from './auth.guard';
 import { Reflector } from '@nestjs/core';
+import { TeacherModule } from 'src/teacher/teacher.module';
+import { StudentModule } from 'src/student/student.module';
 // console.log('JWT_SECRET:', process.env.JWT_SECRET);
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { Reflector } from '@nestjs/core';
       signOptions: { expiresIn: '1h' },
     }),
     AdminModule,
+    TeacherModule,
+    StudentModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, AuthGuard, Reflector],

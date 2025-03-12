@@ -27,10 +27,10 @@ import { LessonBySchedule } from './lesson_by_schedule/lesson_by_schedule.entity
   imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: 'schooldb-bac-a.h.aivencloud.com',
-      port: 10975,
-      username: 'avnadmin',
-      password: process.env.DB_PASSWORD,
+      host: '',
+      port: 3306,
+      username: 'root',
+      password: '',
       database: 'schooldb',
       entities: [
         Lesson,
