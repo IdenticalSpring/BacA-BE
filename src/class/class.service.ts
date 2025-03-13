@@ -31,6 +31,21 @@ export class ClassService {
     return classEntity;
   }
 
+  async findByTeacher(teacherID: number): Promise<Class[]> {
+    const teacher = await this.teacherRepository.findOne({
+      where: { id: teacherID },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException(`Teacher with ID ${teacherID} not found`);
+    }
+
+    return await this.classRepository.find({
+      where: { teacher: { id: teacherID } },
+      relations: ['teacher'],
+    });
+  }
+
   async create(createClassDto: CreateClassDto): Promise<Class> {
     const { teacherID, ...rest } = createClassDto;
 
