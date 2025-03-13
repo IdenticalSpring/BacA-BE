@@ -14,7 +14,11 @@ export class LessonService {
   async findAll(): Promise<Lesson[]> {
     return await this.lessonRepository.find({ where: { isDelete: false } });
   }
-
+  async findLessonByLevel(level: string): Promise<Lesson[]> {
+    return await this.lessonRepository.find({
+      where: { level, isDelete: false },
+    });
+  }
   async findOne(id: number): Promise<Lesson> {
     const lesson = await this.lessonRepository.findOne({
       where: { id, isDelete: false },
