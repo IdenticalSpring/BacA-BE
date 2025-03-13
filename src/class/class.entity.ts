@@ -19,12 +19,6 @@ export class Class {
   @Column({ length: 100, nullable: false })
   name: string;
 
-  @Column({ type: 'date', nullable: false })
-  startDate: Date;
-
-  @Column({ type: 'date', nullable: true })
-  endDate: Date;
-
   @ManyToOne(() => Teacher, (teacher) => teacher.classes, {
     onDelete: 'CASCADE',
   })

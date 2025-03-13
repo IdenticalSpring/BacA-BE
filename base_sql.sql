@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS `assessments` (
 CREATE TABLE IF NOT EXISTS `class` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
-  `startDate` date NOT NULL,
-  `endDate` date DEFAULT NULL,
+  -- `startDate` date NOT NULL,
+  -- `endDate` date DEFAULT NULL,
   `level` varchar(50) DEFAULT NULL,
   `isDelete` BOOLEAN DEFAULT FALSE;
   `teacherID` int NOT NULL,
