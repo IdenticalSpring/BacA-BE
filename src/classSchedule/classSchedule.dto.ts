@@ -1,4 +1,4 @@
-import { IsInt } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional } from 'class-validator';
 
 export class CreateClassScheduleDto {
   @IsInt()
@@ -9,6 +9,10 @@ export class CreateClassScheduleDto {
 
   @IsInt()
   lessonID: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }
 
 export class UpdateClassScheduleDto {
@@ -20,4 +24,8 @@ export class UpdateClassScheduleDto {
 
   @IsInt()
   lessonID?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }

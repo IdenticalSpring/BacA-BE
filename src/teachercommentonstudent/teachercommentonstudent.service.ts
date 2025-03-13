@@ -17,12 +17,13 @@ export class TeacherCommentOnStudentService {
   async findAll(): Promise<TeacherCommentOnStudent[]> {
     return await this.teacherCommentOnStudentRepository.find({
       relations: ['teacher', 'student', 'schedule'],
+      where: { isDelete: false },
     });
   }
 
   async findOne(id: number): Promise<TeacherCommentOnStudent> {
     const comment = await this.teacherCommentOnStudentRepository.findOne({
-      where: { id },
+      where: { id, isDelete: false },
       relations: ['teacher', 'student', 'schedule'],
     });
     if (!comment) {
@@ -52,5 +53,13 @@ export class TeacherCommentOnStudentService {
     if (result.affected === 0) {
       throw new NotFoundException(`Comment with ID ${id} not found`);
     }
+    const Comment = await this.teacherCommentOnStudentRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!Comment) {
+      throw new NotFoundException(`Comment with ID ${id} not found`);
+    }
+    Comment.isDelete = true;
+    await this.teacherCommentOnStudentRepository.save(Comment);
   }
 }

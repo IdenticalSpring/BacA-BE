@@ -12,11 +12,13 @@ export class AdminService {
   ) {}
 
   async findAll(): Promise<Admin[]> {
-    return await this.adminRepository.find();
+    return await this.adminRepository.find({ where: { isDelete: false } });
   }
 
   async findOne(id: number): Promise<Admin> {
-    const admin = await this.adminRepository.findOne({ where: { id } });
+    const admin = await this.adminRepository.findOne({
+      where: { id, isDelete: false },
+    });
     if (!admin) {
       throw new NotFoundException(`Admin with ID ${id} not found`);
     }
@@ -29,15 +31,22 @@ export class AdminService {
   }
 
   async update(id: number, updateAdminDto: UpdateAdminDto): Promise<Admin> {
-    const admin = await this.findOne(id);
+    const admin = await this.adminRepository.findOne({
+      where: { id, isDelete: false },
+    });
     Object.assign(admin, updateAdminDto);
     return await this.adminRepository.save(admin);
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.adminRepository.delete(id);
-    if (result.affected === 0) {
+    // const result = await this.adminRepository.delete(id);
+    const admin = await this.adminRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!admin) {
       throw new NotFoundException(`Admin with ID ${id} not found`);
     }
+    admin.isDelete = true;
+    await this.adminRepository.save(admin);
   }
 }

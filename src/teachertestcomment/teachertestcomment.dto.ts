@@ -1,4 +1,4 @@
-import { IsInt, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateTeacherTestCommentDto {
   @IsInt()
@@ -15,6 +15,9 @@ export class CreateTeacherTestCommentDto {
 
   @IsString()
   skillComment: string;
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }
 
 export class UpdateTeacherTestCommentDto {

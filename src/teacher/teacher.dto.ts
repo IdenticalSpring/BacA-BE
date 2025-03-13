@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsDateString, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsDateString,
+  MinLength,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateTeacherDto {
   @IsString()
@@ -21,6 +27,10 @@ export class CreateTeacherDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }
 
 export class UpdateTeacherDto {
@@ -48,4 +58,8 @@ export class UpdateTeacherDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }

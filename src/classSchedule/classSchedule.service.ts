@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClassSchedule } from './classSchedule.entity';
@@ -24,30 +24,34 @@ export class ClassScheduleService {
   ) {}
 
   async findAll(): Promise<ClassSchedule[]> {
-    return await this.classScheduleRepository.find();
+    return await this.classScheduleRepository.find({
+      where: { isDelete: false },
+    });
   }
 
   async findOne(id: number): Promise<ClassSchedule> {
-    return await this.classScheduleRepository.findOne({ where: { id } });
+    return await this.classScheduleRepository.findOne({
+      where: { id, isDelete: false },
+    });
   }
 
   async create(createDto: CreateClassScheduleDto): Promise<ClassSchedule> {
     const classEntity = await this.classRepository.findOne({
-      where: { id: createDto.classID },
+      where: { id: createDto.classID, isDelete: false },
     });
     if (!classEntity) {
       throw new Error('Class not found');
     }
 
     const schedule = await this.scheduleRepository.findOne({
-      where: { id: createDto.scheduleID },
+      where: { id: createDto.scheduleID, isDelete: false },
     });
     if (!schedule) {
       throw new Error('Schedule not found');
     }
 
     const lesson = await this.lessonRepository.findOne({
-      where: { id: createDto.lessonID },
+      where: { id: createDto.lessonID, isDelete: false },
     });
     if (!lesson) {
       throw new Error('Lesson not found');
@@ -68,7 +72,7 @@ export class ClassScheduleService {
     updateDto: UpdateClassScheduleDto,
   ): Promise<ClassSchedule> {
     const classSchedule = await this.classScheduleRepository.findOne({
-      where: { id },
+      where: { id, isDelete: false },
     });
 
     if (!classSchedule) {
@@ -77,7 +81,7 @@ export class ClassScheduleService {
 
     if (updateDto.classID) {
       const classEntity = await this.classRepository.findOne({
-        where: { id: updateDto.classID },
+        where: { id: updateDto.classID, isDelete: false },
       });
       if (!classEntity) throw new Error('Class not found');
       classSchedule.class = classEntity;
@@ -85,7 +89,7 @@ export class ClassScheduleService {
 
     if (updateDto.scheduleID) {
       const schedule = await this.scheduleRepository.findOne({
-        where: { id: updateDto.scheduleID },
+        where: { id: updateDto.scheduleID, isDelete: false },
       });
       if (!schedule) throw new Error('Schedule not found');
       classSchedule.schedule = schedule;
@@ -93,7 +97,7 @@ export class ClassScheduleService {
 
     if (updateDto.lessonID) {
       const lesson = await this.lessonRepository.findOne({
-        where: { id: updateDto.lessonID },
+        where: { id: updateDto.lessonID, isDelete: false },
       });
       if (!lesson) throw new Error('Lesson not found');
       classSchedule.lesson = lesson;
@@ -103,6 +107,14 @@ export class ClassScheduleService {
   }
 
   async remove(id: number): Promise<void> {
-    await this.classScheduleRepository.delete(id);
+    // await this.classScheduleRepository.delete(id);
+    const classSchedule = await this.classScheduleRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!classSchedule) {
+      throw new NotFoundException(`classSchedule with ID ${id} not found`);
+    }
+    classSchedule.isDelete = true;
+    await this.classScheduleRepository.save(classSchedule);
   }
 }

@@ -28,4 +28,6 @@ export class TeacherCommentOnStudent {
 
   @Column({ type: 'text', nullable: false })
   comment: string;
+  @Column({ type: 'boolean', default: false })
+  isDelete: boolean;
 }

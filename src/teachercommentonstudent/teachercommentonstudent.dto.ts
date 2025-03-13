@@ -1,4 +1,4 @@
-import { IsString, IsInt } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateTeacherCommentOnStudentDto {
   @IsInt()
@@ -12,6 +12,9 @@ export class CreateTeacherCommentOnStudentDto {
 
   @IsString()
   comment: string;
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }
 
 export class UpdateTeacherCommentOnStudentDto {

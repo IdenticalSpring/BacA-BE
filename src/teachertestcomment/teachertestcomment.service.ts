@@ -17,12 +17,13 @@ export class TeacherTestCommentService {
   async findAll(): Promise<TeacherTestComment[]> {
     return await this.repository.find({
       relations: ['teacher', 'student', 'classEntity', 'schedule'],
+      where: { isDelete: false },
     });
   }
 
   async findOne(id: number): Promise<TeacherTestComment> {
     const comment = await this.repository.findOne({
-      where: { id },
+      where: { id, isDelete: false },
       relations: ['teacher', 'student', 'classEntity', 'schedule'],
     });
     if (!comment) {
@@ -48,9 +49,17 @@ export class TeacherTestCommentService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.repository.delete(id);
-    if (result.affected === 0) {
+    // const result = await this.repository.delete(id);
+    // if (result.affected === 0) {
+    //   throw new NotFoundException(`TeacherTestComment with ID ${id} not found`);
+    // }
+    const TeacherTestComment = await this.repository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!TeacherTestComment) {
       throw new NotFoundException(`TeacherTestComment with ID ${id} not found`);
     }
+    TeacherTestComment.isDelete = true;
+    await this.repository.save(TeacherTestComment);
   }
 }
