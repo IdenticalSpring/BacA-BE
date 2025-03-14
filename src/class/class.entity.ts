@@ -10,6 +10,7 @@ import { Teacher } from '../teacher/teacher.entity';
 import { TestResult } from '../testresult/testresult.entity';
 import { ClassSchedule } from '../classSchedule/classSchedule.entity';
 import { LessonBySchedule } from '../lesson_by_schedule/lesson_by_schedule.entity';
+import { Student } from 'src/student/student.entity';
 
 @Entity('class')
 export class Class {
@@ -38,4 +39,7 @@ export class Class {
 
   @OneToMany(() => TestResult, (testResult) => testResult.classEntity)
   testResults: TestResult[];
+
+  @OneToMany(() => Student, (student) => student.class)
+  students: Student[];
 }

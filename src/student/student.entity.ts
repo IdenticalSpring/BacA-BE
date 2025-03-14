@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Schedule } from '../schedule/schedule.entity';
 import { TestResult } from '../testresult/testresult.entity';
+import { Class } from 'src/class/class.entity';
 
 @Entity('student') // Đặt tên bảng đúng với MySQL
 export class Student {
@@ -36,6 +37,14 @@ export class Student {
   password: string;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
+
+  @ManyToOne(() => Class, (classEntity) => classEntity.students, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'classID' })
+  class: Class;
+
   @OneToMany(() => TestResult, (testResult) => testResult.student)
   testResults: TestResult[]; // Đã sửa thành mảng []
 

@@ -24,6 +24,10 @@ export class CreateStudentDto {
   age?: number;
 
   @IsOptional()
+  @IsString()
+  classID?: number;
+
+  @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
 }
@@ -45,6 +49,10 @@ export class UpdateStudentDto {
   @IsInt()
   @Min(0)
   age?: number;
+
+  @IsOptional()
+  @IsString()
+  classID?: number;
 
   @IsOptional()
   @IsBoolean()
