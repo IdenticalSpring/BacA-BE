@@ -5,12 +5,17 @@ import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { User } from './user.entity';
 import { Admin } from 'src/admin/admin.entity';
+import { Teacher } from 'src/teacher/teacher.entity';
+import { Student } from 'src/student/student.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(Admin) private adminRepository: Repository<Admin>,
+    @InjectRepository(Teacher) private teacherRepository: Repository<Teacher>,
+    @InjectRepository(Student) private studentRepository: Repository<Student>,
+
     private jwtService: JwtService,
   ) {}
 
@@ -59,7 +64,7 @@ export class AuthService {
       throw new BadRequestException('Invalid credentials');
     }
 
-    return { userId: user.id, username: user.username };
+    return { userId: user.id, username: user.username, role: 'user' };
   }
 
   async validateAdmin(username: string, password: string): Promise<any> {
@@ -77,8 +82,39 @@ export class AuthService {
     if (password !== admin.password) {
       throw new BadRequestException('Invalid credentials');
     }
+    // console.log('JWT_SECRET:', process.env.JWT_SECRET);
+    return { userId: admin.id, username: admin.username, role: 'admin' };
+  }
+  async validateTeacher(username: string, password: string): Promise<any> {
+    const teacher = await this.teacherRepository.findOne({
+      where: { username },
+    });
 
-    return { adminId: admin.id, username: admin.username };
+    if (!teacher) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    if (password !== teacher.password) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    return { userId: teacher.id, username: teacher.username, role: 'teacher' };
+  }
+
+  async validateStudent(username: string, password: string): Promise<any> {
+    const student = await this.studentRepository.findOne({
+      where: { username },
+    });
+
+    if (!student) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    if (password !== student.password) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    return { userId: student.id, username: student.username, role: 'student' };
   }
 
   async generateToken(payload: any): Promise<string> {

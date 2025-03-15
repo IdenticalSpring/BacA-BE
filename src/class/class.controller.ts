@@ -7,10 +7,12 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ClassService } from './class.service';
 import { CreateClassDto, UpdateClassDto } from './class.dto';
 import { Class } from './class.entity';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('classes')
 export class ClassController {
@@ -26,12 +28,22 @@ export class ClassController {
     return await this.classService.findOne(id);
   }
 
+  @Get('teacher/:teacherID')
+  async findByTeacher(
+    @Param('teacherID', ParseIntPipe) teacherID: number,
+  ): Promise<Class[]> {
+    return await this.classService.findByTeacher(teacherID);
+  }
+
   @Post()
+  @UseGuards(AuthGuard)
   async create(@Body() createClassDto: CreateClassDto): Promise<Class> {
+    console.log('createClassDto', createClassDto);
     return await this.classService.create(createClassDto);
   }
 
   @Put(':id')
+  @UseGuards(AuthGuard)
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateClassDto: UpdateClassDto,
@@ -40,6 +52,7 @@ export class ClassController {
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard)
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.classService.remove(id);
   }

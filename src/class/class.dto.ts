@@ -1,35 +1,37 @@
-import { IsString, IsDateString, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateClassDto {
   @IsString()
   name: string;
 
-  @IsDateString()
-  startDate: string;
-
-  @IsDateString()
-  endDate?: string;
-
   @IsInt()
   teacherID: number;
+  @IsOptional()
+  @IsString()
+  level?: string; // Thêm level (có thể không bắt buộc)
 
-  @IsInt()
-  scheduleID: number;
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }
 
 export class UpdateClassDto {
   @IsString()
   name?: string;
 
-  @IsDateString()
-  startDate?: string;
-
-  @IsDateString()
-  endDate?: string;
-
   @IsInt()
   teacherID?: number;
+  @IsOptional()
+  @IsString()
+  level?: string; // Thêm level vào Update DTO
 
-  @IsInt()
-  scheduleID?: number;
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }

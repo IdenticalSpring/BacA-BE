@@ -10,4 +10,6 @@ export class Admin {
 
   @Column({ length: 255, nullable: false })
   password: string;
+  @Column({ type: 'boolean', default: false })
+  isDelete: boolean;
 }

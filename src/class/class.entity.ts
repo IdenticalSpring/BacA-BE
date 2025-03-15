@@ -7,8 +7,10 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Teacher } from '../teacher/teacher.entity';
-import { Schedule } from '../schedule/schedule.entity';
 import { TestResult } from '../testresult/testresult.entity';
+import { ClassSchedule } from '../classSchedule/classSchedule.entity';
+import { LessonBySchedule } from '../lesson_by_schedule/lesson_by_schedule.entity';
+import { Student } from 'src/student/student.entity';
 
 @Entity('class')
 export class Class {
@@ -18,24 +20,26 @@ export class Class {
   @Column({ length: 100, nullable: false })
   name: string;
 
-  @Column({ type: 'date', nullable: false })
-  startDate: Date;
-
-  @Column({ type: 'date', nullable: true })
-  endDate: Date;
-
   @ManyToOne(() => Teacher, (teacher) => teacher.classes, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'teacherID' })
   teacher: Teacher;
-
-  @ManyToOne(() => Schedule, (schedule) => schedule.classes, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'scheduleID' })
-  schedule: Schedule;
+  @Column({ length: 50, nullable: true })
+  level: string;
+  @Column({ type: 'boolean', default: false })
+  isDelete: boolean;
+  @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.class)
+  classSchedules: ClassSchedule[];
+  @OneToMany(
+    () => LessonBySchedule,
+    (lessonBySchedule) => lessonBySchedule.class,
+  )
+  lessonBySchedule: LessonBySchedule[];
 
   @OneToMany(() => TestResult, (testResult) => testResult.classEntity)
   testResults: TestResult[];
+
+  @OneToMany(() => Student, (student) => student.class)
+  students: Student[];
 }

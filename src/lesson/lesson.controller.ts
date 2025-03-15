@@ -20,7 +20,10 @@ export class LessonController {
   async findAll(): Promise<Lesson[]> {
     return await this.lessonService.findAll();
   }
-
+  @Get('level/:level')
+  async findLessonByLevel(@Param('level') level: string): Promise<Lesson[]> {
+    return await this.lessonService.findLessonByLevel(level);
+  }
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Lesson> {
     return await this.lessonService.findOne(id);

@@ -9,7 +9,11 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
-import { CreateScheduleDto, UpdateScheduleDto } from './schedule.dto';
+import {
+  CreateScheduleDto,
+  dayOfWeekScheduleDto,
+  UpdateScheduleDto,
+} from './schedule.dto';
 import { Schedule } from './schedule.entity';
 
 @Controller('schedules')
@@ -19,6 +23,15 @@ export class ScheduleController {
   @Get()
   async findAll(): Promise<Schedule[]> {
     return await this.scheduleService.findAll();
+  }
+  @Post('/day-of-week')
+  async findbyDayOfWeek(
+    @Body() dayOfWeekScheduleDto: dayOfWeekScheduleDto,
+  ): Promise<Schedule[]> {
+    console.log('dayOfWeekScheduleDto', dayOfWeekScheduleDto);
+    return await this.scheduleService.findByDayOfWeek(
+      dayOfWeekScheduleDto.dayOfWeek,
+    );
   }
 
   @Get(':id')

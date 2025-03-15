@@ -26,6 +26,25 @@ export class StudentController {
     return await this.studentService.findOne(id);
   }
 
+  @Get('class/:classID')
+  async findByClass(
+    @Param('classID', ParseIntPipe) classID: number,
+  ): Promise<Student[]> {
+    return await this.studentService.findByClass(classID);
+  }
+
+  // @Post()
+  // async create(@Body() createStudentDto: CreateStudentDto): Promise<Student> {
+  //   return await this.studentService.create(createStudentDto);
+  // }
+
+  // @Put(':id')
+  // async update(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body() updateStudentDto: UpdateStudentDto,
+  // ): Promise<Student> {
+  //   return await this.studentService.update(id, updateStudentDto);
+  // }
   @Post()
   async create(@Body() createStudentDto: CreateStudentDto): Promise<Student> {
     return await this.studentService.create(createStudentDto);

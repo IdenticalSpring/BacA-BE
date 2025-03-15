@@ -51,4 +51,6 @@ export class TestResult {
 
   @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
   averageScore: number;
+  @Column({ type: 'boolean', default: false })
+  isDelete: boolean;
 }

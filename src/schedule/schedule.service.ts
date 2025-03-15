@@ -12,11 +12,18 @@ export class ScheduleService {
   ) {}
 
   async findAll(): Promise<Schedule[]> {
-    return await this.scheduleRepository.find();
+    return await this.scheduleRepository.find({ where: { isDelete: false } });
   }
-
+  async findByDayOfWeek(dayOfWeek: number): Promise<Schedule[]> {
+    console.log('dayOfWeek', dayOfWeek);
+    return await this.scheduleRepository.find({
+      where: { dayOfWeek, isDelete: false },
+    });
+  }
   async findOne(id: number): Promise<Schedule> {
-    const schedule = await this.scheduleRepository.findOne({ where: { id } });
+    const schedule = await this.scheduleRepository.findOne({
+      where: { id, isDelete: false },
+    });
     if (!schedule) {
       throw new NotFoundException(`Schedule with ID ${id} not found`);
     }
@@ -38,9 +45,17 @@ export class ScheduleService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.scheduleRepository.delete(id);
-    if (result.affected === 0) {
+    // const result = await this.scheduleRepository.delete(id);
+    // if (result.affected === 0) {
+    //   throw new NotFoundException(`Schedule with ID ${id} not found`);
+    // }
+    const Schedule = await this.scheduleRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!Schedule) {
       throw new NotFoundException(`Schedule with ID ${id} not found`);
     }
+    Schedule.isDelete = true;
+    await this.scheduleRepository.save(Schedule);
   }
 }

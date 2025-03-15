@@ -33,4 +33,6 @@ export class TeacherTestComment {
 
   @Column({ type: 'text', nullable: false })
   skillComment: string;
+  @Column({ type: 'boolean', default: false })
+  isDelete: boolean;
 }

@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsNumber } from 'class-validator';
+import { IsInt, IsOptional, IsNumber, IsBoolean } from 'class-validator';
 
 export class CreateTestResultDto {
   @IsInt()
@@ -32,6 +32,9 @@ export class CreateTestResultDto {
   @IsOptional()
   @IsNumber()
   averageScore?: number;
+  @IsOptional()
+  @IsBoolean()
+  isDelete?: boolean;
 }
 
 export class UpdateTestResultDto extends CreateTestResultDto {}

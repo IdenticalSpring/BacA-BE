@@ -7,19 +7,25 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy'; // ✅ Import strategy
 import { AdminModule } from 'src/admin/admin.module';
-
+import { AuthGuard } from './auth.guard';
+import { Reflector } from '@nestjs/core';
+import { TeacherModule } from 'src/teacher/teacher.module';
+import { StudentModule } from 'src/student/student.module';
+// console.log('JWT_SECRET:', process.env.JWT_SECRET);
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
     PassportModule.register({ defaultStrategy: 'jwt' }), // ✅ Đăng ký Passport
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your_secret_key', // ✅ Đảm bảo secret đúng
+      secret: process.env.JWT_SECRET || 'secretKey', // ✅ Đảm bảo secret đúng
       signOptions: { expiresIn: '1h' },
     }),
     AdminModule,
+    TeacherModule,
+    StudentModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy], // ✅ Đăng ký JwtStrategy
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, AuthGuard, Reflector],
+  exports: [AuthService, AuthGuard, JwtModule],
 })
 export class AuthModule {}
