@@ -6,6 +6,9 @@ import {
   CreateTeacherCommentOnStudentDto,
   UpdateTeacherCommentOnStudentDto,
 } from './teachercommentonstudent.dto';
+import { Teacher } from 'src/teacher/teacher.entity';
+import { Student } from 'src/student/student.entity';
+import { Schedule } from 'src/schedule/schedule.entity';
 
 @Injectable()
 export class TeacherCommentOnStudentService {
@@ -35,7 +38,32 @@ export class TeacherCommentOnStudentService {
   async create(
     createDto: CreateTeacherCommentOnStudentDto,
   ): Promise<TeacherCommentOnStudent> {
-    const comment = this.teacherCommentOnStudentRepository.create(createDto);
+    const { teacherID, studentID, scheduleID, ...rest } = createDto;
+
+    const teacher =
+      await this.teacherCommentOnStudentRepository.manager.findOneBy(Teacher, {
+        id: teacherID,
+      });
+    const student =
+      await this.teacherCommentOnStudentRepository.manager.findOneBy(Student, {
+        id: studentID,
+      });
+    const schedule =
+      await this.teacherCommentOnStudentRepository.manager.findOneBy(Schedule, {
+        id: scheduleID,
+      });
+
+    if (!teacher || !student || !schedule) {
+      throw new NotFoundException('Teacher, Student, or Schedule not found');
+    }
+
+    const comment = this.teacherCommentOnStudentRepository.create({
+      teacher,
+      student,
+      schedule,
+      ...rest,
+    });
+
     return await this.teacherCommentOnStudentRepository.save(comment);
   }
 
