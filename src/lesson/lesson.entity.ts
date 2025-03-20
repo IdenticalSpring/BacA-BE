@@ -12,7 +12,7 @@ export class Lesson {
   @Column({ type: 'text', nullable: true })
   link: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   description: string;
   @Column({ length: 50, nullable: true })
   level: string;

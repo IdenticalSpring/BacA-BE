@@ -13,7 +13,7 @@ export class UploadController {
 
   @Post('cloudinary')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadToCloudinary(@UploadedFile() file: any) {
+  async uploadToCloudinary(@UploadedFile() file: any): Promise<{}> {
     try {
       if (!file) {
         console.error('Không có file được upload!');
