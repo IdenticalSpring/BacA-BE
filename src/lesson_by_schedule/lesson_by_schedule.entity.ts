@@ -4,9 +4,11 @@ import {
   ManyToOne,
   JoinColumn,
   Column,
+  OneToMany,
 } from 'typeorm';
 import { Class } from '../class/class.entity';
 import { Schedule } from '../schedule/schedule.entity';
+import { Checkin } from 'src/checkin/checkin.entity';
 
 @Entity('lesson_by_schedule')
 export class LessonBySchedule {
@@ -36,4 +38,6 @@ export class LessonBySchedule {
   lessonID: number;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
+  @OneToMany(() => Checkin, (checkin) => checkin.lessonBySchedule)
+  checkins: Checkin[];
 }
