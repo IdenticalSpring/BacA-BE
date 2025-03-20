@@ -9,6 +9,7 @@ import {
 import { Schedule } from '../schedule/schedule.entity';
 import { TestResult } from '../testresult/testresult.entity';
 import { Class } from 'src/class/class.entity';
+import { Checkin } from 'src/checkin/checkin.entity';
 
 @Entity('student') // Đặt tên bảng đúng với MySQL
 export class Student {
@@ -54,4 +55,7 @@ export class Student {
   })
   @JoinColumn({ name: 'scheduleID' })
   schedule: Schedule;
+
+  @OneToMany(() => Checkin, (checkin) => checkin.student)
+  checkins: Checkin[];
 }
