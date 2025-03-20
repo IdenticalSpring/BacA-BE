@@ -12,7 +12,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { LessonService } from './lesson.service';
-import { CreateLessonDto, UpdateLessonDto } from './lesson.dto';
+import {
+  CreateLessonDto,
+  findLessonByLevelAndTeacherIdDto,
+  UpdateLessonDto,
+} from './lesson.dto';
 import { Lesson } from './lesson.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('lessons')
@@ -23,9 +27,19 @@ export class LessonController {
   async findAll(): Promise<Lesson[]> {
     return await this.lessonService.findAll();
   }
-  @Get('level/:level')
-  async findLessonByLevel(@Param('level') level: string): Promise<Lesson[]> {
-    return await this.lessonService.findLessonByLevel(level);
+  @Post('level')
+  async findLessonByLevelAndTeacherId(
+    @Body() findLessonByLevelAndTeacherId: findLessonByLevelAndTeacherIdDto,
+  ): Promise<Lesson[]> {
+    return await this.lessonService.findLessonByLevelAndTeacherId(
+      findLessonByLevelAndTeacherId,
+    );
+  }
+  @Get('teacher/:teacherId')
+  async findLessonByTeacherId(
+    @Param('teacherId', ParseIntPipe) teacherId: number,
+  ): Promise<Lesson[]> {
+    return await this.lessonService.findLessonByTeacherId(teacherId);
   }
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Lesson> {

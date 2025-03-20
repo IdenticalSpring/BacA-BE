@@ -2,11 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lesson } from './lesson.entity';
-import { CreateLessonDto, UpdateLessonDto } from './lesson.dto';
+import {
+  CreateLessonDto,
+  findLessonByLevelAndTeacherIdDto,
+  UpdateLessonDto,
+} from './lesson.dto';
 import { google } from 'googleapis';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import * as readline from 'readline';
+import { Teacher } from 'src/teacher/teacher.entity';
 dotenv.config();
 @Injectable()
 export class LessonService {
@@ -29,6 +34,8 @@ export class LessonService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(Teacher)
+    private readonly teacherRepository: Repository<Teacher>,
   ) {
     // this.oauth2Client.setCredentials({
     //   refresh_token: process.env.REFRESH_TOKEN,
@@ -40,19 +47,45 @@ export class LessonService {
     //   }
     //   console.log('Service Account authenticated successfully:', tokens);
     // });
-    }
+  }
 
   async findAll(): Promise<Lesson[]> {
-    return await this.lessonRepository.find({ where: { isDelete: false } });
-  }
-  async findLessonByLevel(level: string): Promise<Lesson[]> {
     return await this.lessonRepository.find({
-      where: { level, isDelete: false },
+      where: { isDelete: false },
+      relations: ['teacher'],
+    });
+  }
+  async findLessonByLevelAndTeacherId(
+    findLessonByLevelAndTeacherId: findLessonByLevelAndTeacherIdDto,
+  ): Promise<Lesson[]> {
+    const teacher = await this.teacherRepository.find({
+      where: { id: findLessonByLevelAndTeacherId.teacherId },
+    });
+    return await this.lessonRepository.find({
+      where: {
+        level: findLessonByLevelAndTeacherId.level,
+        teacher,
+        isDelete: false,
+      },
+      relations: ['teacher'],
+    });
+  }
+  async findLessonByTeacherId(teacherId: number): Promise<Lesson[]> {
+    const teacher = await this.teacherRepository.find({
+      where: { id: teacherId },
+    });
+    return await this.lessonRepository.find({
+      where: {
+        teacher,
+        isDelete: false,
+      },
+      relations: ['teacher'],
     });
   }
   async findOne(id: number): Promise<Lesson> {
     const lesson = await this.lessonRepository.findOne({
       where: { id, isDelete: false },
+      relations: ['teacher'],
     });
     if (!lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);

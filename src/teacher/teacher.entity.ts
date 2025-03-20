@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Class } from '../class/class.entity';
 import { TeacherCommentOnStudent } from '../teachercommentonstudent/teachercommentonstudent.entity';
 import { TeacherTestComment } from '../teachertestcomment/teachertestcomment.entity';
+import { Lesson } from 'src/lesson/lesson.entity';
 
 @Entity('teacher')
 export class Teacher {
@@ -38,4 +39,6 @@ export class Teacher {
   // Một giáo viên có thể viết nhiều nhận xét bài kiểm tra
   @OneToMany(() => TeacherTestComment, (testComment) => testComment.teacher)
   testComments: TeacherTestComment[];
+  @OneToMany(() => Lesson, (lesson) => lesson.teacher)
+  lesson: Lesson[];
 }

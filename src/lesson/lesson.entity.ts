@@ -1,5 +1,13 @@
+import { Teacher } from 'src/teacher/teacher.entity';
 import { ClassSchedule } from '../classSchedule/classSchedule.entity';
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('lesson')
 export class Lesson {
@@ -20,4 +28,9 @@ export class Lesson {
   isDelete: boolean;
   @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.lesson)
   classSchedules: ClassSchedule[];
+  @ManyToOne(() => Teacher, (teacherEntity) => teacherEntity.lesson, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'TeacherId' })
+  teacher: Teacher;
 }
