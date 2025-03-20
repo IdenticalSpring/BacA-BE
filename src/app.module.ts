@@ -24,6 +24,9 @@ import { Lesson } from './lesson/lesson.entity';
 import { LessonByScheduleModule } from './lesson_by_schedule/lesson_by_schedule.module';
 import { LessonBySchedule } from './lesson_by_schedule/lesson_by_schedule.entity';
 import { CheckinModule } from './checkin/checkin.module';
+import { TestModule } from './test/test.module';
+import { ClassTestScheduleModule } from './classTestSchedule/classTestSchedule.module';
+import { StudentScoreModule } from './studentScore/studentScore.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -59,6 +62,9 @@ import { CheckinModule } from './checkin/checkin.module';
     TeacherTestCommentModule,
     CloudinaryModule,
     CheckinModule,
+    TestModule,
+    ClassTestScheduleModule,
+    StudentScoreModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],
