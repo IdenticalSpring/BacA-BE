@@ -6,17 +6,17 @@ export class CheckinController {
   constructor(private readonly checkinService: CheckinService) {}
 
   @Post()
-  async createCheckin(
-    @Body('lessonByScheduleId') lessonByScheduleId: number,
-    @Body('studentId') studentId: number,
-    @Body('present') present: number,
-    @Body('note') note?: string,
+  async createCheckins(
+    @Body()
+    body: {
+      lessonByScheduleId: number;
+      attendanceData: { studentId: number; present: number; note?: string }[];
+    },
   ) {
-    return await this.checkinService.createCheckin(
+    const { lessonByScheduleId, attendanceData } = body;
+    return await this.checkinService.createCheckins(
       lessonByScheduleId,
-      studentId,
-      present,
-      note,
+      attendanceData,
     );
   }
 

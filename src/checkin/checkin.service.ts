@@ -10,19 +10,19 @@ export class CheckinService {
     private readonly checkinRepository: Repository<Checkin>,
   ) {}
 
-  async createCheckin(
+  async createCheckins(
     lessonByScheduleId: number,
-    studentId: number,
-    present: number,
-    note?: string,
+    attendanceData: { studentId: number; present: number; note?: string }[],
   ) {
-    const checkin = this.checkinRepository.create({
-      lessonBySchedule: { id: lessonByScheduleId },
-      student: { id: studentId },
-      present,
-      note,
-    });
-    return await this.checkinRepository.save(checkin);
+    const checkinEntities = attendanceData.map((data) =>
+      this.checkinRepository.create({
+        lessonBySchedule: { id: lessonByScheduleId },
+        student: { id: data.studentId },
+        present: data.present,
+        note: data.note,
+      }),
+    );
+    return await this.checkinRepository.save(checkinEntities);
   }
 
   async getCheckinsByLesson(lessonByScheduleId: number) {
