@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { ClassTestScheduleEntity } from 'src/classTestSchedule/classTestSchedule.entity';
 
 @Entity('test')
 export class TestEntity {
@@ -7,4 +8,10 @@ export class TestEntity {
 
   @Column()
   name: string;
+
+  @OneToMany(
+    () => ClassTestScheduleEntity,
+    (classTestSchedule) => classTestSchedule.test,
+  )
+  classTestSchedules: ClassTestScheduleEntity[];
 }

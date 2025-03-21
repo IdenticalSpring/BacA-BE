@@ -21,11 +21,16 @@ export class ClassTestScheduleService {
   }
 
   async findAll(): Promise<ClassTestScheduleEntity[]> {
-    return this.classTestScheduleRepository.find();
+    return this.classTestScheduleRepository.find({
+      relations: ['class', 'test'],
+    });
   }
 
   async findOne(id: number): Promise<ClassTestScheduleEntity> {
-    return this.classTestScheduleRepository.findOneBy({ id });
+    return this.classTestScheduleRepository.findOne({
+      where: { id },
+      relations: ['class', 'test'],
+    });
   }
 
   async update(
