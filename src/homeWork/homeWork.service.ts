@@ -64,17 +64,52 @@ export class HomeWorkService {
   }
 
   async create(createHomeWorkDto: CreateHomeWorkDto): Promise<HomeWork> {
-    const homeWork = this.homeWorkRepository.create(createHomeWorkDto);
-    return await this.homeWorkRepository.save(homeWork);
+    const { teacherId, ...rest } = createHomeWorkDto;
+
+    // Tìm teacher theo ID
+    const teacher = await this.teacherRepository.findOne({
+      where: { id: teacherId, isDelete: false },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
+    }
+
+    // Tạo class và gán teacher
+    const homeWorkEntity = this.homeWorkRepository.create({
+      ...rest,
+      teacher, // Gán trực tiếp teacher vào entity
+    });
+
+    return await this.homeWorkRepository.save(homeWorkEntity);
   }
 
   async update(
     id: number,
     updateHomeWorkDto: UpdateHomeWorkDto,
   ): Promise<HomeWork> {
-    const homeWork = await this.findOne(id);
-    Object.assign(homeWork, updateHomeWorkDto);
-    return await this.homeWorkRepository.save(homeWork);
+    const { teacherId, ...rest } = updateHomeWorkDto;
+    // Tìm class cần update
+    const homeWorkEntity = await this.findOne(id);
+    if (!homeWorkEntity) {
+      throw new NotFoundException(`HomeWork with ID ${id} not found`);
+    }
+    if (teacherId !== undefined) {
+      const teacher = await this.teacherRepository.findOne({
+        where: { id: teacherId },
+      });
+
+      if (!teacher) {
+        throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
+      }
+
+      homeWorkEntity.teacher = teacher;
+    }
+
+    // Cập nhật các field còn lại
+    Object.assign(homeWorkEntity, rest);
+
+    return await this.homeWorkRepository.save(homeWorkEntity);
   }
 
   async remove(id: number): Promise<void> {

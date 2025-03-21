@@ -94,14 +94,49 @@ export class LessonService {
   }
 
   async create(createLessonDto: CreateLessonDto): Promise<Lesson> {
-    const lesson = this.lessonRepository.create(createLessonDto);
-    return await this.lessonRepository.save(lesson);
+    const { teacherId, ...rest } = createLessonDto;
+
+    // Tìm teacher theo ID
+    const teacher = await this.teacherRepository.findOne({
+      where: { id: teacherId, isDelete: false },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
+    }
+
+    // Tạo class và gán teacher
+    const lessonEntity = this.lessonRepository.create({
+      ...rest,
+      teacher, // Gán trực tiếp teacher vào entity
+    });
+
+    return await this.lessonRepository.save(lessonEntity);
   }
 
   async update(id: number, updateLessonDto: UpdateLessonDto): Promise<Lesson> {
-    const lesson = await this.findOne(id);
-    Object.assign(lesson, updateLessonDto);
-    return await this.lessonRepository.save(lesson);
+    const { teacherId, ...rest } = updateLessonDto;
+    // Tìm class cần update
+    const lessonEntity = await this.findOne(id);
+    if (!lessonEntity) {
+      throw new NotFoundException(`Lesson with ID ${id} not found`);
+    }
+    if (teacherId !== undefined) {
+      const teacher = await this.teacherRepository.findOne({
+        where: { id: teacherId },
+      });
+
+      if (!teacher) {
+        throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
+      }
+
+      lessonEntity.teacher = teacher;
+    }
+
+    // Cập nhật các field còn lại
+    Object.assign(lessonEntity, rest);
+
+    return await this.lessonRepository.save(lessonEntity);
   }
 
   async remove(id: number): Promise<void> {
