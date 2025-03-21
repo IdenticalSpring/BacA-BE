@@ -13,8 +13,8 @@ export class CreateClassDto {
   @IsInt()
   teacherID: number;
   @IsOptional()
-  @IsString()
-  level?: string; // Thêm level (có thể không bắt buộc)
+  @IsInt()
+  level?: number; // Thêm level (có thể không bắt buộc)
 
   @IsOptional()
   @IsBoolean()
@@ -28,8 +28,8 @@ export class UpdateClassDto {
   @IsInt()
   teacherID?: number;
   @IsOptional()
-  @IsString()
-  level?: string; // Thêm level vào Update DTO
+  @IsInt()
+  level?: number; // Thêm level vào Update DTO
 
   @IsOptional()
   @IsBoolean()

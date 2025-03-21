@@ -26,8 +26,8 @@ export class Class {
   })
   @JoinColumn({ name: 'teacherID' })
   teacher: Teacher;
-  @Column({ length: 50, nullable: true })
-  level: string;
+  @Column({ type: 'int', nullable: true })
+  level: number;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
   @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.class)

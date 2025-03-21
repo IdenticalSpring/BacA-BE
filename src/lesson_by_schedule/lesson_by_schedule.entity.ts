@@ -36,6 +36,8 @@ export class LessonBySchedule {
   date: Date;
   @Column({ type: 'int', nullable: true })
   lessonID: number;
+  @Column({ type: 'int', nullable: true })
+  homeWorkId: number;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
   @OneToMany(() => Checkin, (checkin) => checkin.lessonBySchedule)

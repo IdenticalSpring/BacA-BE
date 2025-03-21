@@ -12,8 +12,8 @@ export class CreateStudentDto {
   name: string;
 
   @IsOptional()
-  @IsString()
-  level?: string;
+  @IsInt()
+  level?: number;
 
   @IsEmail()
   email: string;
@@ -38,8 +38,8 @@ export class UpdateStudentDto {
   name?: string;
 
   @IsOptional()
-  @IsString()
-  level?: string;
+  @IsInt()
+  level?: number;
 
   @IsOptional()
   @IsEmail()

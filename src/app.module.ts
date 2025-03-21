@@ -27,6 +27,8 @@ import { CheckinModule } from './checkin/checkin.module';
 import { TestModule } from './test/test.module';
 import { ClassTestScheduleModule } from './classTestSchedule/classTestSchedule.module';
 import { StudentScoreModule } from './studentScore/studentScore.module';
+import { LevelModule } from './level/level.module';
+import { HomeWorkModule } from './homeWork/homeWork.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -65,6 +67,8 @@ import { StudentScoreModule } from './studentScore/studentScore.module';
     TestModule,
     ClassTestScheduleModule,
     StudentScoreModule,
+    LevelModule,
+    HomeWorkModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],
