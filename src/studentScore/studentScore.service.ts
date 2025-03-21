@@ -21,11 +21,23 @@ export class StudentScoreService {
   }
 
   async findAll(): Promise<StudentScoreEntity[]> {
-    return this.studentScoreRepository.find();
+    return this.studentScoreRepository.find({
+      relations: ['student', 'classTestSchedule'],
+    });
   }
 
   async findOne(id: number): Promise<StudentScoreEntity> {
-    return this.studentScoreRepository.findOneBy({ id });
+    return this.studentScoreRepository.findOne({
+      where: { id },
+      relations: ['student', 'classTestSchedule'],
+    });
+  }
+
+  async findByStudentId(studentID: number): Promise<StudentScoreEntity[]> {
+    return this.studentScoreRepository.find({
+      where: { studentID },
+      relations: ['student', 'classTestSchedule'],
+    });
   }
 
   async update(

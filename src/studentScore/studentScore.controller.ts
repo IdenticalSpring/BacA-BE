@@ -32,6 +32,13 @@ export class StudentScoreController {
     return this.studentScoreService.findOne(id);
   }
 
+  @Get('student/:studentID')
+  async findByStudentId(
+    @Param('studentID') studentID: number,
+  ): Promise<StudentScoreEntity[]> {
+    return this.studentScoreService.findByStudentId(studentID);
+  }
+
   @Put(':id')
   async update(
     @Param('id') id: number,

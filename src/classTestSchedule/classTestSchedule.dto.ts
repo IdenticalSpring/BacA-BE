@@ -1,8 +1,12 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsDateString, IsNumber } from 'class-validator';
 
 export class CreateClassTestScheduleDto {
   @IsNumber()
   classID: number;
-  @IsString()
-  date: Date;
+
+  @IsNumber()
+  testID: number;
+
+  @IsDateString()
+  date?: string;
 }
