@@ -18,6 +18,8 @@ export class CreateLessonByScheduleDto {
 
   @IsInt()
   lessonID: number;
+  @IsInt()
+  homeWorkID: number;
 
   @IsString()
   startTime: string;
@@ -42,7 +44,8 @@ export class UpdateLessonByScheduleDto {
 
   @IsInt()
   lessonID?: number;
-
+  @IsInt()
+  homeWorkID?: number;
   @IsString()
   startTime?: string;
 
