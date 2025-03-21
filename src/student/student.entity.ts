@@ -20,8 +20,8 @@ export class Student {
   @Column({ length: 100, nullable: false })
   name: string;
 
-  @Column({ length: 50, nullable: true })
-  level: string;
+  @Column({ type: 'int', nullable: true })
+  level: number;
 
   @Column({ type: 'date', nullable: false })
   startDate: Date;

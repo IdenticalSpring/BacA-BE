@@ -1,26 +1,26 @@
 import { Teacher } from 'src/teacher/teacher.entity';
-import { ClassSchedule } from '../classSchedule/classSchedule.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  OneToMany,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
 
-@Entity('lesson')
-export class Lesson {
+@Entity('homework')
+export class HomeWork {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ length: 100, nullable: false })
-  name: string;
+  title: string;
 
   @Column({ type: 'text', nullable: true })
   linkYoutube: string;
   @Column({ type: 'text', nullable: true })
   linkGame: string;
+  @Column({ type: 'text', nullable: true })
+  linkSpeech: string;
 
   @Column({ type: 'longtext', nullable: true })
   description: string;
@@ -28,8 +28,6 @@ export class Lesson {
   level: number;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
-  @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.lesson)
-  classSchedules: ClassSchedule[];
   @ManyToOne(() => Teacher, (teacherEntity) => teacherEntity.lesson, {
     onDelete: 'CASCADE',
   })

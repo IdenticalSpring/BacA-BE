@@ -4,6 +4,7 @@ import {
   IsDateString,
   MinLength,
   IsBoolean,
+  IsInt,
 } from 'class-validator';
 
 export class CreateTeacherDto {
@@ -16,10 +17,6 @@ export class CreateTeacherDto {
   @IsString()
   @MinLength(6)
   password: string;
-
-  @IsOptional()
-  @IsString()
-  level?: string;
 
   @IsDateString()
   startDate: string;
@@ -46,10 +43,6 @@ export class UpdateTeacherDto {
   @IsString()
   @MinLength(6)
   password?: string;
-
-  @IsOptional()
-  @IsString()
-  level?: string;
 
   @IsOptional()
   @IsDateString()

@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
 
-export class CreateLessonDto {
+export class CreateHomeWorkDto {
   @IsString()
   title: string;
 
@@ -10,6 +10,9 @@ export class CreateLessonDto {
   @IsOptional()
   @IsString()
   linkGame?: string;
+  @IsOptional()
+  @IsString()
+  linkSpeech?: string;
 
   @IsOptional()
   @IsString()
@@ -26,8 +29,8 @@ export class CreateLessonDto {
   isDelete?: boolean;
 }
 
-export class UpdateLessonDto extends CreateLessonDto {}
-export class findLessonByLevelAndTeacherIdDto {
+export class UpdateHomeWorkDto extends CreateHomeWorkDto {}
+export class findHomeWorkByLevelAndTeacherIdDto {
   @IsInt()
   level: number;
   @IsInt()

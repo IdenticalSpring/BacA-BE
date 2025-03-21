@@ -3,6 +3,7 @@ import { Class } from '../class/class.entity';
 import { TeacherCommentOnStudent } from '../teachercommentonstudent/teachercommentonstudent.entity';
 import { TeacherTestComment } from '../teachertestcomment/teachertestcomment.entity';
 import { Lesson } from 'src/lesson/lesson.entity';
+import { HomeWork } from 'src/homeWork/homeWork.entity';
 
 @Entity('teacher')
 export class Teacher {
@@ -17,9 +18,6 @@ export class Teacher {
 
   @Column({ length: 255, nullable: false })
   password: string;
-
-  @Column({ length: 50, nullable: true })
-  level: string;
 
   @Column({ type: 'date', nullable: false })
   startDate: Date;
@@ -41,4 +39,6 @@ export class Teacher {
   testComments: TeacherTestComment[];
   @OneToMany(() => Lesson, (lesson) => lesson.teacher)
   lesson: Lesson[];
+  @OneToMany(() => HomeWork, (homeWork) => homeWork.teacher)
+  homeWork: HomeWork[];
 }
