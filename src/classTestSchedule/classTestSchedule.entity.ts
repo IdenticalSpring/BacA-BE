@@ -27,7 +27,7 @@ export class ClassTestScheduleEntity {
   @JoinColumn({ name: 'classID' })
   class: Class;
 
-  @Column()
+  @Column({ type: 'date', nullable: false })
   date: Date;
 
   @ManyToOne(() => TestEntity, (test) => test.classTestSchedules, {

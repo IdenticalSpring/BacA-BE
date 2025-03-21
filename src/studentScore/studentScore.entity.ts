@@ -5,13 +5,34 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Student } from '../student/student.entity';
-import { ClassTestScheduleEntity } from '../classTestSchedule/classTestSchedule.entity';
+import { ClassTestScheduleEntity } from 'src/classTestSchedule/classTestSchedule.entity';
+import { Student } from 'src/student/student.entity';
 
-@Entity('studentScore')
+@Entity('StudentScore')
 export class StudentScoreEntity {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
+  studentID: number;
+
+  @Column()
+  classTestScheduleID: number;
+
+  @Column('float')
+  writingScore: number;
+
+  @Column('float')
+  readingScore: number;
+
+  @Column('float')
+  speakingScore: number;
+
+  @Column('float')
+  listeningScore: number;
+
+  @Column('float')
+  avgScore: number;
 
   @ManyToOne(() => Student, (student) => student.studentScores, {
     onDelete: 'CASCADE',
@@ -28,19 +49,4 @@ export class StudentScoreEntity {
   )
   @JoinColumn({ name: 'classTestScheduleID' })
   classTestSchedule: ClassTestScheduleEntity;
-
-  @Column('float')
-  writingScore: number;
-
-  @Column('float')
-  readingScore: number;
-
-  @Column('float')
-  speakingScore: number;
-
-  @Column('float')
-  listeningScore: number;
-
-  @Column('float')
-  avgScore: number;
 }
