@@ -9,23 +9,6 @@ import {
 } from './homeWork.dto';
 import * as dotenv from 'dotenv';
 import { Teacher } from 'src/teacher/teacher.entity';
-import * as PlayHT from 'playht';
-import fs from 'fs';
-PlayHT.init({
-  userId: process.env.PLAYHT_USERID,
-  apiKey: process.env.PLAYHT_SECRETKEY,
-});
-async function streamAudio(text: string) {
-  const stream = await PlayHT.stream(
-    'All human wisdom is summed up in these two words: Wait and hope.',
-    { voiceEngine: 'PlayDialog' },
-  );
-  stream.on('data', (chunk) => {
-    // Do whatever you want with the stream, you could save it to a file, stream it in realtime to the browser or app, or to a telephony system
-    fs.appendFileSync('output.mp3', chunk);
-  });
-  return stream;
-}
 dotenv.config();
 @Injectable()
 export class HomeWorkService {
@@ -37,7 +20,6 @@ export class HomeWorkService {
   ) {}
 
   async findAll(): Promise<HomeWork[]> {
-    streamAudio('sss');
     return await this.homeWorkRepository.find({
       where: { isDelete: false },
       relations: ['teacher'],
