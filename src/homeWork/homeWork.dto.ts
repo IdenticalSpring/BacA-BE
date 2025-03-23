@@ -25,10 +25,6 @@ export class CreateHomeWorkDto {
   teacherId: number; // Thêm level vào Update DTO
 
   @IsOptional()
-  @IsInt()
-  lessonByScheduleId?: number;
-
-  @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
 }
