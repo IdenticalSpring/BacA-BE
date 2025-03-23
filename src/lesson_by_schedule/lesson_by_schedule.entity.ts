@@ -9,7 +9,6 @@ import {
 import { Class } from '../class/class.entity';
 import { Schedule } from '../schedule/schedule.entity';
 import { Checkin } from 'src/checkin/checkin.entity';
-import { HomeWork } from 'src/homeWork/homeWork.entity';
 
 @Entity('lesson_by_schedule')
 export class LessonBySchedule {
@@ -43,7 +42,4 @@ export class LessonBySchedule {
   isDelete: boolean;
   @OneToMany(() => Checkin, (checkin) => checkin.lessonBySchedule)
   checkins: Checkin[];
-
-  @OneToMany(() => HomeWork, (homeWork) => homeWork.lessonBySchedule)
-  homeWorks: HomeWork[];
 }

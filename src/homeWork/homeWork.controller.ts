@@ -40,14 +40,6 @@ export class HomeWorkController {
   ): Promise<HomeWork[]> {
     return await this.homeworkService.findHomeWorkByTeacherId(teacherId);
   }
-  @Get('lesson/:lessonByScheduleId')
-  async getHomeworkByLessonbySchedule(
-    @Param('lessonByScheduleId', ParseIntPipe) lessonByScheduleId: number,
-  ): Promise<HomeWork[]> {
-    return await this.homeworkService.getHomeworkByLessonbySchedule(
-      lessonByScheduleId,
-    );
-  }
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<HomeWork> {
     return await this.homeworkService.findOne(id);

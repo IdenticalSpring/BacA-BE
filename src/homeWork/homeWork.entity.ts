@@ -1,4 +1,3 @@
-import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
 import { Teacher } from 'src/teacher/teacher.entity';
 import {
   Entity,
@@ -34,14 +33,4 @@ export class HomeWork {
   })
   @JoinColumn({ name: 'TeacherId' })
   teacher: Teacher;
-
-  @ManyToOne(
-    () => LessonBySchedule,
-    (lessonBySchedule) => lessonBySchedule.homeWorks,
-    {
-      onDelete: 'CASCADE',
-    },
-  )
-  @JoinColumn({ name: 'lessonByScheduleId' })
-  lessonBySchedule: LessonBySchedule;
 }
