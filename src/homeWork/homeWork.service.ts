@@ -10,6 +10,7 @@ import {
 import * as dotenv from 'dotenv';
 import { Teacher } from 'src/teacher/teacher.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
 dotenv.config();
 @Injectable()
 export class HomeWorkService {
@@ -18,6 +19,8 @@ export class HomeWorkService {
     private readonly homeWorkRepository: Repository<HomeWork>,
     @InjectRepository(Teacher)
     private readonly teacherRepository: Repository<Teacher>,
+    @InjectRepository(LessonBySchedule)
+    private readonly lessonByScheduleRepository: Repository<LessonBySchedule>,
   ) {}
 
   async findAll(): Promise<HomeWork[]> {
@@ -52,6 +55,23 @@ export class HomeWorkService {
       },
       relations: ['teacher'],
     });
+  }
+
+  async getHomeworkByLessonbySchedule(
+    lessonByScheduleId: number,
+  ): Promise<HomeWork[]> {
+    const lessonBySchedule = await this.lessonByScheduleRepository.findOne({
+      where: { id: lessonByScheduleId },
+      relations: ['homeWorks', 'homeWorks.teacher'],
+    });
+
+    if (!lessonBySchedule) {
+      throw new NotFoundException(
+        `LessonBySchedule with ID ${lessonByScheduleId} not found`,
+      );
+    }
+
+    return lessonBySchedule.homeWorks;
   }
   async findOne(id: number): Promise<HomeWork> {
     const homeWork = await this.homeWorkRepository.findOne({
