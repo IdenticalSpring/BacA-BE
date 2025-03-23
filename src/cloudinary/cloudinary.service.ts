@@ -19,7 +19,7 @@ export class CloudinaryService {
     });
   }
 
-  async uploadBuffer(buffer: Buffer): Promise<string> {
+  static async uploadBuffer(buffer: Buffer): Promise<string> {
     try {
       console.log('Uploading buffer to Cloudinary...');
 

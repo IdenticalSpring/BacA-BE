@@ -7,7 +7,10 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { HomeWorkService } from './homeWork.service';
 import {
   CreateHomeWorkDto,
@@ -43,10 +46,12 @@ export class HomeWorkController {
   }
 
   @Post()
+  @UseInterceptors(FileInterceptor('mp3File'))
   async create(
     @Body() createHomeWorkDto: CreateHomeWorkDto,
+    @UploadedFile() mp3File: Express.Multer.File,
   ): Promise<HomeWork> {
-    return await this.homeworkService.create(createHomeWorkDto);
+    return await this.homeworkService.create(createHomeWorkDto, mp3File);
   }
 
   @Put(':id')

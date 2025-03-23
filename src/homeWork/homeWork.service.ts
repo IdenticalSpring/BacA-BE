@@ -9,6 +9,7 @@ import {
 } from './homeWork.dto';
 import * as dotenv from 'dotenv';
 import { Teacher } from 'src/teacher/teacher.entity';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 dotenv.config();
 @Injectable()
 export class HomeWorkService {
@@ -63,8 +64,11 @@ export class HomeWorkService {
     return homeWork;
   }
 
-  async create(createHomeWorkDto: CreateHomeWorkDto): Promise<HomeWork> {
-    const { teacherId, textToSpeech, ...rest } = createHomeWorkDto;
+  async create(
+    createHomeWorkDto: CreateHomeWorkDto,
+    mp3File?: Express.Multer.File,
+  ): Promise<HomeWork> {
+    const { teacherId, ...rest } = createHomeWorkDto;
 
     // Tìm teacher theo ID
     const teacher = await this.teacherRepository.findOne({
@@ -74,10 +78,16 @@ export class HomeWorkService {
     if (!teacher) {
       throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
     }
-
+    let mp3Url: string | null = null;
+    if (mp3File) {
+      console.log('Uploading MP3 file...');
+      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
+      console.log('MP3 uploaded:', mp3Url);
+    }
     // Tạo class và gán teacher
     const homeWorkEntity = this.homeWorkRepository.create({
       ...rest,
+      linkSpeech: mp3Url || null,
       teacher, // Gán trực tiếp teacher vào entity
     });
 

@@ -23,7 +23,7 @@ export class UploadController {
       console.log('Received file:', file.originalname);
 
       // Upload buffer trực tiếp lên Cloudinary
-      const url = await this.cloudinaryService.uploadBuffer(file.buffer);
+      const url = await CloudinaryService.uploadBuffer(file.buffer);
 
       console.log('Upload thành công:', url);
       return { url };

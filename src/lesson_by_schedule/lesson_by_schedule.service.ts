@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { LessonBySchedule } from './lesson_by_schedule.entity';
 import {
   CreateLessonByScheduleDto,
@@ -70,16 +70,35 @@ export class LessonByScheduleService {
   ): Promise<LessonBySchedule[]> {
     const lessons = [];
 
+    // Lấy danh sách class và schedule
+    const classIds = createManyDto.lessons.map((l) => l.classID);
+    const classEntities = await this.classRepository.findBy({
+      id: In(classIds),
+    });
+
+    if (classEntities.length === 0) {
+      throw new Error(`No classes found for given IDs`);
+    }
+
+    const scheduleIds = createManyDto.lessons.map((l) => l.scheduleID);
+    const scheduleEntities = await this.scheduleRepository.findBy({
+      id: In(scheduleIds),
+    });
+
+    if (scheduleEntities.length === 0) {
+      throw new Error(`No schedules found for given IDs`);
+    }
+
     for (const lessonDto of createManyDto.lessons) {
-      const classEntity = await this.classRepository.findOne({
-        where: { id: lessonDto.classID, isDelete: false },
-      });
+      const classEntity = classEntities.find(
+        (cls) => cls.id === lessonDto.classID,
+      );
       if (!classEntity)
         throw new Error(`Class with ID ${lessonDto.classID} not found`);
 
-      const schedule = await this.scheduleRepository.findOne({
-        where: { id: lessonDto.scheduleID, isDelete: false },
-      });
+      const schedule = scheduleEntities.find(
+        (sch) => sch.id === lessonDto.scheduleID,
+      );
       if (!schedule)
         throw new Error(`Schedule with ID ${lessonDto.scheduleID} not found`);
 

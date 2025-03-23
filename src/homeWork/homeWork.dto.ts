@@ -12,7 +12,7 @@ export class CreateHomeWorkDto {
   linkGame?: string;
   @IsOptional()
   @IsString()
-  textToSpeech: string;
+  linkSpeech: string;
 
   @IsOptional()
   @IsString()
