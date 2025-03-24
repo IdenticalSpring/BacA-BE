@@ -7,7 +7,10 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { StudentService } from './student.service';
 import { CreateStudentDto, UpdateStudentDto } from './student.dto';
 import { Student } from './student.entity';
@@ -33,29 +36,23 @@ export class StudentController {
     return await this.studentService.findByClass(classID);
   }
 
-  // @Post()
-  // async create(@Body() createStudentDto: CreateStudentDto): Promise<Student> {
-  //   return await this.studentService.create(createStudentDto);
-  // }
-
-  // @Put(':id')
-  // async update(
-  //   @Param('id', ParseIntPipe) id: number,
-  //   @Body() updateStudentDto: UpdateStudentDto,
-  // ): Promise<Student> {
-  //   return await this.studentService.update(id, updateStudentDto);
-  // }
   @Post()
-  async create(@Body() createStudentDto: CreateStudentDto): Promise<Student> {
-    return await this.studentService.create(createStudentDto);
+  @UseInterceptors(FileInterceptor('file'))
+  async create(
+    @Body() createStudentDto: CreateStudentDto,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Student> {
+    return await this.studentService.create(createStudentDto, file);
   }
 
   @Put(':id')
+  @UseInterceptors(FileInterceptor('file'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateStudentDto: UpdateStudentDto,
+    @UploadedFile() file: Express.Multer.File,
   ): Promise<Student> {
-    return await this.studentService.update(id, updateStudentDto);
+    return await this.studentService.update(id, updateStudentDto, file);
   }
 
   @Delete(':id')
