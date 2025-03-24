@@ -15,9 +15,11 @@ import { HomeWorkService } from './homeWork.service';
 import {
   CreateHomeWorkDto,
   findHomeWorkByLevelAndTeacherIdDto,
+  textToSpeechDto,
   UpdateHomeWorkDto,
 } from './homeWork.dto';
 import { HomeWork } from './homeWork.entity';
+import { get } from 'http';
 @Controller('homeworks')
 export class HomeWorkController {
   constructor(private readonly homeworkService: HomeWorkService) {}
@@ -55,15 +57,21 @@ export class HomeWorkController {
   }
 
   @Put(':id')
+  @UseInterceptors(FileInterceptor('mp3File'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateHomeWorkDto: UpdateHomeWorkDto,
+    @UploadedFile() mp3File: Express.Multer.File,
   ): Promise<HomeWork> {
-    return await this.homeworkService.update(id, updateHomeWorkDto);
+    return await this.homeworkService.update(id, updateHomeWorkDto, mp3File);
   }
 
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.homeworkService.remove(id);
+  }
+  @Post('/textToSpeech')
+  async textToSpeech(@Body() textToSpeech: textToSpeechDto): Promise<string> {
+    return await this.homeworkService.textToSpeech(textToSpeech);
   }
 }

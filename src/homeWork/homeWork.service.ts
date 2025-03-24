@@ -5,11 +5,13 @@ import { HomeWork } from './homeWork.entity';
 import {
   CreateHomeWorkDto,
   findHomeWorkByLevelAndTeacherIdDto,
+  textToSpeechDto,
   UpdateHomeWorkDto,
 } from './homeWork.dto';
 import * as dotenv from 'dotenv';
 import { Teacher } from 'src/teacher/teacher.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import axios from 'axios';
 dotenv.config();
 @Injectable()
 export class HomeWorkService {
@@ -97,6 +99,7 @@ export class HomeWorkService {
   async update(
     id: number,
     updateHomeWorkDto: UpdateHomeWorkDto,
+    mp3File?: Express.Multer.File,
   ): Promise<HomeWork> {
     const { teacherId, ...rest } = updateHomeWorkDto;
     // Tìm class cần update
@@ -115,7 +118,15 @@ export class HomeWorkService {
 
       homeWorkEntity.teacher = teacher;
     }
-
+    let mp3Url: string | null = null;
+    if (mp3File) {
+      console.log('Uploading MP3 file...');
+      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
+      console.log('MP3 uploaded:', mp3Url);
+    }
+    if (mp3Url) {
+      homeWorkEntity.linkSpeech = mp3Url;
+    }
     // Cập nhật các field còn lại
     Object.assign(homeWorkEntity, rest);
 
@@ -135,5 +146,30 @@ export class HomeWorkService {
     }
     homeWork.isDelete = true;
     await this.homeWorkRepository.save(homeWork);
+  }
+  async textToSpeech(textToSpeechDto: textToSpeechDto): Promise<string> {
+    try {
+      const response = await axios.post(
+        'https://ttsfree.com/api/v1/tts',
+        {
+          text: textToSpeechDto.textToSpeech,
+          voiceService: 'servicebin',
+          voiceID: 'en-US',
+          voiceSpeed: '0',
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: process.env.API_TTS_KEY,
+          },
+        },
+      );
+      console.log(response.data);
+
+      return response.data.audioData; // Trả về buffer
+    } catch (error) {
+      console.error('Error converting text to speech:', error);
+      throw new Error('TTS conversion failed');
+    }
   }
 }

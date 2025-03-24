@@ -36,3 +36,7 @@ export class findHomeWorkByLevelAndTeacherIdDto {
   @IsInt()
   teacherId: number;
 }
+export class textToSpeechDto {
+  @IsString()
+  textToSpeech: string;
+}
