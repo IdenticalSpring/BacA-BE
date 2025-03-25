@@ -12,6 +12,7 @@ import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import * as readline from 'readline';
 import { Teacher } from 'src/teacher/teacher.entity';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 dotenv.config();
 @Injectable()
 export class LessonService {
@@ -93,7 +94,10 @@ export class LessonService {
     return lesson;
   }
 
-  async create(createLessonDto: CreateLessonDto): Promise<Lesson> {
+  async create(
+    createLessonDto: CreateLessonDto,
+    mp3File?: Express.Multer.File,
+  ): Promise<Lesson> {
     const { teacherId, ...rest } = createLessonDto;
 
     // Tìm teacher theo ID
@@ -104,17 +108,27 @@ export class LessonService {
     if (!teacher) {
       throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
     }
-
+    let mp3Url: string | null = null;
+    if (mp3File) {
+      console.log('Uploading MP3 file...');
+      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
+      console.log('MP3 uploaded:', mp3Url);
+    }
     // Tạo class và gán teacher
     const lessonEntity = this.lessonRepository.create({
       ...rest,
+      linkSpeech: mp3Url || null,
       teacher, // Gán trực tiếp teacher vào entity
     });
 
     return await this.lessonRepository.save(lessonEntity);
   }
 
-  async update(id: number, updateLessonDto: UpdateLessonDto): Promise<Lesson> {
+  async update(
+    id: number,
+    updateLessonDto: UpdateLessonDto,
+    mp3File?: Express.Multer.File,
+  ): Promise<Lesson> {
     const { teacherId, ...rest } = updateLessonDto;
     // Tìm class cần update
     const lessonEntity = await this.findOne(id);
@@ -132,7 +146,15 @@ export class LessonService {
 
       lessonEntity.teacher = teacher;
     }
-
+    let mp3Url: string | null = null;
+    if (mp3File) {
+      console.log('Uploading MP3 file...');
+      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
+      console.log('MP3 uploaded:', mp3Url);
+    }
+    if (mp3Url) {
+      lessonEntity.linkSpeech = mp3Url;
+    }
     // Cập nhật các field còn lại
     Object.assign(lessonEntity, rest);
 
@@ -153,6 +175,7 @@ export class LessonService {
     Lesson.isDelete = true;
     await this.lessonRepository.save(Lesson);
   }
+
   // private async refreshAccessToken() {
   //   try {
   //     const { credentials } = await this.oauth2Client.refreshAccessToken();

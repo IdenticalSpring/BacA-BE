@@ -47,16 +47,22 @@ export class LessonController {
   }
 
   @Post()
-  async create(@Body() createLessonDto: CreateLessonDto): Promise<Lesson> {
-    return await this.lessonService.create(createLessonDto);
+  @UseInterceptors(FileInterceptor('mp3File'))
+  async create(
+    @Body() createLessonDto: CreateLessonDto,
+    @UploadedFile() mp3File: Express.Multer.File,
+  ): Promise<Lesson> {
+    return await this.lessonService.create(createLessonDto, mp3File);
   }
 
   @Put(':id')
+  @UseInterceptors(FileInterceptor('mp3File'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateLessonDto: UpdateLessonDto,
+    @UploadedFile() mp3File: Express.Multer.File,
   ): Promise<Lesson> {
-    return await this.lessonService.update(id, updateLessonDto);
+    return await this.lessonService.update(id, updateLessonDto, mp3File);
   }
 
   @Delete(':id')

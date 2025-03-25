@@ -66,3 +66,11 @@ export class CreateManyLessonsDto {
   @Type(() => CreateLessonByScheduleDto)
   lessons: CreateLessonByScheduleDto[];
 }
+export class UpdateLessonOfLessonBySchedule {
+  @IsInt()
+  lessonID: number;
+}
+export class UpdateHomeWorkOfLessonBySchedule {
+  @IsInt()
+  homeWorkId: number;
+}

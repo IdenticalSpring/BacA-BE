@@ -5,7 +5,9 @@ import { LessonBySchedule } from './lesson_by_schedule.entity';
 import {
   CreateLessonByScheduleDto,
   CreateManyLessonsDto,
+  UpdateHomeWorkOfLessonBySchedule,
   UpdateLessonByScheduleDto,
+  UpdateLessonOfLessonBySchedule,
 } from './lesson_by_schedule.dto';
 import { Class } from '../class/class.entity';
 import { Schedule } from '../schedule/schedule.entity';
@@ -33,6 +35,28 @@ export class LessonByScheduleService {
       where: { class: { id: classID }, isDelete: false },
       relations: ['class', 'schedule'],
     });
+  }
+  async updateLessonForLessonBySchedule(
+    id: number,
+    updateDto: UpdateLessonOfLessonBySchedule,
+  ): Promise<LessonBySchedule> {
+    const lessonBySchedule = await this.lessonByScheduleRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!lessonBySchedule) throw new Error('LessonBySchedule not found');
+    lessonBySchedule.lessonID = updateDto.lessonID;
+    return await this.lessonByScheduleRepository.save(lessonBySchedule);
+  }
+  async updateHomeWorkForLessonBySchedule(
+    id: number,
+    updateDto: UpdateHomeWorkOfLessonBySchedule,
+  ): Promise<LessonBySchedule> {
+    const lessonBySchedule = await this.lessonByScheduleRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!lessonBySchedule) throw new Error('LessonBySchedule not found');
+    lessonBySchedule.homeWorkId = updateDto.homeWorkId;
+    return await this.lessonByScheduleRepository.save(lessonBySchedule);
   }
   async findOne(id: number): Promise<LessonBySchedule> {
     return await this.lessonByScheduleRepository.findOne({

@@ -9,7 +9,7 @@ export class CreateLessonDto {
   linkYoutube?: string;
   @IsOptional()
   @IsString()
-  linkGame?: string;
+  linkSpeech?: string;
 
   @IsOptional()
   @IsString()
