@@ -23,6 +23,15 @@ export class Student {
   @Column({ type: 'int', nullable: true })
   level: number;
 
+  @Column({ type: 'int', nullable: true })
+  age: number;
+
+  @Column({ length: 100, nullable: true })
+  phone: string;
+
+  @Column({ length: 100, nullable: true })
+  imgUrl: string;
+
   @Column({ type: 'date', nullable: false })
   startDate: Date;
 

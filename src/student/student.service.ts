@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Student } from './student.entity';
 import { CreateStudentDto, UpdateStudentDto } from './student.dto';
 import { Class } from 'src/class/class.entity';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class StudentService {
@@ -12,16 +13,20 @@ export class StudentService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async findAll(): Promise<Student[]> {
-    return await this.studentRepository.find({ where: { isDelete: false } });
+    return await this.studentRepository.find({
+      where: { isDelete: false },
+      relations: ['class', 'testResults', 'schedule', 'checkins'],
+    });
   }
 
   async findOne(id: number): Promise<Student> {
     const student = await this.studentRepository.findOne({
       where: { id, isDelete: false },
-      relations: ['class'],
+      relations: ['class', 'testResults', 'schedule', 'checkins'],
     });
     if (!student) {
       throw new NotFoundException(`Student with ID ${id} not found`);
@@ -29,21 +34,10 @@ export class StudentService {
     return student;
   }
 
-  // async create(createStudentDto: CreateStudentDto): Promise<Student> {
-  //   const student = this.studentRepository.create(createStudentDto);
-  //   return await this.studentRepository.save(student);
-  // }
-
-  // async update(
-  //   id: number,
-  //   updateStudentDto: UpdateStudentDto,
-  // ): Promise<Student> {
-  //   const student = await this.findOne(id);
-  //   Object.assign(student, updateStudentDto);
-  //   return await this.studentRepository.save(student);
-  // }
-
-  async create(createStudentDto: CreateStudentDto): Promise<Student> {
+  async create(
+    createStudentDto: CreateStudentDto,
+    file: Express.Multer.File,
+  ): Promise<Student> {
     const { classID, ...rest } = createStudentDto;
     const student = this.studentRepository.create(rest);
 
@@ -57,12 +51,18 @@ export class StudentService {
       student.class = classEntity;
     }
 
+    if (file) {
+      const imgUrl = await CloudinaryService.uploadBuffer(file.buffer);
+      student.imgUrl = imgUrl;
+    }
+
     return await this.studentRepository.save(student);
   }
 
   async update(
     id: number,
     updateStudentDto: UpdateStudentDto,
+    file: Express.Multer.File,
   ): Promise<Student> {
     const { classID, ...rest } = updateStudentDto;
     const student = await this.findOne(id);
@@ -75,6 +75,11 @@ export class StudentService {
         throw new NotFoundException(`Class with ID ${classID} not found`);
       }
       student.class = classEntity;
+    }
+
+    if (file) {
+      const imgUrl = await CloudinaryService.uploadBuffer(file.buffer);
+      student.imgUrl = imgUrl;
     }
 
     Object.assign(student, rest);
@@ -92,14 +97,11 @@ export class StudentService {
 
     return await this.studentRepository.find({
       where: { class: classEntity, isDelete: false },
+      relations: ['class', 'testResults', 'schedule', 'checkins'],
     });
   }
 
   async remove(id: number): Promise<void> {
-    // const result = await this.studentRepository.delete(id);
-    // if (result.affected === 0) {
-    //   throw new NotFoundException(`Student with ID ${id} not found`);
-    // }
     const Student = await this.studentRepository.findOne({
       where: { id, isDelete: false },
     });

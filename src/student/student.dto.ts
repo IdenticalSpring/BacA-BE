@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsEmail,
-  IsOptional,
-  IsInt,
-  Min,
-  IsBoolean,
-} from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, IsBoolean } from 'class-validator';
 
 export class CreateStudentDto {
   @IsString()
@@ -15,13 +8,18 @@ export class CreateStudentDto {
   @IsInt()
   level?: number;
 
-  @IsEmail()
-  email: string;
-
   @IsOptional()
   @IsInt()
   @Min(0)
   age?: number;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  imgUrl?: string;
 
   @IsOptional()
   @IsString()
@@ -42,10 +40,6 @@ export class UpdateStudentDto {
   level?: number;
 
   @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @IsOptional()
   @IsInt()
   @Min(0)
   age?: number;
@@ -53,6 +47,14 @@ export class UpdateStudentDto {
   @IsOptional()
   @IsString()
   classID?: number;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  imgUrl?: string;
 
   @IsOptional()
   @IsBoolean()
