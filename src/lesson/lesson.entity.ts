@@ -20,7 +20,7 @@ export class Lesson {
   @Column({ type: 'text', nullable: true })
   linkYoutube: string;
   @Column({ type: 'text', nullable: true })
-  linkGame: string;
+  linkSpeech: string;
 
   @Column({ type: 'longtext', nullable: true })
   description: string;
