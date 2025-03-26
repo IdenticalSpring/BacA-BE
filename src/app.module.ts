@@ -30,6 +30,7 @@ import { StudentScoreModule } from './studentScore/studentScore.module';
 import { LevelModule } from './level/level.module';
 import { HomeWorkModule } from './homeWork/homeWork.module';
 import { SkillModule } from './skill/skill.module';
+import { StudentSkillBehaviorScoreModule } from './studentskillbehaviorscore/studentskillbehaviorscore.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -52,6 +53,7 @@ import { SkillModule } from './skill/skill.module';
     AuthModule,
     StudentModule,
     LessonModule,
+    StudentSkillBehaviorScoreModule,
     TeacherModule,
     ScheduleModule,
     ClassModule,
