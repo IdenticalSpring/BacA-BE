@@ -63,7 +63,25 @@ export class LessonByScheduleService {
       where: { id, isDelete: false },
     });
   }
+  async getSchedulesByClass(classId: number): Promise<Schedule[]> {
+    const classEntity = await this.classRepository.findOne({
+      where: { id: classId },
+    });
+    const lessons = await this.lessonByScheduleRepository.find({
+      where: { class: classEntity },
+      relations: ['schedule'],
+      select: ['schedule'],
+    });
+    // console.log(lessons);
 
+    // return lessons.map((lesson) => lesson.schedule);
+    const uniqueSchedules = Array.from(
+      new Map(
+        lessons.map((lesson) => [lesson.schedule.id, lesson.schedule]),
+      ).values(),
+    );
+    return uniqueSchedules;
+  }
   async create(
     createDto: CreateLessonByScheduleDto,
   ): Promise<LessonBySchedule> {

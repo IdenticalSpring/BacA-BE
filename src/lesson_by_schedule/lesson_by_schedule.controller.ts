@@ -17,6 +17,7 @@ import {
   UpdateLessonOfLessonBySchedule,
 } from './lesson_by_schedule.dto';
 import { LessonBySchedule } from './lesson_by_schedule.entity';
+import { Schedule } from 'src/schedule/schedule.entity';
 
 @Controller('lesson-by-schedule')
 export class LessonByScheduleController {
@@ -41,6 +42,12 @@ export class LessonByScheduleController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<LessonBySchedule> {
     return await this.lessonByScheduleService.findOne(id);
+  }
+  @Get('schedules_by_class/:id')
+  async findSchedulesByClass(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Schedule[]> {
+    return await this.lessonByScheduleService.getSchedulesByClass(id);
   }
 
   @Post()

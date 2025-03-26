@@ -83,19 +83,19 @@ export class ClassService {
       throw new NotFoundException(`Class with ID ${id} not found`);
     }
     // Kiểm tra xem có lesson nào thuộc classId có ngày < hiện tại không
-    const outdatedLessons = await this.lessonByScheduleRepository.find({
-      where: {
-        class: classEntity,
-        date: LessThan(new Date()), // Chỉ lấy những bài học có ngày nhỏ hơn hiện tại
-      },
-    });
+    // const outdatedLessons = await this.lessonByScheduleRepository.find({
+    //   where: {
+    //     class: classEntity,
+    //     date: LessThan(new Date()), // Chỉ lấy những bài học có ngày nhỏ hơn hiện tại
+    //   },
+    // });
 
-    // Nếu có ít nhất một lesson không hợp lệ, ngăn chặn cập nhật
-    if (outdatedLessons.length > 0) {
-      throw new BadRequestException(
-        `Cannot update class because some lessons in this class have already taken place.`,
-      );
-    }
+    // // Nếu có ít nhất một lesson không hợp lệ, ngăn chặn cập nhật
+    // if (outdatedLessons.length > 0) {
+    //   throw new BadRequestException(
+    //     `Cannot update class because some lessons in this class have already taken place.`,
+    //   );
+    // }
 
     // Nếu có teacherId, tìm teacher tương ứng
     if (teacherID !== undefined) {
