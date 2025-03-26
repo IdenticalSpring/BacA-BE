@@ -11,6 +11,11 @@ async function bootstrap() {
       'http://localhost:3000',
       'https://bac-a.vercel.app',
       'https://bac-a-trng-le-minh-nhts-projects.vercel.app',
+      'https://happyclass.com.vn',
+      'http://happyclass.com.vn',
+      'https://www.happyclass.com.vn',
+      'http://www.happyclass.com.vn',
+      'https://82.25.110.152:3000',
     ], // Thay bằng domain frontend của bạn
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true, // Cho phép gửi cookie hoặc token nếu cần
