@@ -29,6 +29,7 @@ import { ClassTestScheduleModule } from './classTestSchedule/classTestSchedule.m
 import { StudentScoreModule } from './studentScore/studentScore.module';
 import { LevelModule } from './level/level.module';
 import { HomeWorkModule } from './homeWork/homeWork.module';
+import { SkillModule } from './skill/skill.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -69,6 +70,7 @@ import { HomeWorkModule } from './homeWork/homeWork.module';
     StudentScoreModule,
     LevelModule,
     HomeWorkModule,
+    SkillModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],
