@@ -17,22 +17,16 @@ export class StudentScoreEntity {
   studentID: number;
 
   @Column()
+  teacherID: number;
+
+  @Column()
   classTestScheduleID: number;
 
-  @Column('float')
-  writingScore: number;
-
-  @Column('float')
-  readingScore: number;
-
-  @Column('float')
-  speakingScore: number;
-
-  @Column('float')
-  listeningScore: number;
-
-  @Column('float')
-  avgScore: number;
+  @ManyToOne(() => Student, (student) => student.studentScores, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'teacherID' })
+  teacher: Student;
 
   @ManyToOne(() => Student, (student) => student.studentScores, {
     onDelete: 'CASCADE',

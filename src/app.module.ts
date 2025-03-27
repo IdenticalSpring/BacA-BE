@@ -31,6 +31,9 @@ import { LevelModule } from './level/level.module';
 import { HomeWorkModule } from './homeWork/homeWork.module';
 import { SkillModule } from './skill/skill.module';
 import { StudentSkillBehaviorScoreModule } from './studentskillbehaviorscore/studentskillbehaviorscore.module';
+import { TestSkill } from './test_skills/test_skills.entity';
+import { StudentScoreDetailsModule } from './student_score_detail/student_score_details.module';
+import { TestSkillsModule } from './test_skills/test_skills.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -55,7 +58,10 @@ import { StudentSkillBehaviorScoreModule } from './studentskillbehaviorscore/stu
     LessonModule,
     StudentSkillBehaviorScoreModule,
     TeacherModule,
+    TestSkillsModule,
+    StudentScoreDetailsModule,
     ScheduleModule,
+    TestSkill,
     ClassModule,
     AssessmentsModule,
     TeacherCommentOnStudentModule,
