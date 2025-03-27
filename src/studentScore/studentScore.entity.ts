@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { ClassTestScheduleEntity } from 'src/classTestSchedule/classTestSchedule.entity';
 import { Student } from 'src/student/student.entity';
+import { Teacher } from 'src/teacher/teacher.entity';
 
 @Entity('StudentScore')
 export class StudentScoreEntity {
@@ -22,11 +23,11 @@ export class StudentScoreEntity {
   @Column()
   classTestScheduleID: number;
 
-  @ManyToOne(() => Student, (student) => student.studentScores, {
+  @ManyToOne(() => Teacher, (teacher) => teacher.studentScores, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'teacherID' })
-  teacher: Student;
+  teacher: Teacher;
 
   @ManyToOne(() => Student, (student) => student.studentScores, {
     onDelete: 'CASCADE',
