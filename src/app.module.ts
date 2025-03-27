@@ -26,7 +26,7 @@ import { LessonBySchedule } from './lesson_by_schedule/lesson_by_schedule.entity
 import { CheckinModule } from './checkin/checkin.module';
 import { TestModule } from './test/test.module';
 import { ClassTestScheduleModule } from './classTestSchedule/classTestSchedule.module';
-// import { StudentScoreModule } from './studentScore/studentScore.module';
+import { StudentScoreModule } from './studentScore/studentScore.module';
 import { LevelModule } from './level/level.module';
 import { HomeWorkModule } from './homeWork/homeWork.module';
 import { SkillModule } from './skill/skill.module';
@@ -75,7 +75,7 @@ import { TestSkillsModule } from './test_skills/test_skills.module';
     CheckinModule,
     TestModule,
     ClassTestScheduleModule,
-    // StudentScoreModule,
+    StudentScoreModule,
     LevelModule,
     HomeWorkModule,
     SkillModule,
