@@ -31,6 +31,10 @@ import { LevelModule } from './level/level.module';
 import { HomeWorkModule } from './homeWork/homeWork.module';
 import { SkillModule } from './skill/skill.module';
 import { StudentSkillBehaviorScoreModule } from './studentskillbehaviorscore/studentskillbehaviorscore.module';
+import { TestSkill } from './test_skills/test_skills.entity';
+import { StudentScoreDetailsModule } from './student_score_detail/student_score_details.module';
+import { TestSkillsModule } from './test_skills/test_skills.module';
+import { GeminiModule } from './gemini/gemini.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -55,7 +59,10 @@ import { StudentSkillBehaviorScoreModule } from './studentskillbehaviorscore/stu
     LessonModule,
     StudentSkillBehaviorScoreModule,
     TeacherModule,
+    TestSkillsModule,
+    StudentScoreDetailsModule,
     ScheduleModule,
+    TestSkill,
     ClassModule,
     AssessmentsModule,
     TeacherCommentOnStudentModule,
@@ -73,6 +80,7 @@ import { StudentSkillBehaviorScoreModule } from './studentskillbehaviorscore/stu
     LevelModule,
     HomeWorkModule,
     SkillModule,
+    GeminiModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],
