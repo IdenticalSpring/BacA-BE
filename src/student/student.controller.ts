@@ -28,7 +28,12 @@ export class StudentController {
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Student> {
     return await this.studentService.findOne(id);
   }
-
+  @Get('classCount/:classId')
+  async countAllStudentOfClass(
+    @Param('classId', ParseIntPipe) classId: number,
+  ): Promise<number> {
+    return await this.studentService.countAllStudentOfClass(classId);
+  }
   @Get('class/:classID')
   async findByClass(
     @Param('classID', ParseIntPipe) classID: number,

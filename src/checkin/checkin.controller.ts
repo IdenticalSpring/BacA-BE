@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { CheckinService } from './checkin.service';
+import { Checkin } from './checkin.entity';
 
 @Controller('checkins')
 export class CheckinController {
@@ -25,5 +26,11 @@ export class CheckinController {
     @Param('lessonByScheduleId') lessonByScheduleId: number,
   ) {
     return await this.checkinService.getCheckinsByLesson(lessonByScheduleId);
+  }
+  @Get('student/:studentId')
+  async getAllCheckinOfStudent(
+    @Param('studentId') studentId: number,
+  ): Promise<Checkin[]> {
+    return this.checkinService.getAllCheckinOfStudent(studentId);
   }
 }

@@ -33,7 +33,22 @@ export class StudentService {
     }
     return student;
   }
+  async countAllStudentOfClass(classId: number): Promise<number> {
+    const classEntity = await this.classRepository.findOne({
+      where: { id: classId, isDelete: false },
+    });
 
+    if (!classEntity) {
+      throw new NotFoundException(`Class with ID ${classId} not found`);
+    }
+    const students = await this.studentRepository.find({
+      where: { class: classEntity, isDelete: false },
+    });
+    // if (students?.length <= 0) {
+    //   throw new NotFoundException(`Students with classID ${classId} not found`);
+    // }
+    return students?.length;
+  }
   async create(
     createStudentDto: CreateStudentDto,
     file: Express.Multer.File,
