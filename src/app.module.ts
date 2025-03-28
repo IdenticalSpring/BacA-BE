@@ -34,6 +34,7 @@ import { StudentSkillBehaviorScoreModule } from './studentskillbehaviorscore/stu
 import { TestSkill } from './test_skills/test_skills.entity';
 import { StudentScoreDetailsModule } from './student_score_detail/student_score_details.module';
 import { TestSkillsModule } from './test_skills/test_skills.module';
+import { GeminiModule } from './gemini/gemini.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -79,6 +80,7 @@ import { TestSkillsModule } from './test_skills/test_skills.module';
     LevelModule,
     HomeWorkModule,
     SkillModule,
+    GeminiModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],
