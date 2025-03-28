@@ -12,7 +12,7 @@ export class GeminiService {
 
   async enhanceDescription(description: string): Promise<string> {
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Enhance this description and make it more detailed and engaging. 
+    const prompt = `Enhance this short description and make it more detailed and engaging. 
     Return the result without any bold, italic :\n\n${description}`;
     const result = await model.generateContent(prompt);
     const response = await result.response;
