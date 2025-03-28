@@ -11,6 +11,7 @@ import { TestResult } from '../testresult/testresult.entity';
 import { Class } from 'src/class/class.entity';
 import { Checkin } from 'src/checkin/checkin.entity';
 import { StudentScoreEntity } from 'src/studentScore/studentScore.entity';
+import { UserNotification } from 'src/user_notification/user_notification.entity';
 
 @Entity('student') // Đặt tên bảng đúng với MySQL
 export class Student {
@@ -71,4 +72,9 @@ export class Student {
 
   @OneToMany(() => StudentScoreEntity, (studentScore) => studentScore.student)
   studentScores: StudentScoreEntity[];
+  @OneToMany(
+    () => UserNotification,
+    (user_notification) => user_notification.student,
+  )
+  userNotifications: UserNotification[];
 }

@@ -35,6 +35,8 @@ import { TestSkill } from './test_skills/test_skills.entity';
 import { StudentScoreDetailsModule } from './student_score_detail/student_score_details.module';
 import { TestSkillsModule } from './test_skills/test_skills.module';
 import { GeminiModule } from './gemini/gemini.module';
+import { NotificationModule } from './notification/notification.module';
+import { UserNotificationModule } from './user_notification/user_notification.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -81,6 +83,8 @@ import { GeminiModule } from './gemini/gemini.module';
     HomeWorkModule,
     SkillModule,
     GeminiModule,
+    NotificationModule,
+    UserNotificationModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],
