@@ -7,12 +7,12 @@ import {
   Body,
   Param,
   ParseIntPipe,
-  UseGuards,
+  // UseGuards,
 } from '@nestjs/common';
 import { LevelService } from './level.service';
 import { CreateLevelDto, UpdateLevelDto } from './level.dto';
 import { Level } from './level.entity';
-import { AuthGuard } from 'src/auth/auth.guard';
+// import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('levels')
 export class LevelController {
@@ -29,14 +29,14 @@ export class LevelController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   async create(@Body() createLevelDto: CreateLevelDto): Promise<Level> {
     // console.log('createClassDto', createLevelDto);
     return await this.levelService.create(createLevelDto);
   }
 
   @Put(':id')
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateLevelDto: UpdateLevelDto,
@@ -45,7 +45,7 @@ export class LevelController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.levelService.remove(id);
   }
