@@ -34,6 +34,11 @@ export class CheckinService {
       relations: ['student', 'lessonBySchedule'],
     });
   }
+  async getAllCheckins(): Promise<Checkin[]> {
+    return this.checkinRepository.find({
+      relations: ['student', 'lessonBySchedule'], // Lấy thông tin khóa ngoại
+    });
+  }
   async getAllCheckinOfStudent(studentId: number) {
     const studentEntity = await this.studentRepository.findOne({
       where: { id: studentId },

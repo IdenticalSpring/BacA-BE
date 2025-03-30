@@ -37,6 +37,7 @@ import { TestSkillsModule } from './test_skills/test_skills.module';
 import { GeminiModule } from './gemini/gemini.module';
 import { NotificationModule } from './notification/notification.module';
 import { UserNotificationModule } from './user_notification/user_notification.module';
+import { FeedbackModule } from './feedback/feedback.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -59,6 +60,7 @@ import { UserNotificationModule } from './user_notification/user_notification.mo
     AuthModule,
     StudentModule,
     LessonModule,
+    FeedbackModule,
     StudentSkillBehaviorScoreModule,
     TeacherModule,
     TestSkillsModule,

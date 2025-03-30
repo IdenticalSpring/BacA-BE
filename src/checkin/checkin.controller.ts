@@ -6,6 +6,11 @@ import { Checkin } from './checkin.entity';
 export class CheckinController {
   constructor(private readonly checkinService: CheckinService) {}
 
+  @Get()
+  async getAllCheckins(): Promise<Checkin[]> {
+    return this.checkinService.getAllCheckins();
+  }
+
   @Post()
   async createCheckins(
     @Body()
