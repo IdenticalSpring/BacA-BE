@@ -24,9 +24,10 @@ export class Student {
   @Column({ type: 'int', nullable: true })
   level: number;
 
-  @Column({ type: 'int', nullable: true })
-  age: number;
-
+  // ...existing code...
+  @Column({ type: 'date', nullable: true })
+  birthOfDate: Date;
+  // ...existing code...
   @Column({ length: 100, nullable: true })
   phone: string;
 
