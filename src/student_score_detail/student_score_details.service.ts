@@ -48,6 +48,14 @@ export class StudentScoreDetailsService {
     Object.assign(detail, updateDto);
     return this.studentScoreDetailsRepository.save(detail);
   }
+  async getScoreDetailsByStudentId(
+    studentId: number,
+  ): Promise<StudentScoreDetails[]> {
+    return this.studentScoreDetailsRepository.find({
+      where: { studentScore: { student: { id: studentId } } },
+      relations: ['studentScore', 'testSkill'], // Lấy thông tin khóa ngoại
+    });
+  }
 
   async remove(id: number): Promise<void> {
     const detail = await this.findOne(id);

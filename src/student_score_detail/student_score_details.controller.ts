@@ -42,6 +42,12 @@ export class StudentScoreDetailsController {
   ): Promise<StudentScoreDetails> {
     return this.service.update(id, updateDto);
   }
+  @Get('student/:studentId')
+  async getScoreDetailsByStudentId(
+    @Param('studentId') studentId: number,
+  ): Promise<StudentScoreDetails[]> {
+    return this.service.getScoreDetailsByStudentId(studentId);
+  }
 
   @Delete(':id')
   async remove(@Param('id') id: number): Promise<void> {
