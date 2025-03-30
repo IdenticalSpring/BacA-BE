@@ -5,6 +5,7 @@ import { Student } from './student.entity';
 import { CreateStudentDto, UpdateStudentDto } from './student.dto';
 import { Class } from 'src/class/class.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class StudentService {
@@ -14,6 +15,7 @@ export class StudentService {
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
     private readonly cloudinaryService: CloudinaryService,
+    private jwtService: JwtService,
   ) {}
 
   async findAll(): Promise<Student[]> {
@@ -32,6 +34,16 @@ export class StudentService {
       throw new NotFoundException(`Student with ID ${id} not found`);
     }
     return student;
+  }
+  async findOneAndLogin(studentId: number): Promise<string> {
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId, isDelete: false },
+    });
+    return this.jwtService.sign({
+      userId: student.id,
+      username: student.username,
+      role: 'student',
+    });
   }
   async countAllStudentOfClass(classId: number): Promise<number> {
     const classEntity = await this.classRepository.findOne({

@@ -24,6 +24,12 @@ export class UserNotificationController {
   async findAll(): Promise<UserNotification[]> {
     return await this.userNotificationService.findAll();
   }
+  @Get('student/:studentId')
+  async findAllOfStudent(
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ): Promise<UserNotification[]> {
+    return await this.userNotificationService.findAllOfStudent(studentId);
+  }
 
   @Get(':id')
   async findOne(

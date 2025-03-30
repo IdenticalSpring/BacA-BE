@@ -41,6 +41,10 @@ export class StudentController {
     return await this.studentService.findByClass(classID);
   }
 
+  @Post('/find-and-login')
+  async findOneAndLogin(@Body() body: { studentId: number }): Promise<string> {
+    return await this.studentService.findOneAndLogin(body.studentId);
+  }
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async create(

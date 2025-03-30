@@ -31,11 +31,15 @@ export class ClassService {
   async findOne(id: number): Promise<Class> {
     const classEntity = await this.classRepository.findOne({
       where: { id, isDelete: false },
-      relations: ['teacher'],
+      relations: ['teacher', 'students'],
     });
     if (!classEntity) {
       throw new NotFoundException(`Class with ID ${id} not found`);
     }
+    classEntity.students.forEach((student) => {
+      delete student.username;
+      delete student.password;
+    });
     return classEntity;
   }
 
