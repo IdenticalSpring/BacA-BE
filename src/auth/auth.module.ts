@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -22,7 +22,7 @@ import { StudentModule } from 'src/student/student.module';
     }),
     AdminModule,
     TeacherModule,
-    StudentModule,
+    forwardRef(() => StudentModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, AuthGuard, Reflector],

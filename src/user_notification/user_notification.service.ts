@@ -27,6 +27,18 @@ export class UserNotificationService {
       relations: ['notification', 'student'],
     });
   }
+  async findAllOfStudent(studentId: number): Promise<UserNotification[]> {
+    const studentEntity = await this.studentRepository.findOne({
+      where: { id: studentId },
+    });
+    if (!studentEntity) {
+      throw new NotFoundException(`Student with ID ${studentId} not found`);
+    }
+    return await this.userNotificationRepository.find({
+      where: { isDelete: false, student: studentEntity },
+      relations: ['notification', 'student'],
+    });
+  }
 
   async findOne(id: number): Promise<UserNotification> {
     const userNotification = await this.userNotificationRepository.findOne({
