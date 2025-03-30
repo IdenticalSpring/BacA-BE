@@ -20,7 +20,7 @@ export class Notification {
   general: boolean;
   @CreateDateColumn()
   createdAt: Date;
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   detail: string;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
