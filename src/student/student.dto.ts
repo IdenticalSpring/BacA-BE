@@ -18,7 +18,7 @@ export class CreateStudentDto {
   @IsOptional()
   @Type(() => Date)
   @IsDate()
-  birthOfDate?: Date;
+  yearOfBirth?: Date;
 
   @IsOptional()
   @IsString()
