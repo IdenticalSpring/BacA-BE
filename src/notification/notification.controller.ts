@@ -25,6 +25,10 @@ export class NotificationController {
   async findAll(): Promise<Notification[]> {
     return await this.notificationService.findAll();
   }
+  @Get('general')
+  async findAllGeneralNotification(): Promise<Notification[]> {
+    return await this.notificationService.findAllGeneralNotification();
+  }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Notification> {

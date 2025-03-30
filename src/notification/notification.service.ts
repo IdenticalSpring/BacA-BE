@@ -25,6 +25,12 @@ export class NotificationService {
       relations: ['class'],
     });
   }
+  async findAllGeneralNotification(): Promise<Notification[]> {
+    return await this.notificationRepository.find({
+      where: { general: true, isDelete: false },
+      relations: ['class'],
+    });
+  }
 
   async findOne(id: number): Promise<Notification> {
     const notification = await this.notificationRepository.findOne({
@@ -41,7 +47,7 @@ export class NotificationService {
   ): Promise<Notification> {
     const { classID, ...rest } = createNotificationDto;
     const notification = this.notificationRepository.create(rest);
-
+    // console.log(notification);
     if (classID) {
       const classEntity = await this.classRepository.findOne({
         where: { id: classID },
@@ -49,9 +55,19 @@ export class NotificationService {
       if (!classEntity) {
         throw new NotFoundException(`Class with ID ${classID} not found`);
       }
+
       notification.class = classEntity;
     }
-
+    if (notification.general) {
+      setTimeout(
+        async () => {
+          await this.notificationRepository.query(
+            `DELETE FROM notification WHERE id = ${notification.id}`,
+          );
+        },
+        24 * 60 * 60 * 1000,
+      );
+    }
     return await this.notificationRepository.save(notification);
   }
 
