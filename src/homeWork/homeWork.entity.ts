@@ -21,6 +21,8 @@ export class HomeWork {
   linkGame: string;
   @Column({ type: 'text', nullable: true })
   linkSpeech: string;
+  @Column({ type: 'text', nullable: true })
+  linkZalo: string;
 
   @Column({ type: 'longtext', nullable: true })
   description: string;

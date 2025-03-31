@@ -15,7 +15,8 @@ export class CreateClassDto {
   @IsOptional()
   @IsInt()
   level?: number; // Thêm level (có thể không bắt buộc)
-
+  @IsString()
+  accessId: string;
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
@@ -30,7 +31,9 @@ export class UpdateClassDto {
   @IsOptional()
   @IsInt()
   level?: number; // Thêm level vào Update DTO
-
+  @IsOptional()
+  @IsString()
+  accessId?: string;
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;

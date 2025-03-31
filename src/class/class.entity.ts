@@ -28,6 +28,8 @@ export class Class {
   teacher: Teacher;
   @Column({ type: 'int', nullable: true })
   level: number;
+  @Column({ length: 10, nullable: false, unique: true })
+  accessId: string;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
   @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.class)
