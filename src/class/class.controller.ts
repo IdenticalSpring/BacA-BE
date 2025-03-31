@@ -27,6 +27,10 @@ export class ClassController {
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Class> {
     return await this.classService.findOne(id);
   }
+  @Get('access/:accessId')
+  async findOneByAccessId(@Param('accessId') accessId: string): Promise<Class> {
+    return await this.classService.findOneByAccessId(accessId);
+  }
 
   @Get('teacher/:teacherID')
   async findByTeacher(

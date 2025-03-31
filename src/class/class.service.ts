@@ -42,6 +42,20 @@ export class ClassService {
     });
     return classEntity;
   }
+  async findOneByAccessId(accessId: string): Promise<Class> {
+    const classEntity = await this.classRepository.findOne({
+      where: { accessId, isDelete: false },
+      relations: ['teacher', 'students'],
+    });
+    if (!classEntity) {
+      throw new NotFoundException(`Class with AccessID ${accessId} not found`);
+    }
+    classEntity.students.forEach((student) => {
+      delete student.username;
+      delete student.password;
+    });
+    return classEntity;
+  }
 
   async findByTeacher(teacherID: number): Promise<Class[]> {
     const teacher = await this.teacherRepository.findOne({
