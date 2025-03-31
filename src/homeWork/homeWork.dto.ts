@@ -19,6 +19,10 @@ export class CreateHomeWorkDto {
 
   @IsOptional()
   @IsString()
+  linkZalo?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()

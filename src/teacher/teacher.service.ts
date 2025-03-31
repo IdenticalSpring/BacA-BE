@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Teacher } from './teacher.entity';
 import { CreateTeacherDto, UpdateTeacherDto } from './teacher.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class TeacherService {
@@ -25,32 +26,46 @@ export class TeacherService {
     return teacher;
   }
 
-  async create(createTeacherDto: CreateTeacherDto): Promise<Teacher> {
-    const teacher = this.teacherRepository.create(createTeacherDto);
+  async create(
+    createTeacherDto: CreateTeacherDto,
+    file: Express.Multer.File,
+  ): Promise<Teacher> {
+    let fileUrl = '';
+    if (file) {
+      fileUrl = await CloudinaryService.uploadBuffer(file.buffer);
+    }
+
+    const teacher = this.teacherRepository.create({
+      ...createTeacherDto,
+      fileUrl,
+    });
     return await this.teacherRepository.save(teacher);
   }
 
   async update(
     id: number,
     updateTeacherDto: UpdateTeacherDto,
+    file?: Express.Multer.File,
   ): Promise<Teacher> {
     const teacher = await this.findOne(id);
+
+    if (file) {
+      const fileUrl = await CloudinaryService.uploadBuffer(file.buffer);
+      updateTeacherDto.fileUrl = fileUrl;
+    }
+
     Object.assign(teacher, updateTeacherDto);
     return await this.teacherRepository.save(teacher);
   }
 
   async remove(id: number): Promise<void> {
-    // const result = await this.teacherRepository.delete(id);
-    // if (result.affected === 0) {
-    //   throw new NotFoundException(`Teacher with ID ${id} not found`);
-    // }
-    const Teacher = await this.teacherRepository.findOne({
+    const teacher = await this.teacherRepository.findOne({
       where: { id, isDelete: false },
     });
-    if (!Teacher) {
+    if (!teacher) {
       throw new NotFoundException(`Teacher with ID ${id} not found`);
     }
-    Teacher.isDelete = true;
-    await this.teacherRepository.save(Teacher);
+    teacher.isDelete = true;
+    await this.teacherRepository.save(teacher);
   }
 }
