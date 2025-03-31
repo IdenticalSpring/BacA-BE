@@ -4,7 +4,6 @@ import {
   IsDateString,
   MinLength,
   IsBoolean,
-  IsInt,
 } from 'class-validator';
 
 export class CreateTeacherDto {
@@ -28,6 +27,10 @@ export class CreateTeacherDto {
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
+
+  @IsOptional()
+  @IsString()
+  fileUrl?: string; // Thêm thuộc tính fileUrl
 }
 
 export class UpdateTeacherDto {
@@ -55,4 +58,8 @@ export class UpdateTeacherDto {
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
+
+  @IsOptional()
+  @IsString()
+  fileUrl?: string; // Thêm thuộc tính fileUrl
 }
