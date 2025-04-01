@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsInt,
+  IsDateString,
+} from 'class-validator';
 
 export class CreateHomeWorkDto {
   @IsString()
@@ -34,6 +40,10 @@ export class CreateHomeWorkDto {
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
+
+  @IsOptional()
+  @IsDateString() // Thêm trường date
+  date?: string;
 }
 
 export class UpdateHomeWorkDto extends CreateHomeWorkDto {}

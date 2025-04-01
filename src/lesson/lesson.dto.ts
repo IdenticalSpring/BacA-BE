@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsInt,
+  IsDateString,
+} from 'class-validator';
 
 export class CreateLessonDto {
   @IsString()
@@ -24,6 +30,10 @@ export class CreateLessonDto {
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
+
+  @IsOptional()
+  @IsDateString() // Thêm trường date
+  date?: string;
 }
 
 export class UpdateLessonDto extends CreateLessonDto {}

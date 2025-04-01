@@ -28,6 +28,10 @@ export class Lesson {
   level: number;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
+
+  @Column({ type: 'date', nullable: true }) // Thêm trường date
+  date: Date;
+
   @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.lesson)
   classSchedules: ClassSchedule[];
   @ManyToOne(() => Teacher, (teacherEntity) => teacherEntity.lesson, {

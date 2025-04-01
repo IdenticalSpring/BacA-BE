@@ -32,6 +32,8 @@ export class HomeWork {
   status: boolean;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
+  @Column({ type: 'date', nullable: true }) // Thêm trường date
+  date: Date;
   @ManyToOne(() => Teacher, (teacherEntity) => teacherEntity.lesson, {
     onDelete: 'CASCADE',
   })
