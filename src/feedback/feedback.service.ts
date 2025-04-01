@@ -30,6 +30,19 @@ export class FeedbackService {
     });
     return this.feedbackRepository.save(feedback);
   }
+  async getFeedbackByStudentID(studentID: number): Promise<Feedback[]> {
+    const student = await this.studentRepository.findOne({
+      where: { id: studentID },
+    });
+    if (!student) {
+      throw new NotFoundException(`Student with ID ${studentID} not found`);
+    }
+
+    return this.feedbackRepository.find({
+      where: { student: { id: studentID } },
+      relations: ['student'],
+    });
+  }
 
   async findAll(): Promise<Feedback[]> {
     return this.feedbackRepository.find({ relations: ['student'] });

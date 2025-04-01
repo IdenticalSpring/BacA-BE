@@ -27,6 +27,13 @@ export class FeedbackController {
     return this.feedbackService.findAll();
   }
 
+  @Get('student/:studentID')
+  async getFeedbackByStudentID(
+    @Param('studentID') studentID: number,
+  ): Promise<Feedback[]> {
+    return this.feedbackService.getFeedbackByStudentID(studentID);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: number): Promise<Feedback> {
     return this.feedbackService.findOne(id);
