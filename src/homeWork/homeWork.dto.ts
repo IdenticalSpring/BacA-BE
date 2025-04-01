@@ -30,6 +30,9 @@ export class CreateHomeWorkDto {
 
   @IsOptional()
   @IsBoolean()
+  status?: boolean;
+  @IsOptional()
+  @IsBoolean()
   isDelete?: boolean;
 }
 

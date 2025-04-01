@@ -29,6 +29,8 @@ export class HomeWork {
   @Column({ type: 'int', nullable: true })
   level: number;
   @Column({ type: 'boolean', default: false })
+  status: boolean;
+  @Column({ type: 'boolean', default: false })
   isDelete: boolean;
   @ManyToOne(() => Teacher, (teacherEntity) => teacherEntity.lesson, {
     onDelete: 'CASCADE',
