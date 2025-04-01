@@ -110,6 +110,15 @@ export class ContentPage {
   @Column({ type: 'text', nullable: true })
   footerDescription: string;
 
+  @Column({ type: 'text', nullable: true })
+  footerAddress: string;
+
+  @Column({ type: 'text', nullable: true })
+  footerEmail: string;
+
+  @Column({ type: 'text', nullable: true })
+  footerContact: string;
+
   @Column({ length: 255, nullable: true })
   linkFacebook: string;
 

@@ -143,6 +143,10 @@ export class CreateContentPageDto {
 
   @IsOptional()
   @IsString()
+  footerAddress?: string;
+
+  @IsOptional()
+  @IsString()
   linkFacebook?: string;
 
   @IsOptional()
