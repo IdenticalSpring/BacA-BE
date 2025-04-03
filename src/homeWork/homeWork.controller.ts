@@ -65,7 +65,6 @@ export class HomeWorkController {
   ): Promise<HomeWork> {
     return await this.homeworkService.update(id, updateHomeWorkDto, mp3File);
   }
-
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.homeworkService.remove(id);

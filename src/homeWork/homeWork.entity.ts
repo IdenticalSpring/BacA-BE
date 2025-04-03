@@ -1,3 +1,4 @@
+import { Student_homework_count } from 'src/student_homework_count/student_homework_count.entity';
 import { Teacher } from 'src/teacher/teacher.entity';
 import {
   Entity,
@@ -5,6 +6,7 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('homework')
@@ -39,4 +41,9 @@ export class HomeWork {
   })
   @JoinColumn({ name: 'TeacherId' })
   teacher: Teacher;
+  @OneToMany(
+    () => Student_homework_count,
+    (student_homework_count) => student_homework_count.homework,
+  )
+  student_homework_count: Student_homework_count[];
 }

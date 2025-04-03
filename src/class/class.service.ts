@@ -44,9 +44,10 @@ export class ClassService {
   }
   async findOneByAccessId(accessId: string): Promise<Class> {
     const classEntity = await this.classRepository.findOne({
-      where: { accessId, isDelete: false },
+      where: { accessId: accessId, isDelete: false },
       relations: ['teacher', 'students'],
     });
+
     if (!classEntity) {
       throw new NotFoundException(`Class with AccessID ${accessId} not found`);
     }

@@ -8,6 +8,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { Student_lesson_count } from 'src/student-lesson-count/student-lesson-count.entity';
 
 @Entity('lesson')
 export class Lesson {
@@ -39,4 +40,9 @@ export class Lesson {
   })
   @JoinColumn({ name: 'TeacherId' })
   teacher: Teacher;
+  @OneToMany(
+    () => Student_lesson_count,
+    (student_lesson_count) => student_lesson_count.lesson,
+  )
+  student_lesson_count: Student_lesson_count[];
 }

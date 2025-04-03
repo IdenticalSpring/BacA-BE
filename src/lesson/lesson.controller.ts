@@ -64,7 +64,6 @@ export class LessonController {
   ): Promise<Lesson> {
     return await this.lessonService.update(id, updateLessonDto, mp3File);
   }
-
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.lessonService.remove(id);

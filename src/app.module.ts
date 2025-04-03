@@ -39,6 +39,8 @@ import { NotificationModule } from './notification/notification.module';
 import { UserNotificationModule } from './user_notification/user_notification.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { ContentPageModule } from './contentpage/contentpage.module';
+import { Student_homework_countModule } from './student_homework_count/student_homework_count.module';
+import { Student_lesson_countModule } from './student-lesson-count/student-lesson-count.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -89,6 +91,8 @@ import { ContentPageModule } from './contentpage/contentpage.module';
     GeminiModule,
     NotificationModule,
     UserNotificationModule,
+    Student_homework_countModule,
+    Student_lesson_countModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],

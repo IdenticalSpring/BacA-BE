@@ -132,7 +132,6 @@ export class HomeWorkService {
 
     return await this.homeWorkRepository.save(homeWorkEntity);
   }
-
   async remove(id: number): Promise<void> {
     // const result = await this.homeWorkRepository.delete(id);
     // if (result.affected === 0) {
