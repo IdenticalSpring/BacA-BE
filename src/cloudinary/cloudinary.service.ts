@@ -45,4 +45,32 @@ export class CloudinaryService {
       throw new Error('Cloudinary upload failed');
     }
   }
+  static async uploadMultipleBuffers(buffers: Buffer[]): Promise<string[]> {
+    try {
+      console.log('Uploading multiple buffers to Cloudinary...');
+      const uploadPromises = buffers.map((buffer) => {
+        const stream = Readable.from(buffer);
+        return new Promise<string>((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { resource_type: 'auto' },
+            (error, result) => {
+              if (error) {
+                console.error('Cloudinary Upload Error:', error);
+                reject(new Error('Cloudinary upload failed'));
+              } else {
+                console.log('Cloudinary Upload Success:', result.secure_url);
+                resolve(result.secure_url);
+              }
+            },
+          );
+          stream.pipe(uploadStream);
+        });
+      });
+
+      return await Promise.all(uploadPromises);
+    } catch (error) {
+      console.error('Cloudinary Upload Error:', error);
+      throw new Error('Cloudinary upload failed');
+    }
+  }
 }

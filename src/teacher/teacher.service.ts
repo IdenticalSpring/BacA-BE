@@ -28,16 +28,17 @@ export class TeacherService {
 
   async create(
     createTeacherDto: CreateTeacherDto,
-    file: Express.Multer.File,
+    files: Express.Multer.File[],
   ): Promise<Teacher> {
-    let fileUrl = '';
-    if (file) {
-      fileUrl = await CloudinaryService.uploadBuffer(file.buffer);
+    let fileUrls: string[] = [];
+    if (files && files.length > 0) {
+      const buffers = files.map((file) => file.buffer);
+      fileUrls = await CloudinaryService.uploadMultipleBuffers(buffers);
     }
 
     const teacher = this.teacherRepository.create({
       ...createTeacherDto,
-      fileUrl,
+      fileUrl: fileUrls.join(','), // Lưu danh sách URL dưới dạng chuỗi
     });
     return await this.teacherRepository.save(teacher);
   }
@@ -45,13 +46,14 @@ export class TeacherService {
   async update(
     id: number,
     updateTeacherDto: UpdateTeacherDto,
-    file?: Express.Multer.File,
+    files?: Express.Multer.File[],
   ): Promise<Teacher> {
     const teacher = await this.findOne(id);
 
-    if (file) {
-      const fileUrl = await CloudinaryService.uploadBuffer(file.buffer);
-      updateTeacherDto.fileUrl = fileUrl;
+    if (files && files.length > 0) {
+      const buffers = files.map((file) => file.buffer);
+      const fileUrls = await CloudinaryService.uploadMultipleBuffers(buffers);
+      updateTeacherDto.fileUrl = fileUrls.join(','); // Lưu danh sách URL dưới dạng chuỗi
     }
 
     Object.assign(teacher, updateTeacherDto);
