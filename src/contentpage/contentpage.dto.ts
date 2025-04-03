@@ -152,6 +152,10 @@ export class CreateContentPageDto {
   @IsOptional()
   @IsString()
   linkZalo?: string;
+
+  @IsOptional()
+  @IsString()
+  linkYoutube?: string;
 }
 
 export class UpdateContentPageDto extends CreateContentPageDto {}

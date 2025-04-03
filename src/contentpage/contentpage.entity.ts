@@ -124,4 +124,7 @@ export class ContentPage {
 
   @Column({ length: 255, nullable: true })
   linkZalo: string;
+
+  @Column({ length: 255, nullable: true })
+  linkYoutube: string;
 }
