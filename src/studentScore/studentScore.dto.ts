@@ -1,4 +1,4 @@
-import { IsNumber } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateStudentScoreDto {
   @IsNumber()
@@ -21,4 +21,12 @@ export class CreateStudentScoreDto {
 
   @IsNumber()
   avgScore: number;
+
+  @IsOptional()
+  @IsString() // Thêm teacherComment
+  teacherComment?: string;
+
+  @IsOptional()
+  @IsNumber() // Thêm assessmentID
+  assessmentID?: number;
 }

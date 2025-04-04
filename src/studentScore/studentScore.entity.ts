@@ -8,6 +8,7 @@ import {
 import { ClassTestScheduleEntity } from 'src/classTestSchedule/classTestSchedule.entity';
 import { Student } from 'src/student/student.entity';
 import { Teacher } from 'src/teacher/teacher.entity';
+import { Assessments } from 'src/assessments/assessments.entity';
 
 @Entity('StudentScore')
 export class StudentScoreEntity {
@@ -22,6 +23,12 @@ export class StudentScoreEntity {
 
   @Column()
   classTestScheduleID: number;
+
+  @Column({ type: 'text', nullable: true }) // Thêm teacherComment
+  teacherComment: string;
+
+  @Column({ nullable: true }) // Thêm assessmentID
+  assessmentID: number;
 
   @ManyToOne(() => Teacher, (teacher) => teacher.studentScores, {
     onDelete: 'CASCADE',
@@ -44,4 +51,10 @@ export class StudentScoreEntity {
   )
   @JoinColumn({ name: 'classTestScheduleID' })
   classTestSchedule: ClassTestScheduleEntity;
+
+  @ManyToOne(() => Assessments, (assessments) => assessments.testResults, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'assessmentID' }) // Liên kết với bảng Assessments
+  assessment: Assessments;
 }
