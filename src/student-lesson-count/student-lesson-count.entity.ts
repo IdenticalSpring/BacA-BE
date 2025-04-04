@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { Lesson } from 'src/lesson/lesson.entity';
 import { Student } from 'src/student/student.entity';
+import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
 
 @Entity('student_lesson_count')
 export class Student_lesson_count {
@@ -34,4 +35,13 @@ export class Student_lesson_count {
   )
   @JoinColumn({ name: 'studentId' })
   student: Student;
+  @ManyToOne(
+    () => LessonBySchedule,
+    (LessonByScheduleEntity) => LessonByScheduleEntity.student_lesson_count,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
+  @JoinColumn({ name: 'lessonByScheduleId' })
+  lessonBySchedule: LessonBySchedule;
 }

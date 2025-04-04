@@ -1,4 +1,5 @@
 import { HomeWork } from 'src/homeWork/homeWork.entity';
+import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
 import { Student } from 'src/student/student.entity';
 import {
   Entity,
@@ -34,4 +35,13 @@ export class Student_homework_count {
   )
   @JoinColumn({ name: 'studentId' })
   student: Student;
+  @ManyToOne(
+    () => LessonBySchedule,
+    (LessonByScheduleEntity) => LessonByScheduleEntity.student_homework_count,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
+  @JoinColumn({ name: 'lessonByScheduleId' })
+  lessonBySchedule: LessonBySchedule;
 }
