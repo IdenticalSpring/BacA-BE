@@ -50,17 +50,17 @@ export class LevelService {
   }
 
   async remove(id: number): Promise<void> {
-    // const result = await this.classRepository.delete(id);
-    // if (result.affected === 0) {
-    //   throw new NotFoundException(`Class with ID ${id} not found`);
-    // }
-    const Level = await this.levelRepository.findOne({
-      where: { id, isDelete: false },
-    });
-    if (!Level) {
+    const result = await this.levelRepository.delete(id);
+    if (result.affected === 0) {
       throw new NotFoundException(`Level with ID ${id} not found`);
     }
-    Level.isDelete = true;
-    await this.levelRepository.save(Level);
+    // const Level = await this.levelRepository.findOne({
+    //   where: { id, isDelete: false },
+    // });
+    // if (!Level) {
+    //   throw new NotFoundException(`Level with ID ${id} not found`);
+    // }
+    // Level.isDelete = true;
+    // await this.levelRepository.save(Level);
   }
 }
