@@ -153,7 +153,7 @@ export class HomeWorkService {
         {
           text: textToSpeechDto.textToSpeech,
           voiceService: 'servicebin',
-          voiceID: 'en-US',
+          voiceID: textToSpeechDto.gender ? 'en-US4' : 'en-US',
           voiceSpeed: '0',
         },
         {

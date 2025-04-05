@@ -21,6 +21,8 @@ export class Lesson {
   @Column({ type: 'text', nullable: true })
   linkYoutube: string;
   @Column({ type: 'text', nullable: true })
+  linkGame: string;
+  @Column({ type: 'text', nullable: true })
   linkSpeech: string;
 
   @Column({ type: 'longtext', nullable: true })

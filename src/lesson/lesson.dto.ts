@@ -15,6 +15,9 @@ export class CreateLessonDto {
   linkYoutube?: string;
   @IsOptional()
   @IsString()
+  linkGame?: string;
+  @IsOptional()
+  @IsString()
   linkSpeech?: string;
 
   @IsOptional()

@@ -56,4 +56,6 @@ export class findHomeWorkByLevelAndTeacherIdDto {
 export class textToSpeechDto {
   @IsString()
   textToSpeech: string;
+  @IsBoolean()
+  gender: boolean;
 }
