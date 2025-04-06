@@ -10,8 +10,7 @@ import { TeacherModule } from 'src/teacher/teacher.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Lesson, ClassSchedule, Teacher]),
-    forwardRef(() => ClassScheduleModule),
+    TypeOrmModule.forFeature([Lesson, Teacher]),
     forwardRef(() => TeacherModule),
   ],
   providers: [LessonService],

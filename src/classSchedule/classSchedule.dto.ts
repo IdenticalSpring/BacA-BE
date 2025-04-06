@@ -7,9 +7,6 @@ export class CreateClassScheduleDto {
   @IsInt()
   scheduleID: number;
 
-  @IsInt()
-  lessonID: number;
-
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
@@ -21,9 +18,6 @@ export class UpdateClassScheduleDto {
 
   @IsInt()
   scheduleID?: number;
-
-  @IsInt()
-  lessonID?: number;
 
   @IsOptional()
   @IsBoolean()

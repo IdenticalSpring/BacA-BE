@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ClassSchedule } from './classSchedule.entity';
 import {
   CreateClassScheduleDto,
@@ -52,23 +52,45 @@ export class ClassScheduleService {
       throw new Error('Schedule not found');
     }
 
-    const lesson = await this.lessonRepository.findOne({
-      where: { id: createDto.lessonID, isDelete: false },
-    });
-    if (!lesson) {
-      throw new Error('Lesson not found');
-    }
-
     // Tạo entity hợp lệ
     const classSchedule = this.classScheduleRepository.create({
       class: classEntity,
       schedule: schedule,
-      lesson: lesson,
     });
 
     return await this.classScheduleRepository.save(classSchedule);
   }
+  async createMany(
+    createDto: CreateClassScheduleDto[],
+  ): Promise<ClassSchedule[]> {
+    const classSchedules = [];
+    const classEntity = await this.classRepository.findOne({
+      where: { id: createDto[0].classID, isDelete: false },
+    });
+    if (!classEntity) {
+      throw new NotFoundException(`Class with ${createDto[0]} not found`);
+    }
+    const scheduleIds = createDto.map((l) => l.scheduleID);
+    const scheduleEntities = await this.scheduleRepository.findBy({
+      id: In(scheduleIds),
+    });
 
+    if (scheduleEntities.length === 0) {
+      throw new Error(`No schedules found for given IDs`);
+    }
+    scheduleEntities.forEach((schedule) => {
+      if (schedule.isDelete) {
+        throw new Error(`Schedule with ID ${schedule.id} is deleted`);
+      }
+      classSchedules.push(
+        this.classScheduleRepository.create({
+          class: classEntity,
+          schedule: schedule,
+        }),
+      );
+    });
+    return await this.classScheduleRepository.save(classSchedules);
+  }
   async update(
     id: number,
     updateDto: UpdateClassScheduleDto,
@@ -95,14 +117,6 @@ export class ClassScheduleService {
       });
       if (!schedule) throw new Error('Schedule not found');
       classSchedule.schedule = schedule;
-    }
-
-    if (updateDto.lessonID) {
-      const lesson = await this.lessonRepository.findOne({
-        where: { id: updateDto.lessonID, isDelete: false },
-      });
-      if (!lesson) throw new Error('Lesson not found');
-      classSchedule.lesson = lesson;
     }
 
     return await this.classScheduleRepository.save(classSchedule);

@@ -35,7 +35,12 @@ export class ClassScheduleController {
   ): Promise<ClassSchedule> {
     return await this.classScheduleService.create(createDto);
   }
-
+  @Post('many')
+  async createMany(
+    @Body() createDtos: CreateClassScheduleDto[],
+  ): Promise<ClassSchedule[]> {
+    return await this.classScheduleService.createMany(createDtos);
+  }
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,

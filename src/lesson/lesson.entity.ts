@@ -35,8 +35,6 @@ export class Lesson {
   @Column({ type: 'date', nullable: true }) // Thêm trường date
   date: Date;
 
-  @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.lesson)
-  classSchedules: ClassSchedule[];
   @ManyToOne(() => Teacher, (teacherEntity) => teacherEntity.lesson, {
     onDelete: 'CASCADE',
   })

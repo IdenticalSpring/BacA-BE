@@ -25,12 +25,6 @@ export class ClassSchedule {
   })
   @JoinColumn({ name: 'scheduleID' })
   schedule: Schedule;
-
-  @ManyToOne(() => Lesson, (lesson) => lesson.classSchedules, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'lessonID' })
-  lesson: Lesson;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
 }
