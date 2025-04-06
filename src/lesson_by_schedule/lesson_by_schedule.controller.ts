@@ -80,6 +80,26 @@ export class LessonByScheduleController {
       updateDto,
     );
   }
+  @Post('/updateIsHomeWorkSent/:id')
+  async updateIsHomeWorkSent(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('isHomeWorkSent') isHomeWorkSent: boolean,
+  ) {
+    return this.lessonByScheduleService.updateSendingHomeWorkStatus(
+      id,
+      isHomeWorkSent,
+    );
+  }
+  @Post('/updateIsLessonSent/:id')
+  async updateIsLessonSent(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('isLessonSent') isLessonSent: boolean,
+  ) {
+    return this.lessonByScheduleService.updateSendingLessonStatus(
+      id,
+      isLessonSent,
+    );
+  }
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,

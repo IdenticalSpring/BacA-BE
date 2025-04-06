@@ -192,7 +192,24 @@ export class LessonByScheduleService {
 
     return await this.lessonByScheduleRepository.save(lessonBySchedule);
   }
-
+  updateSendingHomeWorkStatus(
+    id: number,
+    isHomeWorkSent: boolean,
+  ): Promise<LessonBySchedule> {
+    return this.lessonByScheduleRepository.save({
+      id,
+      isHomeWorkSent,
+    });
+  }
+  updateSendingLessonStatus(
+    id: number,
+    isLessonSent: boolean,
+  ): Promise<LessonBySchedule> {
+    return this.lessonByScheduleRepository.save({
+      id,
+      isLessonSent,
+    });
+  }
   async remove(id: number): Promise<void> {
     // await this.lessonByScheduleRepository.delete(id);
     const lessonBySchedule = await this.lessonByScheduleRepository.findOne({
