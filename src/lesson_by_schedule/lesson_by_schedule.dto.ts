@@ -57,6 +57,12 @@ export class UpdateLessonByScheduleDto {
 
   @IsOptional()
   @IsBoolean()
+  isHomeWorkSent?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  isLessonSent?: boolean;
+  @IsOptional()
+  @IsBoolean()
   isDelete?: boolean;
 }
 
@@ -73,4 +79,12 @@ export class UpdateLessonOfLessonBySchedule {
 export class UpdateHomeWorkOfLessonBySchedule {
   @IsInt()
   homeWorkId: number;
+}
+export class UpdateSendingHomeworkStatusOfLessonBySchedule {
+  @IsBoolean()
+  isHomeWorkSent: boolean;
+}
+export class UpdateSendingLessonStatusOfLessonBySchedule {
+  @IsBoolean()
+  isLessonSent: boolean;
 }
