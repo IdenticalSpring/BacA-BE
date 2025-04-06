@@ -5,6 +5,7 @@ import { TeacherTestComment } from '../teachertestcomment/teachertestcomment.ent
 import { Lesson } from 'src/lesson/lesson.entity';
 import { HomeWork } from 'src/homeWork/homeWork.entity';
 import { StudentScoreEntity } from 'src/studentScore/studentScore.entity';
+import { TeacherFeedback } from 'src/teacher_feedback/teacher_feedback.entity';
 
 @Entity('teacher')
 export class Teacher {
@@ -48,4 +49,7 @@ export class Teacher {
 
   @OneToMany(() => StudentScoreEntity, (studentScore) => studentScore.teacher)
   studentScores: StudentScoreEntity[];
+
+  @OneToMany(() => TeacherFeedback, (feedback) => feedback.teacher)
+  feedbacks: TeacherFeedback[];
 }
