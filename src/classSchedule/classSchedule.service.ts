@@ -26,14 +26,14 @@ export class ClassScheduleService {
   async findAll(): Promise<ClassSchedule[]> {
     return await this.classScheduleRepository.find({
       where: { isDelete: false },
-      relations: ['class', 'schedule', 'lesson'],
+      relations: ['class', 'schedule'],
     });
   }
 
   async findOne(id: number): Promise<ClassSchedule> {
     return await this.classScheduleRepository.findOne({
       where: { id, isDelete: false },
-      relations: ['class', 'schedule', 'lesson'],
+      relations: ['class', 'schedule'],
     });
   }
 
