@@ -12,4 +12,11 @@ export class GeminiController {
     const response = await this.chatbotService.enhanceDescription(description);
     return { response };
   }
+  @Post('enhance-lesson-plan')
+  async enhanceLessonPlan(
+    @Body('lessonPlan') lessonPlan: string,
+  ): Promise<{ response: string }> {
+    const response = await this.chatbotService.enhanceLessonPlan(lessonPlan);
+    return { response };
+  }
 }

@@ -25,6 +25,10 @@ export class CreateLessonDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  lessonPlan?: string;
+
+  @IsOptional()
   @IsInt()
   level?: number; // Thêm level vào Update DTO
   @IsInt()

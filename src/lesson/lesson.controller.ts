@@ -9,7 +9,6 @@ import {
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
-  BadRequestException,
 } from '@nestjs/common';
 import { LessonService } from './lesson.service';
 import {

@@ -1,5 +1,4 @@
 import { Teacher } from 'src/teacher/teacher.entity';
-import { ClassSchedule } from '../classSchedule/classSchedule.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -27,6 +26,10 @@ export class Lesson {
 
   @Column({ type: 'longtext', nullable: true })
   description: string;
+
+  @Column({ type: 'longtext', nullable: true })
+  lessonPlan: string;
+
   @Column({ type: 'int', nullable: true })
   level: number;
   @Column({ type: 'boolean', default: false })
