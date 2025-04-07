@@ -42,6 +42,7 @@ import { ContentPageModule } from './contentpage/contentpage.module';
 import { Student_homework_countModule } from './student_homework_count/student_homework_count.module';
 import { Student_lesson_countModule } from './student-lesson-count/student-lesson-count.module';
 import { TeacherFeedbackModule } from './teacher_feedback/teacher_feedback.module';
+import { PageVisitModule } from './pagevisit/pagevist.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -74,6 +75,7 @@ import { TeacherFeedbackModule } from './teacher_feedback/teacher_feedback.modul
     TestSkill,
     ClassModule,
     AssessmentsModule,
+    PageVisitModule,
     TeacherFeedbackModule,
     TeacherCommentOnStudentModule,
     AdminModule,
