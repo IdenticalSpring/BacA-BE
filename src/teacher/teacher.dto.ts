@@ -31,6 +31,10 @@ export class CreateTeacherDto {
   @IsOptional()
   @IsString()
   fileUrl?: string; // Thêm thuộc tính fileUrl
+
+  @IsOptional()
+  @IsString()
+  linkDrive?: string;
 }
 
 export class UpdateTeacherDto {
@@ -62,4 +66,8 @@ export class UpdateTeacherDto {
   @IsOptional()
   @IsString()
   fileUrl?: string; // Thêm thuộc tính fileUrl
+
+  @IsOptional()
+  @IsString()
+  linkDrive?: string;
 }
