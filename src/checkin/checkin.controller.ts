@@ -38,4 +38,12 @@ export class CheckinController {
   ): Promise<Checkin[]> {
     return this.checkinService.getAllCheckinOfStudent(studentId);
   }
+  @Get('lesson-by-schedule/:lessonByScheduleId')
+  async getAllCheckinOfLessonBySchedule(
+    @Param('lessonByScheduleId') lessonByScheduleId: number,
+  ): Promise<Checkin[]> {
+    return this.checkinService.getAllCheckinOfLessonBySchedule(
+      lessonByScheduleId,
+    );
+  }
 }
