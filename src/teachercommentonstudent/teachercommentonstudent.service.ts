@@ -24,6 +24,15 @@ export class TeacherCommentOnStudentService {
     });
   }
 
+  async getEvaluationByStudentID(
+    studentID: number,
+  ): Promise<TeacherCommentOnStudent[]> {
+    return this.teacherCommentOnStudentRepository.find({
+      where: { student: { id: studentID }, isDelete: false },
+      relations: ['teacher', 'student', 'schedule'],
+    });
+  }
+
   async findOne(id: number): Promise<TeacherCommentOnStudent> {
     const comment = await this.teacherCommentOnStudentRepository.findOne({
       where: { id, isDelete: false },

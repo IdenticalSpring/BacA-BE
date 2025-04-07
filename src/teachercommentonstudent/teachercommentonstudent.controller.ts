@@ -31,6 +31,13 @@ export class TeacherCommentOnStudentController {
     return await this.service.findOne(id);
   }
 
+  @Get('student/:studentID')
+  async getEvaluationByStudentID(
+    @Param('studentID', ParseIntPipe) studentID: number,
+  ): Promise<TeacherCommentOnStudent[]> {
+    return await this.service.getEvaluationByStudentID(studentID);
+  }
+
   @Post()
   async create(
     @Body() createDto: CreateTeacherCommentOnStudentDto,

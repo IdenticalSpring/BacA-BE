@@ -29,4 +29,7 @@ export class StudentSkillBehaviorScore {
 
   @Column({ type: 'int' })
   score: number;
+
+  @Column({ type: 'date', nullable: false }) // Thêm trường date
+  date: Date;
 }

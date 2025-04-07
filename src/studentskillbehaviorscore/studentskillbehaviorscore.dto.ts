@@ -1,4 +1,11 @@
-import { IsInt, IsString, IsOptional, Min, Max } from 'class-validator';
+import {
+  IsInt,
+  IsString,
+  IsOptional,
+  Min,
+  Max,
+  IsDateString,
+} from 'class-validator';
 
 export class CreateStudentSkillBehaviorScoreDto {
   @IsInt()
@@ -17,6 +24,9 @@ export class CreateStudentSkillBehaviorScoreDto {
   @Min(0)
   @Max(100)
   score: number;
+
+  @IsDateString() // Thêm trường date
+  date: string;
 }
 
 export class UpdateStudentSkillBehaviorScoreDto {
@@ -41,4 +51,8 @@ export class UpdateStudentSkillBehaviorScoreDto {
   @Min(0)
   @Max(100)
   score?: number;
+
+  @IsOptional()
+  @IsDateString() // Thêm trường date
+  date?: string;
 }
