@@ -26,13 +26,13 @@ export class Student_lesson_countService {
   async findAll(): Promise<Student_lesson_count[]> {
     return await this.student_lesson_countRepository.find({
       where: { isDelete: false },
-      relations: ['student', 'lesson'],
+      relations: ['student', 'lesson', 'lessonBySchedule'],
     });
   }
   async findOne(id: number): Promise<Student_lesson_count> {
     const lesson = await this.student_lesson_countRepository.findOne({
       where: { id, isDelete: false },
-      relations: ['student', 'lesson'],
+      relations: ['student', 'lesson', 'lessonBySchedule'],
     });
     if (!lesson) {
       throw new NotFoundException(`lesson with ID ${id} not found`);
@@ -165,7 +165,7 @@ export class Student_lesson_countService {
         return await this.student_lesson_countRepository.find({
           select: { id: true, count: true },
           where: { student, isDelete: false },
-          relations: ['student', 'lesson'],
+          relations: ['student', 'lesson', 'lessonBySchedule'],
         });
       }),
     );

@@ -26,13 +26,13 @@ export class Student_homework_countService {
   async findAll(): Promise<Student_homework_count[]> {
     return await this.student_homework_countRepository.find({
       where: { isDelete: false },
-      relations: ['student', 'homework'],
+      relations: ['student', 'homework', 'lessonBySchedule'],
     });
   }
   async findOne(id: number): Promise<Student_homework_count> {
     const homeWork = await this.student_homework_countRepository.findOne({
       where: { id, isDelete: false },
-      relations: ['student', 'homework'],
+      relations: ['student', 'homework', 'lessonBySchedule'],
     });
     if (!homeWork) {
       throw new NotFoundException(`HomeWork with ID ${id} not found`);
@@ -166,7 +166,7 @@ export class Student_homework_countService {
         return await this.student_homework_countRepository.find({
           select: { id: true, count: true },
           where: { student, isDelete: false },
-          relations: ['student', 'homework'],
+          relations: ['student', 'homework', 'lessonBySchedule'],
         });
       }),
     );

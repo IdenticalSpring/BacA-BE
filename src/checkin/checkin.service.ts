@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Checkin } from './checkin.entity';
 import { Student } from 'src/student/student.entity';
+import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
 
 @Injectable()
 export class CheckinService {
@@ -11,6 +12,8 @@ export class CheckinService {
     private readonly checkinRepository: Repository<Checkin>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    @InjectRepository(LessonBySchedule)
+    private readonly lessonByScheduleRepository: Repository<LessonBySchedule>,
   ) {}
 
   async createCheckins(
@@ -48,6 +51,23 @@ export class CheckinService {
     }
     return this.checkinRepository.find({
       where: { student: studentEntity },
+      relations: ['student', 'lessonBySchedule'],
+    });
+  }
+  async getAllCheckinOfLessonBySchedule(LessonByScheduleId: number) {
+    const LessonByScheduleEntity =
+      await this.lessonByScheduleRepository.findOne({
+        where: { id: LessonByScheduleId },
+      });
+    console.log(LessonByScheduleEntity);
+
+    if (!LessonByScheduleEntity) {
+      throw new NotFoundException(
+        `LessonBySchedule with ID ${LessonByScheduleId} not found`,
+      );
+    }
+    return this.checkinRepository.find({
+      where: { lessonBySchedule: LessonByScheduleEntity },
       relations: ['student', 'lessonBySchedule'],
     });
   }
