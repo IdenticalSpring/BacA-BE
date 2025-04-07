@@ -32,6 +32,11 @@ export class StudentSkillBehaviorScoreController {
     return await this.service.create(dto);
   }
 
+  @Get('student/:studentID')
+  async getEvaluationSkillStudent(@Param('studentID') studentId: number) {
+    return await this.service.getEvaluationSkillStudent(studentId);
+  }
+
   @Put(':id')
   async update(
     @Param('id') id: number,

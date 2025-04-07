@@ -1,4 +1,10 @@
-import { IsString, IsInt, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsBoolean,
+  IsDateString,
+} from 'class-validator';
 
 export class CreateTeacherCommentOnStudentDto {
   @IsInt()
@@ -16,6 +22,9 @@ export class CreateTeacherCommentOnStudentDto {
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
+
+  @IsDateString() // Thêm trường date
+  date: string;
 }
 
 export class UpdateTeacherCommentOnStudentDto {
@@ -26,4 +35,8 @@ export class UpdateTeacherCommentOnStudentDto {
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
+
+  @IsOptional()
+  @IsDateString() // Thêm trường date
+  date?: string;
 }

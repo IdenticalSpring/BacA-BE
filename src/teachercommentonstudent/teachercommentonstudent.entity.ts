@@ -31,4 +31,6 @@ export class TeacherCommentOnStudent {
 
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
+  @Column({ type: 'date', nullable: false }) // Thêm trường date
+  date: Date;
 }

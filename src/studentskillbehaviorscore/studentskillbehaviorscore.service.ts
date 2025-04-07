@@ -19,6 +19,14 @@ export class StudentSkillBehaviorScoreService {
       relations: ['teacherComment', 'skill'],
     });
   }
+  async getEvaluationSkillStudent(
+    studentID: number,
+  ): Promise<StudentSkillBehaviorScore[]> {
+    return await this.repository.find({
+      where: { studentID },
+      relations: ['teacherComment', 'skill'],
+    });
+  }
 
   async findOne(id: number): Promise<StudentSkillBehaviorScore> {
     const record = await this.repository.findOne({
