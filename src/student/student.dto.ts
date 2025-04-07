@@ -1,11 +1,4 @@
-import { Type } from 'class-transformer';
-import {
-  IsString,
-  IsOptional,
-  IsInt,
-  IsBoolean,
-  IsDate,
-} from 'class-validator';
+import { IsString, IsOptional, IsInt, IsBoolean } from 'class-validator';
 
 export class CreateStudentDto {
   @IsString()
@@ -15,10 +8,10 @@ export class CreateStudentDto {
   @IsInt()
   level?: number;
 
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  yearOfBirth?: Date;
+  // @IsOptional()
+  // @Type(() => Date)
+  // @IsDate()
+  // yearOfBirth?: Date;
 
   @IsOptional()
   @IsString()
@@ -46,10 +39,10 @@ export class UpdateStudentDto {
   @IsInt()
   level?: number;
 
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  birthOfDate?: Date;
+  // @IsOptional()
+  // @Type(() => Date)
+  // @IsDate()
+  // birthOfDate?: Date;
 
   @IsOptional()
   @IsString()

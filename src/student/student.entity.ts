@@ -26,8 +26,8 @@ export class Student {
   @Column({ type: 'int', nullable: true })
   level: number;
 
-  @Column({ type: 'date', nullable: true })
-  yearOfBirth: Date;
+  // @Column({ type: 'date', nullable: true })
+  // yearOfBirth: Date;
 
   @Column({ length: 100, nullable: true })
   phone: string;
