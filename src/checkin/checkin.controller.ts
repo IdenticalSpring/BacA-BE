@@ -1,6 +1,15 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Put,
+  Delete,
+} from '@nestjs/common';
 import { CheckinService } from './checkin.service';
 import { Checkin } from './checkin.entity';
+import { UpdateCheckinDto } from './checkin.dto';
 
 @Controller('checkins')
 export class CheckinController {
@@ -9,6 +18,11 @@ export class CheckinController {
   @Get()
   async getAllCheckins(): Promise<Checkin[]> {
     return this.checkinService.getAllCheckins();
+  }
+
+  @Get('date/:date')
+  async getCheckinsByDate(@Param('date') date: string): Promise<Checkin[]> {
+    return this.checkinService.getCheckinsByDate(date);
   }
 
   @Post()
@@ -32,12 +46,14 @@ export class CheckinController {
   ) {
     return await this.checkinService.getCheckinsByLesson(lessonByScheduleId);
   }
+
   @Get('student/:studentId')
   async getAllCheckinOfStudent(
     @Param('studentId') studentId: number,
   ): Promise<Checkin[]> {
     return this.checkinService.getAllCheckinOfStudent(studentId);
   }
+
   @Get('lesson-by-schedule/:lessonByScheduleId')
   async getAllCheckinOfLessonBySchedule(
     @Param('lessonByScheduleId') lessonByScheduleId: number,
@@ -45,5 +61,26 @@ export class CheckinController {
     return this.checkinService.getAllCheckinOfLessonBySchedule(
       lessonByScheduleId,
     );
+  }
+
+  @Put('student/:studentId')
+  async updateCheckinByStudentId(
+    @Param('studentId') studentId: number,
+    @Body() updateData: UpdateCheckinDto,
+  ) {
+    return this.checkinService.updateCheckinByStudentId(studentId, updateData);
+  }
+
+  @Put(':id')
+  async updateCheckin(
+    @Param('id') id: number,
+    @Body() updateData: UpdateCheckinDto,
+  ) {
+    return this.checkinService.updateCheckin(id, updateData);
+  }
+
+  @Delete(':id')
+  async deleteCheckin(@Param('id') id: number) {
+    return this.checkinService.deleteCheckin(id);
   }
 }
