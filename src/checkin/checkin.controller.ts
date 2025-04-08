@@ -25,6 +25,14 @@ export class CheckinController {
     return this.checkinService.getCheckinsByDate(date);
   }
 
+  @Put('date/:date')
+  async updateCheckinsByDate(
+    @Param('date') date: string,
+    @Body() updateData: UpdateCheckinDto,
+  ) {
+    return this.checkinService.updateCheckinsByDate(date, updateData);
+  }
+
   @Post()
   async createCheckins(
     @Body()

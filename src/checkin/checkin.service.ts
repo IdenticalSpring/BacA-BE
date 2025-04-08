@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Checkin } from './checkin.entity';
 import { Student } from 'src/student/student.entity';
 import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
@@ -30,6 +30,51 @@ export class CheckinService {
       }),
     );
     return await this.checkinRepository.save(checkinEntities);
+  }
+
+  async updateCheckinsByDate(
+    date: string,
+    updateData: {
+      attendanceData?: { studentId: number; present: number; note?: string }[];
+      [key: string]: any;
+    },
+  ) {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+
+    const checkins = await this.checkinRepository.find({
+      where: {
+        date: Between(startDate, endDate),
+      },
+      relations: ['student'], // Lấy thông tin liên kết với student
+    });
+
+    if (!checkins || checkins.length === 0) {
+      throw new NotFoundException(`No checkins found for date ${date}`);
+    }
+
+    // Nếu có attendanceData, cập nhật từng bản ghi theo studentId
+    if (updateData.attendanceData) {
+      updateData.attendanceData.forEach((attendance) => {
+        const checkin = checkins.find(
+          (c) => c.student.id === attendance.studentId,
+        );
+        if (checkin) {
+          checkin.present = attendance.present;
+          checkin.note = attendance.note || checkin.note;
+        }
+      });
+    }
+
+    // Cập nhật các trường khác (nếu có)
+    const updatedCheckins = checkins.map((checkin) => {
+      return Object.assign(checkin, updateData);
+    });
+
+    return this.checkinRepository.save(updatedCheckins);
   }
 
   async getCheckinsByLesson(lessonByScheduleId: number) {
