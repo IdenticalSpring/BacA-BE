@@ -54,7 +54,7 @@ export class Student {
 
   @ManyToOne(() => Class, (classEntity) => classEntity.students, {
     nullable: true,
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'classID' })
   class: Class;
@@ -64,7 +64,7 @@ export class Student {
 
   @ManyToOne(() => Schedule, (schedule) => schedule.students, {
     nullable: true,
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'scheduleID' })
   schedule: Schedule;
