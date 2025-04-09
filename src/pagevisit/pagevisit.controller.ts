@@ -14,4 +14,9 @@ export class PageVisitController {
   async getVisitCount() {
     return { visitCount: await this.service.getVisitCount() };
   }
+
+  @Get('stats')
+  async getVisitStats() {
+    return await this.service.getVisitStats();
+  }
 }

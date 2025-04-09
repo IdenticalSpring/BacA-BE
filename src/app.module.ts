@@ -43,6 +43,7 @@ import { Student_homework_countModule } from './student_homework_count/student_h
 import { Student_lesson_countModule } from './student-lesson-count/student-lesson-count.module';
 import { TeacherFeedbackModule } from './teacher_feedback/teacher_feedback.module';
 import { PageVisitModule } from './pagevisit/pagevist.module';
+import { SidebarModule } from './sidebar/sidebar.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -61,6 +62,7 @@ import { PageVisitModule } from './pagevisit/pagevist.module';
         __dirname + '/**/*.entity{.ts,.js}',
       ], // Tự động quét tất cả entity
       synchronize: true, // Chỉ dùng trong dev, tránh dùng production
+      // logging: true,
     }),
     AuthModule,
     StudentModule,
@@ -91,6 +93,7 @@ import { PageVisitModule } from './pagevisit/pagevist.module';
     StudentScoreModule,
     LevelModule,
     HomeWorkModule,
+    SidebarModule,
     SkillModule,
     GeminiModule,
     NotificationModule,
