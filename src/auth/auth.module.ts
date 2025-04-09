@@ -18,7 +18,7 @@ import { StudentModule } from 'src/student/student.module';
     PassportModule.register({ defaultStrategy: 'jwt' }), // ✅ Đăng ký Passport
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secretKey', // ✅ Đảm bảo secret đúng
-      signOptions: { expiresIn: '1h' },
+      signOptions: { expiresIn: '24h' },
     }),
     AdminModule,
     TeacherModule,
