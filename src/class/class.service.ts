@@ -136,17 +136,17 @@ export class ClassService {
   }
 
   async remove(id: number): Promise<void> {
-    // const result = await this.classRepository.delete(id);
-    // if (result.affected === 0) {
-    //   throw new NotFoundException(`Class with ID ${id} not found`);
-    // }
-    const Class = await this.classRepository.findOne({
-      where: { id, isDelete: false },
-    });
-    if (!Class) {
+    const result = await this.classRepository.delete(id);
+    if (result.affected === 0) {
       throw new NotFoundException(`Class with ID ${id} not found`);
     }
-    Class.isDelete = true;
-    await this.classRepository.save(Class);
+    //   const Class = await this.classRepository.findOne({
+    //     where: { id, isDelete: false },
+    //   });
+    //   if (!Class) {
+    //     throw new NotFoundException(`Class with ID ${id} not found`);
+    //   }
+    //   Class.isDelete = true;
+    //   await this.classRepository.save(Class);
   }
 }

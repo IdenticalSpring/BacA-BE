@@ -26,7 +26,7 @@ export class Notification {
   isDelete: boolean;
   @ManyToOne(() => Class, (classEntity) => classEntity.students, {
     nullable: true,
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'classID' })
   class: Class;
