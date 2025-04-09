@@ -119,7 +119,7 @@ export class LessonByScheduleService {
     });
 
     if (classEntities.length === 0) {
-      throw new Error(`No classes found for given IDs`);
+      throw new NotFoundException(`No classes found for given IDs`);
     }
 
     const scheduleIds = createManyDto.lessons.map((l) => l.scheduleID);
@@ -128,7 +128,7 @@ export class LessonByScheduleService {
     });
 
     if (scheduleEntities.length === 0) {
-      throw new Error(`No schedules found for given IDs`);
+      throw new NotFoundException(`No schedules found for given IDs`);
     }
 
     for (const lessonDto of createManyDto.lessons) {
@@ -136,13 +136,17 @@ export class LessonByScheduleService {
         (cls) => cls.id === lessonDto.classID,
       );
       if (!classEntity)
-        throw new Error(`Class with ID ${lessonDto.classID} not found`);
+        throw new NotFoundException(
+          `Class with ID ${lessonDto.classID} not found`,
+        );
 
       const schedule = scheduleEntities.find(
         (sch) => sch.id === lessonDto.scheduleID,
       );
       if (!schedule)
-        throw new Error(`Schedule with ID ${lessonDto.scheduleID} not found`);
+        throw new NotFoundException(
+          `Schedule with ID ${lessonDto.scheduleID} not found`,
+        );
 
       const lessonBySchedule = this.lessonByScheduleRepository.create({
         class: classEntity,
@@ -167,13 +171,14 @@ export class LessonByScheduleService {
     const lessonBySchedule = await this.lessonByScheduleRepository.findOne({
       where: { id, isDelete: false },
     });
-    if (!lessonBySchedule) throw new Error('LessonBySchedule not found');
+    if (!lessonBySchedule)
+      throw new NotFoundException('LessonBySchedule not found');
 
     if (classID) {
       const classEntity = await this.classRepository.findOne({
         where: { id: classID, isDelete: false },
       });
-      if (!classEntity) throw new Error('Class not found');
+      if (!classEntity) throw new NotFoundException('Class not found');
       lessonBySchedule.class = classEntity;
     }
 
@@ -181,7 +186,7 @@ export class LessonByScheduleService {
       const schedule = await this.scheduleRepository.findOne({
         where: { id: scheduleID, isDelete: false },
       });
-      if (!schedule) throw new Error('Schedule not found');
+      if (!schedule) throw new NotFoundException('Schedule not found');
       lessonBySchedule.schedule = schedule;
     }
     Object.assign(lessonBySchedule, rest);
@@ -192,20 +197,38 @@ export class LessonByScheduleService {
 
     return await this.lessonByScheduleRepository.save(lessonBySchedule);
   }
-  updateSendingHomeWorkStatus(
+  async updateSendingHomeWorkStatus(
     id: number,
     isHomeWorkSent: boolean,
   ): Promise<LessonBySchedule> {
-    return this.lessonByScheduleRepository.save({
+    const lessonByScheduleEntity =
+      await this.lessonByScheduleRepository.findOne({
+        where: { id: id },
+      });
+    console.log(lessonByScheduleEntity);
+
+    if (!lessonByScheduleEntity) {
+      throw new NotFoundException('lesson By Schedule not found');
+    }
+    return await this.lessonByScheduleRepository.save({
       id,
       isHomeWorkSent,
     });
   }
-  updateSendingLessonStatus(
+  async updateSendingLessonStatus(
     id: number,
     isLessonSent: boolean,
   ): Promise<LessonBySchedule> {
-    return this.lessonByScheduleRepository.save({
+    const lessonByScheduleEntity =
+      await this.lessonByScheduleRepository.findOne({
+        where: { id: id },
+      });
+    console.log(lessonByScheduleEntity);
+    if (!lessonByScheduleEntity) {
+      throw new NotFoundException('lesson By Schedule not found');
+    }
+
+    return await this.lessonByScheduleRepository.save({
       id,
       isLessonSent,
     });
