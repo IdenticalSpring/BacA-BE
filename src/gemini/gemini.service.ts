@@ -12,16 +12,14 @@ export class GeminiService {
 
   async enhanceDescription(description: string): Promise<string> {
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Enhance this short description and make it more detailed and engaging. 
-    Return the result without any bold, italic :\n\n${description}`;
+    const prompt = `${description}Return result without bold or italic`;
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text();
   }
   async enhanceLessonPlan(lessonPlan: string): Promise<string> {
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Enhance this short lesson Plan and make it more detailed and engaging. 
-    Return the result without any bold, italic :\n\n${lessonPlan}`;
+    const prompt = `${lessonPlan} Return result without bold or italic`;
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text();
