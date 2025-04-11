@@ -51,7 +51,6 @@ export class NotificationController {
   }
 
   @Put(':id')
-  @UseInterceptors(FileInterceptor('file'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateNotificationDto: UpdateNotificationDto,

@@ -98,6 +98,7 @@ export class NotificationService {
       }
       notification.class = classEntity;
     }
+    // console.log(notification, updateNotificationDto);
 
     Object.assign(notification, rest);
     return await this.notificationRepository.save(notification);
