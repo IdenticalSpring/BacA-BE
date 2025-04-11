@@ -8,6 +8,7 @@ import {
 } from './notification.dto';
 import { Class } from 'src/class/class.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { truncate } from 'fs';
 
 @Injectable()
 export class NotificationService {
@@ -28,6 +29,14 @@ export class NotificationService {
   async findAllGeneralNotification(): Promise<Notification[]> {
     return await this.notificationRepository.find({
       where: { general: true, isDelete: false },
+      relations: ['class'],
+    });
+  }
+  async findAllGeneralByTypeNotification(
+    type: boolean,
+  ): Promise<Notification[]> {
+    return await this.notificationRepository.find({
+      where: { general: true, type: type, isDelete: false },
       relations: ['class'],
     });
   }
@@ -58,16 +67,16 @@ export class NotificationService {
 
       notification.class = classEntity;
     }
-    if (notification.general) {
-      setTimeout(
-        async () => {
-          await this.notificationRepository.query(
-            `DELETE FROM notification WHERE id = ${notification.id}`,
-          );
-        },
-        24 * 60 * 60 * 1000,
-      );
-    }
+    // if (notification.general) {
+    //   setTimeout(
+    //     async () => {
+    //       await this.notificationRepository.query(
+    //         `DELETE FROM notification WHERE id = ${notification.id}`,
+    //       );
+    //     },
+    //     24 * 60 * 60 * 1000,
+    //   );
+    // }
     return await this.notificationRepository.save(notification);
   }
 

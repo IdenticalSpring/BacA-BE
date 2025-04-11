@@ -17,6 +17,9 @@ export class CreateNotificationDto {
   general?: boolean;
   @IsOptional()
   @IsBoolean()
+  type?: boolean;
+  @IsOptional()
+  @IsBoolean()
   isDelete?: boolean;
 }
 
@@ -36,6 +39,9 @@ export class UpdateNotificationDto {
   @IsOptional()
   @IsBoolean()
   general?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  type?: boolean;
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;

@@ -22,6 +22,8 @@ export class Notification {
   createdAt: Date;
   @Column({ type: 'longtext', nullable: true })
   detail: string;
+  @Column({ type: 'boolean', nullable: true })
+  type: boolean;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
   @ManyToOne(() => Class, (classEntity) => classEntity.students, {
