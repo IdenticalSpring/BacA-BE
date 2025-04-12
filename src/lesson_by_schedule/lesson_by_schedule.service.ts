@@ -26,6 +26,7 @@ export class LessonByScheduleService {
   async findAll(): Promise<LessonBySchedule[]> {
     return await this.lessonByScheduleRepository.find({
       where: { isDelete: false },
+      relations: ['class', 'schedule'],
     });
   }
   async findAllLessonByScheduleOfClass(
