@@ -13,6 +13,7 @@ import { ClassService } from './class.service';
 import { CreateClassDto, UpdateClassDto } from './class.dto';
 import { Class } from './class.entity';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { Roles } from 'src/auth/roles.decorator';
 
 @Controller('classes')
 export class ClassController {
@@ -41,6 +42,7 @@ export class ClassController {
 
   @Post()
   @UseGuards(AuthGuard)
+  @Roles('admin')
   async create(@Body() createClassDto: CreateClassDto): Promise<Class> {
     console.log('createClassDto', createClassDto);
     return await this.classService.create(createClassDto);
@@ -48,6 +50,7 @@ export class ClassController {
 
   @Put(':id')
   @UseGuards(AuthGuard)
+  @Roles('admin')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateClassDto: UpdateClassDto,
@@ -57,6 +60,7 @@ export class ClassController {
 
   @Delete(':id')
   @UseGuards(AuthGuard)
+  @Roles('admin')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.classService.remove(id);
   }
