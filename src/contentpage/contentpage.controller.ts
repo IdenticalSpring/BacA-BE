@@ -26,7 +26,10 @@ export class ContentPageController {
   async findAll(): Promise<ContentPage[]> {
     return this.contentPageService.findAll();
   }
-
+  @Get('adsenseId')
+  async getAdsenseId(): Promise<string> {
+    return this.contentPageService.getAdsenseId();
+  }
   @Get(':id')
   async findOne(@Param('id') id: number): Promise<ContentPage> {
     return this.contentPageService.findOne(id);

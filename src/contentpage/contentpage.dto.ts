@@ -160,6 +160,9 @@ export class CreateContentPageDto {
   @IsOptional()
   @IsString()
   name?: string;
+  @IsOptional()
+  @IsString()
+  adsenseId?: string;
 }
 
 export class UpdateContentPageDto extends CreateContentPageDto {}

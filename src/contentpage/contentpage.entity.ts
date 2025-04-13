@@ -130,4 +130,6 @@ export class ContentPage {
 
   @Column({ length: 255, nullable: true })
   name: string;
+  @Column({ length: 255, nullable: true })
+  adsenseId: string;
 }
