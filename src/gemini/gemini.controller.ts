@@ -15,8 +15,13 @@ export class GeminiController {
   @Post('enhance-lesson-plan')
   async enhanceLessonPlan(
     @Body('lessonPlan') lessonPlan: string,
+    @Body('imageUrls') imageUrls: string[], // Nhận imageUrls từ body
   ): Promise<{ response: string }> {
-    const response = await this.chatbotService.enhanceLessonPlan(lessonPlan);
+    // Gọi GeminiService với lessonPlan và imageUrls
+    const response = await this.chatbotService.enhanceLessonPlan(
+      lessonPlan,
+      imageUrls || [], // Đảm bảo imageUrls là mảng, mặc định rỗng nếu không có
+    );
     return { response };
   }
 }
