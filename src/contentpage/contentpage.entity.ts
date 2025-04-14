@@ -132,4 +132,11 @@ export class ContentPage {
   name: string;
   @Column({ length: 255, nullable: true })
   adsenseId: string;
+
+  // Thêm hai trường mới
+  @Column({ type: 'text', nullable: true })
+  promptDescription: string;
+
+  @Column({ type: 'text', nullable: true })
+  promptLessonPlan: string;
 }

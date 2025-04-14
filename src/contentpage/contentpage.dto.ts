@@ -163,6 +163,14 @@ export class CreateContentPageDto {
   @IsOptional()
   @IsString()
   adsenseId?: string;
+
+  @IsOptional()
+  @IsString()
+  promptDescription?: string;
+
+  @IsOptional()
+  @IsString()
+  promptLessonPlan?: string;
 }
 
 export class UpdateContentPageDto extends CreateContentPageDto {}
