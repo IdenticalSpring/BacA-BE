@@ -64,7 +64,8 @@ export class CheckinService {
         );
         if (checkin) {
           checkin.present = attendance.present;
-          checkin.note = attendance.note || checkin.note;
+          checkin.note = attendance.note;
+          // checkin.note = attendance.note || checkin.note;
         }
       });
     }
