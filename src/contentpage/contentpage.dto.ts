@@ -155,7 +155,15 @@ export class CreateContentPageDto {
 
   @IsOptional()
   @IsString()
+  img1?: string;
+
+  @IsOptional()
+  @IsString()
   linkYoutube?: string;
+
+  @IsOptional()
+  @IsString()
+  img2?: string;
 
   @IsOptional()
   @IsString()

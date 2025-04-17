@@ -6,20 +6,25 @@ import {
   Delete,
   Param,
   Body,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { ContentPageService } from './contentpage.service';
 import { CreateContentPageDto, UpdateContentPageDto } from './contentpage.dto';
 import { ContentPage } from './contentpage.entity';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('contentpage')
 export class ContentPageController {
   constructor(private readonly contentPageService: ContentPageService) {}
 
   @Post()
+  @UseInterceptors(FilesInterceptor('files')) // Nhận nhiều file với key 'files'
   async create(
     @Body() createContentPageDto: CreateContentPageDto,
+    @UploadedFiles() files: Express.Multer.File[], // Nhận files từ request
   ): Promise<ContentPage> {
-    return this.contentPageService.create(createContentPageDto);
+    return this.contentPageService.create(createContentPageDto, files);
   }
 
   @Get()
@@ -36,11 +41,13 @@ export class ContentPageController {
   }
 
   @Put(':id')
+  @UseInterceptors(FilesInterceptor('files')) // Nhận nhiều file với key 'files'
   async update(
     @Param('id') id: number,
     @Body() updateContentPageDto: UpdateContentPageDto,
+    @UploadedFiles() files: Express.Multer.File[], // Nhận files từ request
   ): Promise<ContentPage> {
-    return this.contentPageService.update(id, updateContentPageDto);
+    return this.contentPageService.update(id, updateContentPageDto, files);
   }
 
   @Delete(':id')
