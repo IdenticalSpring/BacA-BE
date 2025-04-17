@@ -13,6 +13,7 @@ import * as dotenv from 'dotenv';
 import * as readline from 'readline';
 import { Teacher } from 'src/teacher/teacher.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
 dotenv.config();
 @Injectable()
 export class LessonService {
@@ -37,6 +38,8 @@ export class LessonService {
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(Teacher)
     private readonly teacherRepository: Repository<Teacher>,
+    @InjectRepository(LessonBySchedule)
+    private readonly lessonByScheduleRepository: Repository<LessonBySchedule>,
   ) {
     // this.oauth2Client.setCredentials({
     //   refresh_token: process.env.REFRESH_TOKEN,
@@ -171,6 +174,20 @@ export class LessonService {
     });
     if (!Lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
+    }
+    const lessonBySchedule = await this.lessonByScheduleRepository.find({
+      where: { lessonID: Lesson.id },
+    });
+    if (lessonBySchedule.length > 0) {
+      // console.log('lessonBySchedule', lessonBySchedule);
+      const data = await Promise.all(
+        lessonBySchedule.map((lesson) => {
+          lesson.lessonID = null;
+          lesson.isLessonSent = false;
+          return lesson;
+        }),
+      );
+      await this.lessonByScheduleRepository.save(data);
     }
     Lesson.isDelete = true;
     await this.lessonRepository.save(Lesson);
