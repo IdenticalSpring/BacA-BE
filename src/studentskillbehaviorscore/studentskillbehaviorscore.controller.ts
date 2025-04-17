@@ -12,6 +12,7 @@ import {
   CreateStudentSkillBehaviorScoreDto,
   UpdateStudentSkillBehaviorScoreDto,
 } from './studentskillbehaviorscore.dto';
+import { StudentSkillBehaviorScore } from './studentskillbehaviorscore.entity';
 
 @Controller('studentskillbehaviorscores')
 export class StudentSkillBehaviorScoreController {
@@ -35,6 +36,32 @@ export class StudentSkillBehaviorScoreController {
   @Get('student/:studentID')
   async getEvaluationSkillStudent(@Param('studentID') studentId: number) {
     return await this.service.getEvaluationSkillStudent(studentId);
+  }
+
+  @Get('date/:date')
+  async getScoresByDate(@Param('date') date: string) {
+    return await this.service.getScoresByDate(date);
+  }
+
+  @Put('date/:date')
+  async updateScoresByDate(
+    @Param('date') date: string,
+    @Body() updateData: Partial<StudentSkillBehaviorScore>,
+  ) {
+    return await this.service.updateScoresByDate(date, updateData);
+  }
+
+  @Put('student/:studentID/date/:date')
+  async updateScoreByStudentAndDate(
+    @Param('studentID') studentID: number,
+    @Param('date') date: string,
+    @Body() updateData: Partial<StudentSkillBehaviorScore>,
+  ) {
+    return await this.service.updateScoreByStudentAndDate(
+      studentID,
+      date,
+      updateData,
+    );
   }
 
   @Put(':id')

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { TeacherCommentOnStudent } from './teachercommentonstudent.entity';
 import {
   CreateTeacherCommentOnStudentDto,
@@ -98,5 +98,56 @@ export class TeacherCommentOnStudentService {
     }
     Comment.isDelete = true;
     await this.teacherCommentOnStudentRepository.save(Comment);
+  }
+  async getCommentsByDate(date: string): Promise<TeacherCommentOnStudent[]> {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0); // Đặt thời gian bắt đầu của ngày
+
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999); // Đặt thời gian kết thúc của ngày
+
+    return this.teacherCommentOnStudentRepository
+      .createQueryBuilder('comment')
+      .leftJoinAndSelect('comment.teacher', 'teacher')
+      .leftJoinAndSelect('comment.student', 'student')
+      .leftJoinAndSelect('comment.schedule', 'schedule')
+      .where('comment.date BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .andWhere('comment.isDelete = :isDelete', { isDelete: false })
+      .getMany();
+  }
+  async updateCommentByStudentAndDate(
+    studentID: number,
+    date: string,
+    updateData: Partial<TeacherCommentOnStudent>,
+  ): Promise<TeacherCommentOnStudent[]> {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0); // Đặt thời gian bắt đầu của ngày
+
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999); // Đặt thời gian kết thúc của ngày
+
+    const comments = await this.teacherCommentOnStudentRepository.find({
+      where: {
+        student: { id: studentID },
+        date: Between(startDate, endDate),
+        isDelete: false,
+      },
+      relations: ['teacher', 'student', 'schedule'],
+    });
+
+    if (!comments || comments.length === 0) {
+      throw new NotFoundException(
+        `No comments found for studentID ${studentID} on date ${date}`,
+      );
+    }
+
+    const updatedComments = comments.map((comment) => {
+      return Object.assign(comment, updateData);
+    });
+
+    return this.teacherCommentOnStudentRepository.save(updatedComments);
   }
 }

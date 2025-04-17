@@ -38,6 +38,26 @@ export class TeacherCommentOnStudentController {
     return await this.service.getEvaluationByStudentID(studentID);
   }
 
+  @Get('date/:date')
+  async getCommentsByDate(
+    @Param('date') date: string,
+  ): Promise<TeacherCommentOnStudent[]> {
+    return await this.service.getCommentsByDate(date);
+  }
+
+  @Put('student/:studentID/date/:date')
+  async updateCommentByStudentAndDate(
+    @Param('studentID', ParseIntPipe) studentID: number,
+    @Param('date') date: string,
+    @Body() updateData: Partial<TeacherCommentOnStudent>,
+  ): Promise<TeacherCommentOnStudent[]> {
+    return await this.service.updateCommentByStudentAndDate(
+      studentID,
+      date,
+      updateData,
+    );
+  }
+
   @Post()
   async create(
     @Body() createDto: CreateTeacherCommentOnStudentDto,
