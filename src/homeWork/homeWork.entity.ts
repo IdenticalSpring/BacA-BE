@@ -25,7 +25,8 @@ export class HomeWork {
   linkSpeech: string;
   @Column({ type: 'text', nullable: true })
   linkZalo: string;
-
+  @Column({ type: 'longtext', nullable: true })
+  textToSpeech: string;
   @Column({ type: 'longtext', nullable: true })
   description: string;
   @Column({ type: 'int', nullable: true })

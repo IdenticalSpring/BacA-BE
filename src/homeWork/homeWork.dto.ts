@@ -26,6 +26,9 @@ export class CreateHomeWorkDto {
 
   @IsOptional()
   @IsString()
+  textToSpeech?: string;
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()

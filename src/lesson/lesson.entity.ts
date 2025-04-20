@@ -25,6 +25,8 @@ export class Lesson {
   linkSpeech: string;
 
   @Column({ type: 'longtext', nullable: true })
+  textToSpeech: string;
+  @Column({ type: 'longtext', nullable: true })
   description: string;
 
   @Column({ type: 'longtext', nullable: true })

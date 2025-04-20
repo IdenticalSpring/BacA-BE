@@ -19,7 +19,9 @@ export class CreateLessonDto {
   @IsOptional()
   @IsString()
   linkSpeech?: string;
-
+  @IsOptional()
+  @IsString()
+  textToSpeech?: string;
   @IsOptional()
   @IsString()
   description?: string;
