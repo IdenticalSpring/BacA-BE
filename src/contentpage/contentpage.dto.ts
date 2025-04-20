@@ -139,11 +139,31 @@ export class CreateContentPageDto {
 
   @IsOptional()
   @IsString()
+  testimonialsFirstImgUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  testimonialsSecondImgUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  testimonialsThirdImgUrl?: string;
+
+  @IsOptional()
+  @IsString()
   footerDescription?: string;
 
   @IsOptional()
   @IsString()
   footerAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  footerEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  footerContact?: string;
 
   @IsOptional()
   @IsString()

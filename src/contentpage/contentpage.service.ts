@@ -67,7 +67,7 @@ export class ContentPageService {
     updateContentPageDto: UpdateContentPageDto,
     files?: Express.Multer.File[],
   ): Promise<ContentPage> {
-    const contentPage = await this.findOne(id); // Kiểm tra bản ghi tồn tại
+    const contentPage = await this.findOne(id);
 
     let img1Url: string | undefined;
     let img2Url: string | undefined;
@@ -79,11 +79,48 @@ export class ContentPageService {
       img2Url = urls[1] || undefined;
     }
 
-    // Cập nhật dữ liệu, không thay đổi id
     Object.assign(contentPage, {
       ...updateContentPageDto,
       img1: img1Url || updateContentPageDto.img1 || contentPage.img1,
       img2: img2Url || updateContentPageDto.img2 || contentPage.img2,
+    });
+
+    return this.contentPageRepository.save(contentPage);
+  }
+
+  async updateTestimonialImages(
+    id: number,
+    updateContentPageDto: UpdateContentPageDto,
+    files?: Express.Multer.File[],
+  ): Promise<ContentPage> {
+    const contentPage = await this.findOne(id);
+
+    let testimonialsFirstImgUrl: string | undefined;
+    let testimonialsSecondImgUrl: string | undefined;
+    let testimonialsThirdImgUrl: string | undefined;
+
+    if (files && files.length > 0) {
+      const buffers = files.map((file) => file.buffer);
+      const urls = await CloudinaryService.uploadMultipleBuffers(buffers);
+      testimonialsFirstImgUrl = urls[0] || undefined;
+      testimonialsSecondImgUrl = urls[1] || undefined;
+      testimonialsThirdImgUrl = urls[2] || undefined;
+    }
+
+    Object.assign(contentPage, {
+      ...updateContentPageDto,
+      testimonialsFirstImgUrl:
+        testimonialsFirstImgUrl ||
+        updateContentPageDto.testimonialsFirstImgUrl ||
+        contentPage.testimonialsFirstImgUrl,
+      testimonialsSecondImgUrl:
+        testimonialsSecondImgUrl ||
+        updateContentPageDto.testimonialsSecondImgUrl ||
+        contentPage.testimonialsSecondImgUrl,
+      testimonialsThirdImgUrl:
+        testimonialsThirdImgUrl ||
+        updateContentPageDto.testimonialsThirdImgUrl ||
+        contentPage.testimonialsThirdImgUrl,
     });
 
     return this.contentPageRepository.save(contentPage);

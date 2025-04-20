@@ -41,13 +41,27 @@ export class ContentPageController {
   }
 
   @Put(':id')
-  @UseInterceptors(FilesInterceptor('files')) // Nhận nhiều file với key 'files'
+  @UseInterceptors(FilesInterceptor('files'))
   async update(
     @Param('id') id: number,
     @Body() updateContentPageDto: UpdateContentPageDto,
-    @UploadedFiles() files: Express.Multer.File[], // Nhận files từ request
+    @UploadedFiles() files: Express.Multer.File[],
   ): Promise<ContentPage> {
     return this.contentPageService.update(id, updateContentPageDto, files);
+  }
+
+  @Put(':id/testimonial-images')
+  @UseInterceptors(FilesInterceptor('files'))
+  async updateTestimonialImages(
+    @Param('id') id: number,
+    @Body() updateContentPageDto: UpdateContentPageDto,
+    @UploadedFiles() files: Express.Multer.File[],
+  ): Promise<ContentPage> {
+    return this.contentPageService.updateTestimonialImages(
+      id,
+      updateContentPageDto,
+      files,
+    );
   }
 
   @Delete(':id')

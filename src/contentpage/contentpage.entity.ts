@@ -107,6 +107,15 @@ export class ContentPage {
   @Column({ type: 'text', nullable: true })
   testimonialsThirdDescription: string;
 
+  @Column({ length: 255, nullable: true })
+  testimonialsFirstImgUrl: string;
+
+  @Column({ length: 255, nullable: true })
+  testimonialsSecondImgUrl: string;
+
+  @Column({ length: 255, nullable: true })
+  testimonialsThirdImgUrl: string;
+
   @Column({ type: 'text', nullable: true })
   footerDescription: string;
 
