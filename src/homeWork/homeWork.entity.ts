@@ -1,5 +1,6 @@
 import { Student_homework_count } from 'src/student_homework_count/student_homework_count.entity';
 import { Teacher } from 'src/teacher/teacher.entity';
+import { Vocabulary } from 'src/vocabulary/vocabulary.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -21,12 +22,12 @@ export class HomeWork {
   linkYoutube: string;
   @Column({ type: 'text', nullable: true })
   linkGame: string;
-  @Column({ type: 'text', nullable: true })
-  linkSpeech: string;
+  // @Column({ type: 'text', nullable: true })
+  // linkSpeech: string;
   @Column({ type: 'text', nullable: true })
   linkZalo: string;
-  @Column({ type: 'longtext', nullable: true })
-  textToSpeech: string;
+  // @Column({ type: 'longtext', nullable: true })
+  // textToSpeech: string;
   @Column({ type: 'longtext', nullable: true })
   description: string;
   @Column({ type: 'int', nullable: true })
@@ -47,4 +48,6 @@ export class HomeWork {
     (student_homework_count) => student_homework_count.homework,
   )
   student_homework_count: Student_homework_count[];
+  @OneToMany(() => Vocabulary, (vocabulary) => vocabulary.homework)
+  vocabularies: Vocabulary[];
 }

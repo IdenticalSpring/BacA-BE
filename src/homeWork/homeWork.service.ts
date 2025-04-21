@@ -28,7 +28,7 @@ export class HomeWorkService {
   async findAll(): Promise<HomeWork[]> {
     return await this.homeWorkRepository.find({
       where: { isDelete: false },
-      relations: ['teacher'],
+      relations: ['teacher', 'vocabularies'],
     });
   }
   async findHomeWorkByLevelAndTeacherId(
@@ -43,7 +43,7 @@ export class HomeWorkService {
         teacher,
         isDelete: false,
       },
-      relations: ['teacher'],
+      relations: ['teacher', 'vocabularies'],
     });
   }
   async findHomeWorkByTeacherId(teacherId: number): Promise<HomeWork[]> {
@@ -55,13 +55,13 @@ export class HomeWorkService {
         teacher,
         isDelete: false,
       },
-      relations: ['teacher'],
+      relations: ['teacher', 'vocabularies'],
     });
   }
   async findOne(id: number): Promise<HomeWork> {
     const homeWork = await this.homeWorkRepository.findOne({
       where: { id, isDelete: false },
-      relations: ['teacher'],
+      relations: ['teacher', 'vocabularies'],
     });
     if (!homeWork) {
       throw new NotFoundException(`HomeWork with ID ${id} not found`);
@@ -69,11 +69,9 @@ export class HomeWorkService {
     return homeWork;
   }
 
-  async create(
-    createHomeWorkDto: CreateHomeWorkDto,
-    mp3File?: Express.Multer.File,
-  ): Promise<HomeWork> {
+  async create(createHomeWorkDto: CreateHomeWorkDto): Promise<HomeWork> {
     const { teacherId, ...rest } = createHomeWorkDto;
+    // console.log('createHomeWorkDto', createHomeWorkDto);
 
     // Tìm teacher theo ID
     const teacher = await this.teacherRepository.findOne({
@@ -83,16 +81,10 @@ export class HomeWorkService {
     if (!teacher) {
       throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
     }
-    let mp3Url: string | null = null;
-    if (mp3File) {
-      console.log('Uploading MP3 file...');
-      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
-      console.log('MP3 uploaded:', mp3Url);
-    }
+
     // Tạo class và gán teacher
     const homeWorkEntity = this.homeWorkRepository.create({
       ...rest,
-      linkSpeech: mp3Url || null,
       teacher, // Gán trực tiếp teacher vào entity
     });
 
@@ -102,7 +94,6 @@ export class HomeWorkService {
   async update(
     id: number,
     updateHomeWorkDto: UpdateHomeWorkDto,
-    mp3File?: Express.Multer.File,
   ): Promise<HomeWork> {
     const { teacherId, ...rest } = updateHomeWorkDto;
     // Tìm class cần update
@@ -121,15 +112,7 @@ export class HomeWorkService {
 
       homeWorkEntity.teacher = teacher;
     }
-    let mp3Url: string | null = null;
-    if (mp3File) {
-      console.log('Uploading MP3 file...');
-      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
-      console.log('MP3 uploaded:', mp3Url);
-    }
-    if (mp3Url) {
-      homeWorkEntity.linkSpeech = mp3Url;
-    }
+
     // Cập nhật các field còn lại
     Object.assign(homeWorkEntity, rest);
 

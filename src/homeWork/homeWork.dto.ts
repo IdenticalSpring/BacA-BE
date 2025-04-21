@@ -16,17 +16,17 @@ export class CreateHomeWorkDto {
   @IsOptional()
   @IsString()
   linkGame?: string;
-  @IsOptional()
-  @IsString()
-  linkSpeech: string;
+  // @IsOptional()
+  // @IsString()
+  // linkSpeech: string;
 
   @IsOptional()
   @IsString()
   linkZalo?: string;
 
-  @IsOptional()
-  @IsString()
-  textToSpeech?: string;
+  // @IsOptional()
+  // @IsString()
+  // textToSpeech?: string;
   @IsOptional()
   @IsString()
   description?: string;

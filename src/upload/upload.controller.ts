@@ -32,4 +32,25 @@ export class UploadController {
       throw new Error(`Upload failed: ${error.message}`);
     }
   }
+  @Post('avatar/')
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadToCloudinaryForAvatar(@UploadedFile() avatar: any): Promise<{}> {
+    try {
+      if (!avatar) {
+        console.error('Không có file được upload!');
+        throw new Error('No file uploaded');
+      }
+
+      console.log('Received file:', avatar.originalname);
+
+      // Upload buffer trực tiếp lên Cloudinary
+      const url = await CloudinaryService.uploadBuffer(avatar.buffer);
+
+      console.log('Upload thành công:', url);
+      return { url };
+    } catch (error) {
+      console.error('Lỗi trong upload.controller.ts:', error);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
+  }
 }

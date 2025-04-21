@@ -46,24 +46,20 @@ export class HomeWorkController {
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<HomeWork> {
     return await this.homeworkService.findOne(id);
   }
-
-  @Post()
   @UseInterceptors(FileInterceptor('mp3File'))
+  @Post()
   async create(
     @Body() createHomeWorkDto: CreateHomeWorkDto,
-    @UploadedFile() mp3File: Express.Multer.File,
   ): Promise<HomeWork> {
-    return await this.homeworkService.create(createHomeWorkDto, mp3File);
+    return await this.homeworkService.create(createHomeWorkDto);
   }
-
-  @Put(':id')
   @UseInterceptors(FileInterceptor('mp3File'))
+  @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateHomeWorkDto: UpdateHomeWorkDto,
-    @UploadedFile() mp3File: Express.Multer.File,
   ): Promise<HomeWork> {
-    return await this.homeworkService.update(id, updateHomeWorkDto, mp3File);
+    return await this.homeworkService.update(id, updateHomeWorkDto);
   }
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
