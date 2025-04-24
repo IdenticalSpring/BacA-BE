@@ -35,6 +35,10 @@ export class ContentPageController {
   async getAdsenseId(): Promise<string> {
     return this.contentPageService.getAdsenseId();
   }
+  @Get('lessonPlanPlaceholder')
+  async getPlaceHolderLessonPlan(): Promise<string> {
+    return this.contentPageService.getPlaceHolderLessonPlan();
+  }
   @Get(':id')
   async findOne(@Param('id') id: number): Promise<ContentPage> {
     return this.contentPageService.findOne(id);

@@ -23,5 +23,7 @@ export class Vocabulary {
   @JoinColumn({ name: 'homeworkId' })
   homework: HomeWork;
   @Column({ type: 'boolean', default: false })
+  isStudent: boolean;
+  @Column({ type: 'boolean', default: false })
   isDelete: boolean;
 }

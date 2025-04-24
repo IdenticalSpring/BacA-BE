@@ -47,7 +47,7 @@ export class GeminiService {
       where: { id: 1 },
     });
     const defaultPrompt = `Create a lesson plan for an English lesson with the following requirements: ${lessonPlan}. Use the following images as references:\n${imagesReference}. Return the result without bold or italic.`;
-    const prompt = contentPage?.promptLessonPlan || defaultPrompt;
+    const prompt = defaultPrompt;
     console.log('Prompt:', prompt); // Debugging line to check the prompt
 
     const result = await model.generateContent(prompt);

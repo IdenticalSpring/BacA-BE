@@ -48,6 +48,16 @@ export class ContentPageService {
 
     return firstPage.adsenseId;
   }
+  async getPlaceHolderLessonPlan(): Promise<string> {
+    const [firstPage] = await this.contentPageRepository.find({ take: 1 });
+    // console.log(firstPage);
+
+    if (!firstPage) {
+      throw new NotFoundException('ContentPage not found');
+    }
+
+    return firstPage.promptLessonPlan;
+  }
   async findAll(): Promise<ContentPage[]> {
     return this.contentPageRepository.find();
   }
