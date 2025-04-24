@@ -33,6 +33,24 @@ export class VocabularyController {
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Vocabulary> {
     return await this.vocabularyService.findOne(id);
   }
+  @Get('student')
+  async findAllForStudent(): Promise<Vocabulary[]> {
+    return await this.vocabularyService.findAllForStudent();
+  }
+  @Get('student/homework/:homeworkId')
+  async findVocabularyByHomeworkIdForStudent(
+    @Param('homeworkId', ParseIntPipe) homeworkId: number,
+  ): Promise<Vocabulary[]> {
+    return await this.vocabularyService.findVocabularyByHomeworkIdForStudent(
+      homeworkId,
+    );
+  }
+  @Get('student/:id')
+  async findOneForStudent(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Vocabulary> {
+    return await this.vocabularyService.findOneForStudent(id);
+  }
 
   @Post()
   @UseInterceptors(FileInterceptor('mp3File'))

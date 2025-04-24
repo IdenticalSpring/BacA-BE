@@ -18,13 +18,44 @@ export class VocabularyService {
 
   async findAll(): Promise<Vocabulary[]> {
     return await this.vocabularyRepository.find({
-      where: { isDelete: false },
+      where: { isDelete: false, isStudent: false },
       relations: ['homework'],
     });
   }
   async findVocabularyByHomeworkId(homeworkId: number): Promise<Vocabulary[]> {
     const homework = await this.homeworkRepository.find({
-      where: { id: homeworkId },
+      where: { id: homeworkId, isDelete: false },
+    });
+    return await this.vocabularyRepository.find({
+      where: {
+        homework,
+        isDelete: false,
+        isStudent: false,
+      },
+      relations: ['homework'],
+    });
+  }
+  async findOne(id: number): Promise<Vocabulary> {
+    const vocabulary = await this.vocabularyRepository.findOne({
+      where: { id, isDelete: false, isStudent: false },
+      relations: ['homework'],
+    });
+    if (!vocabulary) {
+      throw new NotFoundException(`Vocabulary with ID ${id} not found`);
+    }
+    return vocabulary;
+  }
+  async findAllForStudent(): Promise<Vocabulary[]> {
+    return await this.vocabularyRepository.find({
+      where: { isDelete: false },
+      relations: ['homework'],
+    });
+  }
+  async findVocabularyByHomeworkIdForStudent(
+    homeworkId: number,
+  ): Promise<Vocabulary[]> {
+    const homework = await this.homeworkRepository.find({
+      where: { id: homeworkId, isDelete: false },
     });
     return await this.vocabularyRepository.find({
       where: {
@@ -34,7 +65,7 @@ export class VocabularyService {
       relations: ['homework'],
     });
   }
-  async findOne(id: number): Promise<Vocabulary> {
+  async findOneForStudent(id: number): Promise<Vocabulary> {
     const vocabulary = await this.vocabularyRepository.findOne({
       where: { id, isDelete: false },
       relations: ['homework'],
