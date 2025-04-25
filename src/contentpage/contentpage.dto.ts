@@ -199,6 +199,9 @@ export class CreateContentPageDto {
   @IsOptional()
   @IsString()
   promptLessonPlan?: string;
+  @IsOptional()
+  @IsString()
+  centerZaloLink?: string;
 }
 
 export class UpdateContentPageDto extends CreateContentPageDto {}
