@@ -95,7 +95,7 @@ export class VocabularyService {
     if (!student) {
       throw new NotFoundException(`student with ID ${studentId} not found`);
     }
-    console.log(homework, student);
+    // console.log(homework, student);
     return await this.vocabularyRepository.find({
       where: {
         homework,
@@ -121,7 +121,9 @@ export class VocabularyService {
     mp3File?: Express.Multer.File,
   ): Promise<Vocabulary> {
     const { homeworkId, studentId, ...rest } = createVocabularyDto;
-
+    if (createVocabularyDto?.imageUrl === 'undefined') {
+      createVocabularyDto.imageUrl = null;
+    }
     // Tìm teacher theo ID
     const homework = await this.homeworkRepository.findOne({
       where: { id: homeworkId, isDelete: false },
@@ -164,6 +166,9 @@ export class VocabularyService {
     return await Promise.all(
       dtos.map(async (dto, index) => {
         const { homeworkId, studentId, ...rest } = dto;
+        if (dto?.imageUrl === 'undefined') {
+          dto.imageUrl = null;
+        }
         const homework = await this.homeworkRepository.findOne({
           where: { id: homeworkId, isDelete: false },
         });
@@ -214,6 +219,9 @@ export class VocabularyService {
     const vocabularyEntity = await this.findOne(id);
     if (!vocabularyEntity) {
       throw new NotFoundException(`Vocabulary with ID ${id} not found`);
+    }
+    if (updateVocabularyDto?.imageUrl === 'undefined') {
+      updateVocabularyDto.imageUrl = vocabularyEntity.imageUrl;
     }
     if (homeworkId !== undefined) {
       const homework = await this.homeworkRepository.findOne({
