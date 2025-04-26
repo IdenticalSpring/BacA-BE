@@ -122,7 +122,7 @@ export class VocabularyService {
   ): Promise<Vocabulary> {
     const { homeworkId, studentId, ...rest } = createVocabularyDto;
     if (createVocabularyDto?.imageUrl === 'undefined') {
-      createVocabularyDto.imageUrl = null;
+      rest.imageUrl = null;
     }
     // Tìm teacher theo ID
     const homework = await this.homeworkRepository.findOne({
@@ -167,7 +167,7 @@ export class VocabularyService {
       dtos.map(async (dto, index) => {
         const { homeworkId, studentId, ...rest } = dto;
         if (dto?.imageUrl === 'undefined') {
-          dto.imageUrl = null;
+          rest.imageUrl = null;
         }
         const homework = await this.homeworkRepository.findOne({
           where: { id: homeworkId, isDelete: false },
@@ -221,7 +221,7 @@ export class VocabularyService {
       throw new NotFoundException(`Vocabulary with ID ${id} not found`);
     }
     if (updateVocabularyDto?.imageUrl === 'undefined') {
-      updateVocabularyDto.imageUrl = vocabularyEntity.imageUrl;
+      rest.imageUrl = vocabularyEntity.imageUrl;
     }
     if (homeworkId !== undefined) {
       const homework = await this.homeworkRepository.findOne({
