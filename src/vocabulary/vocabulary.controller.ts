@@ -13,7 +13,11 @@ import {
 } from '@nestjs/common';
 import { VocabularyService } from './vocabulary.service';
 import { Vocabulary } from './vocabulary.entity';
-import { CreateVocabularyDto, UpdateVocabularyDto } from './vocabulary.dto';
+import {
+  CreateVocabularyDto,
+  FindByStudentAndHomework,
+  UpdateVocabularyDto,
+} from './vocabulary.dto';
 import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 @Controller('vocabularies')
 export class VocabularyController {
@@ -43,6 +47,15 @@ export class VocabularyController {
   ): Promise<Vocabulary[]> {
     return await this.vocabularyService.findVocabularyByHomeworkIdForStudent(
       homeworkId,
+    );
+  }
+  @Post('student/homework/')
+  async findVocabularyByHomeworkIdAndStudentIdForStudent(
+    @Body() findByStudentAndHomework: FindByStudentAndHomework,
+  ): Promise<Vocabulary[]> {
+    const { studentId, homeworkId } = findByStudentAndHomework;
+    return await this.vocabularyService.findVocabularyByHomeworkIdAndStudentIdForStudent(
+      findByStudentAndHomework,
     );
   }
   @Get('student/:id')

@@ -4,8 +4,13 @@ import { Repository } from 'typeorm';
 import * as dotenv from 'dotenv';
 import { Vocabulary } from './vocabulary.entity';
 import { HomeWork } from 'src/homeWork/homeWork.entity';
-import { CreateVocabularyDto, UpdateVocabularyDto } from './vocabulary.dto';
+import {
+  CreateVocabularyDto,
+  FindByStudentAndHomework,
+  UpdateVocabularyDto,
+} from './vocabulary.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Student } from 'src/student/student.entity';
 dotenv.config();
 @Injectable()
 export class VocabularyService {
@@ -14,31 +19,36 @@ export class VocabularyService {
     private readonly vocabularyRepository: Repository<Vocabulary>,
     @InjectRepository(HomeWork)
     private readonly homeworkRepository: Repository<HomeWork>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
   ) {}
 
   async findAll(): Promise<Vocabulary[]> {
     return await this.vocabularyRepository.find({
-      where: { isDelete: false, isStudent: false },
-      relations: ['homework'],
+      where: { isDelete: false, student: null },
+      relations: ['homework', 'student'],
     });
   }
   async findVocabularyByHomeworkId(homeworkId: number): Promise<Vocabulary[]> {
-    const homework = await this.homeworkRepository.find({
+    const homework = await this.homeworkRepository.findOne({
       where: { id: homeworkId, isDelete: false },
     });
+    if (!homework) {
+      throw new NotFoundException(`homework with ID ${homeworkId} not found`);
+    }
     return await this.vocabularyRepository.find({
       where: {
         homework,
         isDelete: false,
-        isStudent: false,
+        student: null,
       },
-      relations: ['homework'],
+      relations: ['homework', 'student'],
     });
   }
   async findOne(id: number): Promise<Vocabulary> {
     const vocabulary = await this.vocabularyRepository.findOne({
-      where: { id, isDelete: false, isStudent: false },
-      relations: ['homework'],
+      where: { id, isDelete: false, student: null },
+      relations: ['homework', 'student'],
     });
     if (!vocabulary) {
       throw new NotFoundException(`Vocabulary with ID ${id} not found`);
@@ -48,27 +58,57 @@ export class VocabularyService {
   async findAllForStudent(): Promise<Vocabulary[]> {
     return await this.vocabularyRepository.find({
       where: { isDelete: false },
-      relations: ['homework'],
+      relations: ['homework', 'student'],
     });
   }
   async findVocabularyByHomeworkIdForStudent(
     homeworkId: number,
   ): Promise<Vocabulary[]> {
-    const homework = await this.homeworkRepository.find({
+    const homework = await this.homeworkRepository.findOne({
       where: { id: homeworkId, isDelete: false },
     });
+    if (!homework) {
+      throw new NotFoundException(`homework with ID ${homeworkId} not found`);
+    }
     return await this.vocabularyRepository.find({
       where: {
         homework,
         isDelete: false,
       },
-      relations: ['homework'],
+      relations: ['homework', 'student'],
+    });
+  }
+  async findVocabularyByHomeworkIdAndStudentIdForStudent(
+    findByStudentAndHomework: FindByStudentAndHomework,
+  ): Promise<Vocabulary[]> {
+    const { homeworkId, studentId } = findByStudentAndHomework;
+
+    const homework = await this.homeworkRepository.findOne({
+      where: { id: homeworkId, isDelete: false },
+    });
+    if (!homework) {
+      throw new NotFoundException(`homework with ID ${homeworkId} not found`);
+    }
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId, isDelete: false },
+    });
+    if (!student) {
+      throw new NotFoundException(`student with ID ${studentId} not found`);
+    }
+    console.log(homework, student);
+    return await this.vocabularyRepository.find({
+      where: {
+        homework,
+        student,
+        isDelete: false,
+      },
+      relations: ['homework', 'student'],
     });
   }
   async findOneForStudent(id: number): Promise<Vocabulary> {
     const vocabulary = await this.vocabularyRepository.findOne({
       where: { id, isDelete: false },
-      relations: ['homework'],
+      relations: ['homework', 'student'],
     });
     if (!vocabulary) {
       throw new NotFoundException(`Vocabulary with ID ${id} not found`);
@@ -80,7 +120,7 @@ export class VocabularyService {
     createVocabularyDto: CreateVocabularyDto,
     mp3File?: Express.Multer.File,
   ): Promise<Vocabulary> {
-    const { homeworkId, ...rest } = createVocabularyDto;
+    const { homeworkId, studentId, ...rest } = createVocabularyDto;
 
     // Tìm teacher theo ID
     const homework = await this.homeworkRepository.findOne({
@@ -89,6 +129,16 @@ export class VocabularyService {
 
     if (!homework) {
       throw new NotFoundException(`Teacher with ID ${homeworkId} not found`);
+    }
+    let student = null;
+    if (studentId) {
+      student = await this.studentRepository.findOne({
+        where: { id: studentId, isDelete: false },
+      });
+
+      if (!student) {
+        throw new NotFoundException(`Teacher with ID ${studentId} not found`);
+      }
     }
     let mp3Url: string | null = null;
     if (mp3File) {
@@ -100,6 +150,7 @@ export class VocabularyService {
       ...rest,
       audioUrl: mp3Url || null,
       homework,
+      student,
     });
 
     return await this.vocabularyRepository.save(vocabularyEntity);
@@ -112,7 +163,7 @@ export class VocabularyService {
 
     return await Promise.all(
       dtos.map(async (dto, index) => {
-        const { homeworkId, ...rest } = dto;
+        const { homeworkId, studentId, ...rest } = dto;
         const homework = await this.homeworkRepository.findOne({
           where: { id: homeworkId, isDelete: false },
         });
@@ -123,7 +174,18 @@ export class VocabularyService {
           );
         }
         // Tìm teacher theo ID
+        let student = null;
+        if (studentId) {
+          student = await this.studentRepository.findOne({
+            where: { id: studentId, isDelete: false },
+          });
 
+          if (!student) {
+            throw new NotFoundException(
+              `Teacher with ID ${studentId} not found`,
+            );
+          }
+        }
         let mp3Url: string | null = null;
         if (mp3Files[index] && mp3Files[index].size > 0) {
           console.log('Uploading MP3 file...');
@@ -134,6 +196,7 @@ export class VocabularyService {
           ...rest,
           audioUrl: mp3Url || null,
           homework,
+          student,
         });
 
         return await this.vocabularyRepository.save(vocabularyEntity);
@@ -146,7 +209,7 @@ export class VocabularyService {
     updateVocabularyDto: UpdateVocabularyDto,
     mp3File?: Express.Multer.File,
   ): Promise<Vocabulary> {
-    const { homeworkId, ...rest } = updateVocabularyDto;
+    const { homeworkId, studentId, ...rest } = updateVocabularyDto;
     // Tìm class cần update
     const vocabularyEntity = await this.findOne(id);
     if (!vocabularyEntity) {
@@ -162,6 +225,16 @@ export class VocabularyService {
       }
 
       vocabularyEntity.homework = homework;
+    }
+    if (studentId) {
+      const student = await this.studentRepository.findOne({
+        where: { id: studentId, isDelete: false },
+      });
+
+      if (!student) {
+        throw new NotFoundException(`Teacher with ID ${studentId} not found`);
+      }
+      vocabularyEntity.student = student;
     }
     let mp3Url: string | null = null;
     if (mp3File) {

@@ -14,7 +14,16 @@ export class CreateVocabularyDto {
   @IsBoolean()
   isDelete: boolean;
   @IsInt()
-  homeworkId: number; // Thêm level vào Update DTO
+  homeworkId: number;
+  @IsInt()
+  @IsOptional()
+  studentId?: number;
 }
 
 export class UpdateVocabularyDto extends CreateVocabularyDto {}
+export class FindByStudentAndHomework {
+  @IsInt()
+  homeworkId: number;
+  @IsInt()
+  studentId: number;
+}

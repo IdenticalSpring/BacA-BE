@@ -1,4 +1,5 @@
 import { HomeWork } from 'src/homeWork/homeWork.entity';
+import { Student } from 'src/student/student.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -22,8 +23,12 @@ export class Vocabulary {
   })
   @JoinColumn({ name: 'homeworkId' })
   homework: HomeWork;
-  @Column({ type: 'boolean', default: false })
-  isStudent: boolean;
+  @ManyToOne(() => Student, (studentEntity) => studentEntity.vocabularies, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'studentId' })
+  student: Student;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
 }
