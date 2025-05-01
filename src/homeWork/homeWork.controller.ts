@@ -69,4 +69,8 @@ export class HomeWorkController {
   async textToSpeech(@Body() textToSpeech: textToSpeechDto): Promise<string> {
     return await this.homeworkService.textToSpeech(textToSpeech);
   }
+  @Get('/textToSpeech/voices')
+  async voices(): Promise<any> {
+    return await this.homeworkService.voices();
+  }
 }

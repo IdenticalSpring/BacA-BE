@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsInt,
   IsDateString,
+  IsNumber,
 } from 'class-validator';
 
 export class CreateHomeWorkDto {
@@ -59,6 +60,9 @@ export class findHomeWorkByLevelAndTeacherIdDto {
 export class textToSpeechDto {
   @IsString()
   textToSpeech: string;
-  @IsBoolean()
-  gender: boolean;
+  @IsString()
+  voice: string;
+  @IsOptional()
+  @IsNumber()
+  voiceSpeed?: string;
 }

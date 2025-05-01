@@ -146,20 +146,44 @@ export class HomeWorkService {
     homeWork.isDelete = true;
     await this.homeWorkRepository.save(homeWork);
   }
+  // async textToSpeech(textToSpeechDto: textToSpeechDto): Promise<string> {
+  //   try {
+  //     const response = await axios.post(
+  //       'https://ttsfree.com/api/v1/tts',
+  //       {
+  //         text: textToSpeechDto.textToSpeech,
+  //         voiceService: 'servicebin',
+  //         voiceID: textToSpeechDto.gender ? 'en-US4' : 'en-US',
+  //         voiceSpeed: '0',
+  //       },
+  //       {
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           apikey: process.env.API_TTS_KEY,
+  //         },
+  //       },
+  //     );
+  //     console.log(response.data);
+
+  //     return response.data.audioData; // Trả về buffer
+  //   } catch (error) {
+  //     console.error('Error converting text to speech:', error);
+  //     throw new Error('TTS conversion failed');
+  //   }
+  // }
   async textToSpeech(textToSpeechDto: textToSpeechDto): Promise<string> {
     try {
       const response = await axios.post(
-        'https://ttsfree.com/api/v1/tts',
+        'http://82.25.110.152:5000/tts',
         {
           text: textToSpeechDto.textToSpeech,
-          voiceService: 'servicebin',
-          voiceID: textToSpeechDto.gender ? 'en-US4' : 'en-US',
-          voiceSpeed: '0',
+          voice: textToSpeechDto.voice ?? 'af_heart',
+          voiceSpeed: textToSpeechDto.voiceSpeed ?? '0.8',
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            apikey: process.env.API_TTS_KEY,
+            // apikey: process.env.API_TTS_KEY,
           },
         },
       );
@@ -167,8 +191,26 @@ export class HomeWorkService {
 
       return response.data.audioData; // Trả về buffer
     } catch (error) {
-      console.error('Error converting text to speech:', error);
-      throw new Error('TTS conversion failed');
+      console.error(
+        'Error converting text to speech:',
+        error?.response?.data?.message,
+      );
+      throw new Error(
+        'TTS conversion failed ' + error?.response?.data?.message,
+      );
+    }
+  }
+  async voices(): Promise<any> {
+    try {
+      const response = await axios.get('http://82.25.110.152:5000/voices');
+      console.log(response.data);
+
+      return response.data.voices; // Trả về buffer
+    } catch (error) {
+      console.error('Get voices TTS failed ', error?.response?.data?.message);
+      throw new Error(
+        'Get voices TTS failed ' + error?.response?.data?.message,
+      );
     }
   }
 }
