@@ -1,4 +1,5 @@
 import { Student_homework_count } from 'src/student_homework_count/student_homework_count.entity';
+import { Student_vocabulary } from 'src/student_vocabulary/student_vocabulary.entity';
 import { Teacher } from 'src/teacher/teacher.entity';
 import { Vocabulary } from 'src/vocabulary/vocabulary.entity';
 import {
@@ -38,7 +39,7 @@ export class HomeWork {
   isDelete: boolean;
   @Column({ type: 'date', nullable: true }) // Thêm trường date
   date: Date;
-  @ManyToOne(() => Teacher, (teacherEntity) => teacherEntity.lesson, {
+  @ManyToOne(() => Teacher, (teacherEntity) => teacherEntity.homeWork, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'TeacherId' })
@@ -50,4 +51,9 @@ export class HomeWork {
   student_homework_count: Student_homework_count[];
   @OneToMany(() => Vocabulary, (vocabulary) => vocabulary.homework)
   vocabularies: Vocabulary[];
+  @OneToMany(
+    () => Student_vocabulary,
+    (student_vocabulary) => student_vocabulary.student,
+  )
+  student_vocabularies: Student_vocabulary[];
 }

@@ -1,11 +1,13 @@
 import { HomeWork } from 'src/homeWork/homeWork.entity';
 import { Student } from 'src/student/student.entity';
+import { Student_vocabulary } from 'src/student_vocabulary/student_vocabulary.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('vocabulary')
@@ -31,4 +33,9 @@ export class Vocabulary {
   student: Student;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
+  @OneToMany(
+    () => Student_vocabulary,
+    (student_vocabulary) => student_vocabulary.vocabulary,
+  )
+  student_vocabularies: Student_vocabulary[];
 }

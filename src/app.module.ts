@@ -45,6 +45,7 @@ import { TeacherFeedbackModule } from './teacher_feedback/teacher_feedback.modul
 import { PageVisitModule } from './pagevisit/pagevist.module';
 import { SidebarModule } from './sidebar/sidebar.module';
 import { VocabularyModule } from './vocabulary/vocabulary.module';
+import { Student_vocabularyModule } from './student_vocabulary/student_vocabulary.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -102,6 +103,7 @@ import { VocabularyModule } from './vocabulary/vocabulary.module';
     Student_homework_countModule,
     Student_lesson_countModule,
     VocabularyModule,
+    Student_vocabularyModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],
