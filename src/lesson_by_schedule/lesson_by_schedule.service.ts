@@ -37,6 +37,14 @@ export class LessonByScheduleService {
       relations: ['class', 'schedule'],
     });
   }
+  async getLessonByScheduleByHomeworkId(
+    homeworkId: number,
+  ): Promise<LessonBySchedule> {
+    return await this.lessonByScheduleRepository.findOne({
+      where: { homeWorkId: homeworkId },
+      relations: ['class', 'schedule'],
+    });
+  }
   async updateLessonForLessonBySchedule(
     id: number,
     updateDto: UpdateLessonOfLessonBySchedule,

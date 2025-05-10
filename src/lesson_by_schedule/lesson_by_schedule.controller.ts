@@ -37,6 +37,14 @@ export class LessonByScheduleController {
       classID,
     );
   }
+  @Get('homework/:homeworkId')
+  async findLessonByScheduleByHomeworkId(
+    @Param('homeworkId', ParseIntPipe) homeworkId: number,
+  ): Promise<LessonBySchedule> {
+    return await this.lessonByScheduleService.getLessonByScheduleByHomeworkId(
+      homeworkId,
+    );
+  }
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
