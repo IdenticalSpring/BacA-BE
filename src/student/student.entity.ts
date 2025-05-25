@@ -40,8 +40,8 @@ export class Student {
   @Column({ type: 'date', nullable: false })
   startDate: Date;
 
-  @Column({ type: 'date', nullable: true })
-  endDate: Date;
+  // @Column({ type: 'date', nullable: true })
+  // endDate: Date;
 
   @Column({ type: 'text', nullable: true })
   note: string;
