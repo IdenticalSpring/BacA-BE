@@ -20,9 +20,9 @@ export class CreateTeacherDto {
   @IsDateString()
   startDate: string;
 
-  @IsOptional()
-  @IsDateString()
-  endDate?: string;
+  // @IsOptional()
+  // @IsDateString()
+  // endDate?: string;
 
   @IsOptional()
   @IsBoolean()
@@ -55,9 +55,9 @@ export class UpdateTeacherDto {
   @IsDateString()
   startDate?: string;
 
-  @IsOptional()
-  @IsDateString()
-  endDate?: string;
+  // @IsOptional()
+  // @IsDateString()
+  // endDate?: string;
 
   @IsOptional()
   @IsBoolean()

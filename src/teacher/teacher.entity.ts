@@ -30,8 +30,8 @@ export class Teacher {
   @Column({ type: 'date', nullable: false })
   startDate: Date;
 
-  @Column({ type: 'date', nullable: true })
-  endDate: Date;
+  // @Column({ type: 'date', nullable: true })
+  // endDate: Date;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
   // Một giáo viên có thể dạy nhiều lớp
