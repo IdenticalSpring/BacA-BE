@@ -64,6 +64,13 @@ export class StudentController {
     return await this.studentService.update(id, updateStudentDto, file);
   }
 
+  @Put(':id/remove-class')
+  async removeClassFromStudent(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Student> {
+    return await this.studentService.removeClassFromStudent(id);
+  }
+
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.studentService.remove(id);

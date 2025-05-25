@@ -138,4 +138,10 @@ export class StudentService {
     Student.isDelete = true;
     await this.studentRepository.save(Student);
   }
+
+  async removeClassFromStudent(id: number): Promise<Student> {
+    const student = await this.findOne(id);
+    student.class = null;
+    return await this.studentRepository.save(student);
+  }
 }
