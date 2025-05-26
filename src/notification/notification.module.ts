@@ -10,6 +10,6 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
   imports: [TypeOrmModule.forFeature([Notification, Class]), CloudinaryModule],
   providers: [NotificationService],
   controllers: [NotificationController],
-  exports: [TypeOrmModule],
+  exports: [NotificationService],
 })
 export class NotificationModule {}

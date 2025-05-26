@@ -6,6 +6,8 @@ import { CreateStudentDto, UpdateStudentDto } from './student.dto';
 import { Class } from 'src/class/class.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { JwtService } from '@nestjs/jwt';
+import { NotificationService } from 'src/notification/notification.service';
+import { CreateNotificationDto } from 'src/notification/notification.dto';
 
 @Injectable()
 export class StudentService {
@@ -15,6 +17,7 @@ export class StudentService {
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly notificationService: NotificationService,
     private jwtService: JwtService,
   ) {}
 
@@ -143,5 +146,36 @@ export class StudentService {
     const student = await this.findOne(id);
     student.class = null;
     return await this.studentRepository.save(student);
+  }
+
+  async requestDeleteStudent(id: number): Promise<any> {
+    const student = await this.studentRepository.findOne({
+      where: { id },
+      relations: ['class'], // Đảm bảo tải quan hệ class
+    });
+    if (!student) {
+      throw new NotFoundException(`Học sinh với ID ${id} không tồn tại`);
+    }
+
+    // Lấy tên học sinh và tên lớp
+    const studentName = student.name || `Học sinh ID ${id}`; // Thay 'name' bằng thuộc tính thực tế
+    const className = student.class ? student.class.name : 'Không có lớp'; // Thay 'name' bằng thuộc tính thực tế của Class
+
+    const createNotificationDto: CreateNotificationDto = {
+      title: `Yêu cầu xóa học sinh ${studentName} lớp ${className}`,
+      detail: `Giáo viên yêu cầu xóa học sinh ${studentName} lớp ${className}.`,
+      general: false,
+      type: true,
+      isDelete: false,
+      classID: student.class ? student.class.id : undefined,
+    };
+
+    const notification = await this.notificationService.create(
+      createNotificationDto,
+    );
+    return {
+      message: `Yêu cầu xóa học sinh ${studentName} đã được gửi đến admin`,
+      notification,
+    };
   }
 }

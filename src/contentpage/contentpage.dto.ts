@@ -202,6 +202,10 @@ export class CreateContentPageDto {
   @IsOptional()
   @IsString()
   centerZaloLink?: string;
+
+  @IsOptional()
+  @IsString()
+  linkTeacherSignUp?: string;
 }
 
 export class UpdateContentPageDto extends CreateContentPageDto {}

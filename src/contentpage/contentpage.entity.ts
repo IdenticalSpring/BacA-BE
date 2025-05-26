@@ -156,4 +156,7 @@ export class ContentPage {
   promptLessonPlan: string;
   @Column({ type: 'text', nullable: true })
   centerZaloLink: string;
+
+  @Column({ type: 'text', nullable: true })
+  linkTeacherSignUp: string;
 }

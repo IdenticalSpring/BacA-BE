@@ -71,6 +71,13 @@ export class StudentController {
     return await this.studentService.removeClassFromStudent(id);
   }
 
+  @Put(':id/request-delete')
+  async requestDeleteStudent(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<any> {
+    return await this.studentService.requestDeleteStudent(id);
+  }
+
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.studentService.remove(id);
