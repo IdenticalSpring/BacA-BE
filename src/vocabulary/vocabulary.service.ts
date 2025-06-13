@@ -157,56 +157,110 @@ export class VocabularyService {
 
     return await this.vocabularyRepository.save(vocabularyEntity);
   }
+  // async bulkCreateWithFiles(
+  //   dtos: CreateVocabularyDto[],
+  //   mp3Files: Express.Multer.File[],
+  // ): Promise<Vocabulary[]> {
+  //   // console.log(dtos, mp3Files);
+
+  //   return await Promise.all(
+  //     dtos.map(async (dto, index) => {
+  //       const { homeworkId, studentId, ...rest } = dto;
+  //       if (dto?.imageUrl === 'undefined') {
+  //         rest.imageUrl = null;
+  //       }
+  //       const homework = await this.homeworkRepository.findOne({
+  //         where: { id: homeworkId, isDelete: false },
+  //       });
+
+  //       if (!homework) {
+  //         throw new NotFoundException(
+  //           `Teacher with ID ${homeworkId} not found`,
+  //         );
+  //       }
+  //       // Tìm teacher theo ID
+  //       let student = null;
+  //       if (studentId) {
+  //         student = await this.studentRepository.findOne({
+  //           where: { id: studentId, isDelete: false },
+  //         });
+
+  //         if (!student) {
+  //           throw new NotFoundException(
+  //             `Teacher with ID ${studentId} not found`,
+  //           );
+  //         }
+  //       }
+  //       let mp3Url: string | null = null;
+  //       if (mp3Files[index] && mp3Files[index].size > 0) {
+  //         console.log('Uploading MP3 file...');
+  //         mp3Url = await CloudinaryService.uploadBuffer(mp3Files[index].buffer);
+  //         console.log('MP3 uploaded:', mp3Url);
+  //       }
+  //       const vocabularyEntity = this.vocabularyRepository.create({
+  //         ...rest,
+  //         audioUrl: mp3Url || null,
+  //         homework,
+  //         student,
+  //       });
+
+  //       return await this.vocabularyRepository.save(vocabularyEntity);
+  //     }),
+  //   );
+  // }
+
   async bulkCreateWithFiles(
     dtos: CreateVocabularyDto[],
     mp3Files: Express.Multer.File[],
   ): Promise<Vocabulary[]> {
-    // console.log(dtos, mp3Files);
+    const result: Vocabulary[] = [];
 
-    return await Promise.all(
-      dtos.map(async (dto, index) => {
-        const { homeworkId, studentId, ...rest } = dto;
-        if (dto?.imageUrl === 'undefined') {
-          rest.imageUrl = null;
-        }
-        const homework = await this.homeworkRepository.findOne({
-          where: { id: homeworkId, isDelete: false },
+    for (let index = 0; index < dtos.length; index++) {
+      const dto = dtos[index];
+      const { homeworkId, studentId, ...rest } = dto;
+
+      if (dto?.imageUrl === 'undefined') {
+        rest.imageUrl = null;
+      }
+
+      const homework = await this.homeworkRepository.findOne({
+        where: { id: homeworkId, isDelete: false },
+      });
+
+      if (!homework) {
+        throw new NotFoundException(`Homework with ID ${homeworkId} not found`);
+      }
+
+      let student = null;
+      if (studentId) {
+        student = await this.studentRepository.findOne({
+          where: { id: studentId, isDelete: false },
         });
 
-        if (!homework) {
-          throw new NotFoundException(
-            `Teacher with ID ${homeworkId} not found`,
-          );
+        if (!student) {
+          throw new NotFoundException(`Student with ID ${studentId} not found`);
         }
-        // Tìm teacher theo ID
-        let student = null;
-        if (studentId) {
-          student = await this.studentRepository.findOne({
-            where: { id: studentId, isDelete: false },
-          });
+      }
 
-          if (!student) {
-            throw new NotFoundException(
-              `Teacher with ID ${studentId} not found`,
-            );
-          }
-        }
-        let mp3Url: string | null = null;
-        if (mp3Files[index] && mp3Files[index].size > 0) {
-          console.log('Uploading MP3 file...');
-          mp3Url = await CloudinaryService.uploadBuffer(mp3Files[index].buffer);
-          console.log('MP3 uploaded:', mp3Url);
-        }
-        const vocabularyEntity = this.vocabularyRepository.create({
-          ...rest,
-          audioUrl: mp3Url || null,
-          homework,
-          student,
-        });
+      let mp3Url: string | null = null;
+      if (mp3Files[index] && mp3Files[index].size > 0) {
+        console.log('Uploading MP3 file...');
+        mp3Url = await CloudinaryService.uploadBuffer(mp3Files[index].buffer);
+        console.log('MP3 uploaded:', mp3Url);
+      }
 
-        return await this.vocabularyRepository.save(vocabularyEntity);
-      }),
-    );
+      const vocabularyEntity = this.vocabularyRepository.create({
+        ...rest,
+        audioUrl: mp3Url || null,
+        homework,
+        student,
+      });
+
+      const saved = await this.vocabularyRepository.save(vocabularyEntity);
+      result.push(saved);
+    }
+
+    return result;
   }
 
   async update(
