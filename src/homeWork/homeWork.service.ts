@@ -202,7 +202,7 @@ export class HomeWorkService {
   }
   async voices(): Promise<any> {
     try {
-      const response = await axios.get('http://82.25.110.152:5000/voices');
+      const response = await axios.get('http://45.13.132.111:5000/voices');
       console.log(response.data);
 
       return response.data.voices; // Trả về buffer
