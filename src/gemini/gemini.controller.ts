@@ -24,4 +24,17 @@ export class GeminiController {
     );
     return { response };
   }
+  @Post('analyze')
+  async analyzeWithImage(
+    @Body('question') question: string | null,
+    @Body('imageUrl') imageUrl: string | null,
+  ): Promise<{ response: string }> {
+    const safeQuestion = question || '';
+    const safeImageUrl = imageUrl || '';
+    const response = await this.chatbotService.analyzeWithImage(
+      safeQuestion,
+      safeImageUrl,
+    );
+    return { response };
+  }
 }

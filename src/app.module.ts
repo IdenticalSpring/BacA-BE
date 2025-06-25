@@ -46,6 +46,8 @@ import { PageVisitModule } from './pagevisit/pagevist.module';
 import { SidebarModule } from './sidebar/sidebar.module';
 import { VocabularyModule } from './vocabulary/vocabulary.module';
 import { Student_vocabularyModule } from './student_vocabulary/student_vocabulary.module';
+import { QuestionModule } from './question/question.module';
+import { StudentQuestionAnswerModule } from './studentQuestionAnswer/studenQuestionAnser.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -104,6 +106,8 @@ import { Student_vocabularyModule } from './student_vocabulary/student_vocabular
     Student_lesson_countModule,
     VocabularyModule,
     Student_vocabularyModule,
+    QuestionModule,
+    StudentQuestionAnswerModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],

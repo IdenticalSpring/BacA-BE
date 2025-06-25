@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ContentPage } from 'src/contentpage/contentpage.entity';
+import axios from 'axios';
 
 @Injectable()
 export class GeminiService {
@@ -51,6 +52,53 @@ export class GeminiService {
     console.log('Prompt:', prompt); // Debugging line to check the prompt
 
     const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  }
+
+  async analyzeWithImage(question: string, imageUrl: string): Promise<string> {
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const hasQuestion = question && question.trim().length > 0;
+    const hasImage = imageUrl && imageUrl.trim().length > 0;
+
+    let prompt = '';
+    let imageParts = [];
+
+    if (hasImage) {
+      try {
+        // Tải hình ảnh từ URL
+        const response = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+        });
+        const imageBuffer = Buffer.from(response.data);
+        const base64Image = imageBuffer.toString('base64');
+
+        // Tạo phần hình ảnh cho Gemini API
+        imageParts = [
+          {
+            inlineData: {
+              data: base64Image,
+              mimeType: response.headers['content-type'] || 'image/jpeg',
+            },
+          },
+        ];
+
+        prompt = hasQuestion
+          ? `Suggest an answer for the following question: "${question}" using the provided image. Return the answer without bold or italic.`
+          : `Suggest an answer based on the provided image. Return the answer without bold or italic.`;
+      } catch (error) {
+        console.error('Error downloading image:', error);
+        prompt = `Error: Could not download image from ${imageUrl}.`;
+      }
+    } else if (hasQuestion) {
+      prompt = `Suggest an answer for the following question: "${question}". Return the answer without bold or italic.`;
+    } else {
+      prompt = `No question or image provided.`;
+    }
+
+    // Gửi prompt và dữ liệu hình ảnh (nếu có) tới Gemini
+    const result = await model.generateContent([prompt, ...imageParts]);
     const response = await result.response;
     return response.text();
   }
