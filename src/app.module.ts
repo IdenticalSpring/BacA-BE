@@ -48,8 +48,32 @@ import { VocabularyModule } from './vocabulary/vocabulary.module';
 import { Student_vocabularyModule } from './student_vocabulary/student_vocabulary.module';
 import { QuestionModule } from './question/question.module';
 import { StudentQuestionAnswerModule } from './studentQuestionAnswer/studenQuestionAnser.module';
+import { FilesModule } from './files/files.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 @Module({
   imports: [
+    MulterModule.register({
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        // Nếu muốn giới hạn, thêm điều kiện ở đây
+        // Ví dụ: chỉ cho phép hình ảnh
+        // if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+        //   return cb(new Error('Only image files are allowed!'), false);
+        // }
+        cb(null, true); // Cho phép tất cả loại file
+      },
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST,
@@ -70,6 +94,7 @@ import { StudentQuestionAnswerModule } from './studentQuestionAnswer/studenQuest
     }),
     AuthModule,
     StudentModule,
+    FilesModule,
     LessonModule,
     FeedbackModule,
     StudentSkillBehaviorScoreModule,
