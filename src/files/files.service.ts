@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class FilesService {
   saveFile(file: Express.Multer.File) {
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:8000'; // Dùng biến môi trường hoặc mặc định cổng 8000
+    const baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn'; // Dùng biến môi trường hoặc mặc định cổng 8000
     return {
       originalName: file.originalname,
       fileName: file.filename,
@@ -15,7 +15,7 @@ export class FilesService {
     };
   }
   saveFiles(files: Express.Multer.File[]) {
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:8000';
+    const baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn';
     return files.map((file) => ({
       originalName: file.originalname,
       fileName: file.filename,
