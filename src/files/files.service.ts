@@ -14,4 +14,15 @@ export class FilesService {
       mimeType: file.mimetype,
     };
   }
+  saveFiles(files: Express.Multer.File[]) {
+    const baseUrl = process.env.API_BASE_URL || 'http://localhost:8000';
+    return files.map((file) => ({
+      originalName: file.originalname,
+      fileName: file.filename,
+      path: file.path,
+      url: `${baseUrl}/${file.path.replace(/\\/g, '/')}`,
+      size: file.size,
+      mimeType: file.mimetype,
+    }));
+  }
 }

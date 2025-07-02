@@ -21,6 +21,12 @@ export class CreateStudentDto {
   @IsString()
   imgUrl?: string;
 
+  @IsString()
+  username: string;
+
+  @IsString()
+  password: string;
+
   @IsOptional()
   @IsString()
   classID?: number;
@@ -43,6 +49,12 @@ export class UpdateStudentDto {
   // @Type(() => Date)
   // @IsDate()
   // birthOfDate?: Date;
+
+  @IsString()
+  username: string;
+
+  @IsString()
+  password: string;
 
   @IsOptional()
   @IsString()

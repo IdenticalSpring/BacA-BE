@@ -3,9 +3,10 @@ import {
   Controller,
   Post,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from './files.service';
 
 @Controller('files')
@@ -19,5 +20,14 @@ export class FilesController {
       throw new Error('No file uploaded');
     }
     return this.filesService.saveFile(file);
+  }
+
+  @Post('upload-multiple')
+  @UseInterceptors(FilesInterceptor('files'))
+  async uploadMultipleFiles(@UploadedFiles() files: Express.Multer.File[]) {
+    if (!files || files.length === 0) {
+      throw new Error('No files uploaded');
+    }
+    return this.filesService.saveFiles(files);
   }
 }

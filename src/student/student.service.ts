@@ -64,10 +64,7 @@ export class StudentService {
     // }
     return students?.length;
   }
-  async create(
-    createStudentDto: CreateStudentDto,
-    file: Express.Multer.File,
-  ): Promise<Student> {
+  async create(createStudentDto: CreateStudentDto): Promise<Student> {
     const { classID, ...rest } = createStudentDto;
     const student = this.studentRepository.create(rest);
 
@@ -81,10 +78,7 @@ export class StudentService {
       student.class = classEntity;
     }
 
-    if (file) {
-      const imgUrl = await CloudinaryService.uploadBuffer(file.buffer);
-      student.imgUrl = imgUrl;
-    }
+    // Đã xóa logic upload file và Cloudinary
 
     return await this.studentRepository.save(student);
   }
@@ -92,7 +86,6 @@ export class StudentService {
   async update(
     id: number,
     updateStudentDto: UpdateStudentDto,
-    file: Express.Multer.File,
   ): Promise<Student> {
     const { classID, ...rest } = updateStudentDto;
     const student = await this.findOne(id);
@@ -107,10 +100,7 @@ export class StudentService {
       student.class = classEntity;
     }
 
-    if (file) {
-      const imgUrl = await CloudinaryService.uploadBuffer(file.buffer);
-      student.imgUrl = imgUrl;
-    }
+    // Đã xóa logic upload file và Cloudinary
 
     Object.assign(student, rest);
     return await this.studentRepository.save(student);

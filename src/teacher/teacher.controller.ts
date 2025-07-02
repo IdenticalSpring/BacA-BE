@@ -7,10 +7,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
-  UseInterceptors,
-  UploadedFiles,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
 import { TeacherService } from './teacher.service';
 import { CreateTeacherDto, UpdateTeacherDto } from './teacher.dto';
 import { Teacher } from './teacher.entity';
@@ -30,22 +27,16 @@ export class TeacherController {
   }
 
   @Post()
-  @UseInterceptors(FilesInterceptor('files')) // Đổi từ FileInterceptor sang FilesInterceptor
-  async create(
-    @Body() createTeacherDto: CreateTeacherDto,
-    @UploadedFiles() files: Express.Multer.File[], // Đổi từ UploadedFile sang UploadedFiles
-  ): Promise<Teacher> {
-    return await this.teacherService.create(createTeacherDto, files);
+  async create(@Body() createTeacherDto: CreateTeacherDto): Promise<Teacher> {
+    return await this.teacherService.create(createTeacherDto);
   }
 
   @Put(':id')
-  @UseInterceptors(FilesInterceptor('files')) // Đổi từ FileInterceptor sang FilesInterceptor
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateTeacherDto: UpdateTeacherDto,
-    @UploadedFiles() files?: Express.Multer.File[], // Đổi từ UploadedFile sang UploadedFiles
   ): Promise<Teacher> {
-    return await this.teacherService.update(id, updateTeacherDto, files);
+    return await this.teacherService.update(id, updateTeacherDto);
   }
 
   @Delete(':id')

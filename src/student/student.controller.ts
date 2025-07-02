@@ -46,22 +46,16 @@ export class StudentController {
     return await this.studentService.findOneAndLogin(body.studentId);
   }
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
-  async create(
-    @Body() createStudentDto: CreateStudentDto,
-    @UploadedFile() file: Express.Multer.File,
-  ): Promise<Student> {
-    return await this.studentService.create(createStudentDto, file);
+  async create(@Body() createStudentDto: CreateStudentDto): Promise<Student> {
+    return await this.studentService.create(createStudentDto);
   }
 
   @Put(':id')
-  @UseInterceptors(FileInterceptor('file'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateStudentDto: UpdateStudentDto,
-    @UploadedFile() file: Express.Multer.File,
   ): Promise<Student> {
-    return await this.studentService.update(id, updateStudentDto, file);
+    return await this.studentService.update(id, updateStudentDto);
   }
 
   @Put(':id/remove-class')
