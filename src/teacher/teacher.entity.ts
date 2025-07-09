@@ -25,6 +25,9 @@ export class Teacher {
   fileUrl: string;
 
   @Column({ length: 255, nullable: false })
+  imageUrl: string;
+
+  @Column({ length: 255, nullable: false })
   linkDrive: string;
 
   @Column({ type: 'date', nullable: false })
