@@ -121,15 +121,25 @@ export class StudentService {
     });
   }
 
+  // async remove(id: number): Promise<void> {
+  //   const Student = await this.studentRepository.findOne({
+  //     where: { id, isDelete: false },
+  //   });
+  //   if (!Student) {
+  //     throw new NotFoundException(`Student with ID ${id} not found`);
+  //   }
+  //   Student.isDelete = true;
+  //   await this.studentRepository.save(Student);
+  // }
+
   async remove(id: number): Promise<void> {
-    const Student = await this.studentRepository.findOne({
-      where: { id, isDelete: false },
+    const student = await this.studentRepository.findOne({
+      where: { id },
     });
-    if (!Student) {
+    if (!student) {
       throw new NotFoundException(`Student with ID ${id} not found`);
     }
-    Student.isDelete = true;
-    await this.studentRepository.save(Student);
+    await this.studentRepository.remove(student);
   }
 
   async removeClassFromStudent(id: number): Promise<Student> {
