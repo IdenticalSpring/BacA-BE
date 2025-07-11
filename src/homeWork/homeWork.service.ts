@@ -174,7 +174,7 @@ export class HomeWorkService {
   async textToSpeech(textToSpeechDto: textToSpeechDto): Promise<string> {
     try {
       const response = await axios.post(
-        'http://82.25.110.152:5000/tts',
+        'http://45.13.132.111:5000/tts',
         {
           text: textToSpeechDto.textToSpeech,
           voice: textToSpeechDto.voice ?? 'af_heart',
