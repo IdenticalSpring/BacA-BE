@@ -43,12 +43,12 @@ export class TeacherService {
 
   async remove(id: number): Promise<void> {
     const teacher = await this.teacherRepository.findOne({
-      where: { id, isDelete: false },
+      where: { id },
     });
     if (!teacher) {
       throw new NotFoundException(`Teacher with ID ${id} not found`);
     }
-    teacher.isDelete = true;
+    // teacher.isDelete = true;
     await this.teacherRepository.save(teacher);
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Chat } from './chat.entity';
+import { Chat, SenderRole } from './chat.entity';
 import { CreateChatDto, RevokeChatDto } from './chat.dto';
 import { Student } from '../student/student.entity';
 import { Teacher } from '../teacher/teacher.entity';
@@ -33,8 +33,10 @@ export class ChatService {
         id: dto.teacherId,
       });
     }
+    chat.senderRole = dto.senderRole;
     chat.message = dto.message;
     chat.audioUrl = dto.audioUrl;
+    chat.imageUrl = dto.imageUrl;
     return this.chatRepository.save(chat);
   }
 
@@ -51,5 +53,28 @@ export class ChatService {
     if (!chat) throw new NotFoundException('Chat not found');
     chat.isRevoked = dto.isRevoked;
     return this.chatRepository.save(chat);
+  }
+
+  async markMessagesAsRead(
+    classId: number,
+    readerId: number,
+    readerRole: SenderRole,
+  ): Promise<{ success: boolean }> {
+    // Xác định vai trò của người gửi tin nhắn (ngược lại với người đọc)
+    const senderRoleToUpdate = readerRole === 'teacher' ? 'student' : 'teacher';
+
+    await this.chatRepository.update(
+      {
+        class: { id: classId }, // Trong lớp học này
+        senderRole: senderRoleToUpdate, // Tin nhắn được gửi bởi người kia
+        isRead: false, // Chỉ cập nhật những tin chưa đọc
+        // Đảm bảo đúng cuộc trò chuyện 1-1
+        ...(senderRoleToUpdate === 'student' && { student: { id: readerId } }),
+        ...(senderRoleToUpdate === 'teacher' && { teacher: { id: readerId } }),
+      },
+      { isRead: true }, // Đặt isRead = true
+    );
+
+    return { success: true };
   }
 }

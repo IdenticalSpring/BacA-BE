@@ -23,4 +23,20 @@ export class ChatController {
   ) {
     return this.chatService.revokeChat({ chatId: Number(chatId), isRevoked });
   }
+
+  @Post('read-messages')
+  markMessagesAsRead(
+    @Body()
+    body: {
+      classId: number;
+      readerId: number;
+      readerRole: 'student' | 'teacher';
+    },
+  ) {
+    return this.chatService.markMessagesAsRead(
+      body.classId,
+      body.readerId,
+      body.readerRole,
+    );
+  }
 }

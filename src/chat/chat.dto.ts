@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsEnum,
+} from 'class-validator';
+import { SenderRole } from './chat.entity';
 
 export class CreateChatDto {
   @IsNumber()
@@ -16,9 +23,17 @@ export class CreateChatDto {
   @IsString()
   message?: string;
 
+  // *** THÊM TRƯỜNG NÀY ***
+  @IsEnum(['student', 'teacher'])
+  senderRole: SenderRole;
+
   @IsOptional()
   @IsString()
   audioUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
 
 export class RevokeChatDto {

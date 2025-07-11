@@ -9,6 +9,8 @@ import { Student } from '../student/student.entity';
 import { Teacher } from '../teacher/teacher.entity';
 import { Class } from '../class/class.entity';
 
+export type SenderRole = 'student' | 'teacher';
+
 @Entity('chat')
 export class Chat {
   @PrimaryGeneratedColumn()
@@ -23,14 +25,28 @@ export class Chat {
   @ManyToOne(() => Class, { nullable: false, onDelete: 'CASCADE' })
   class: Class;
 
+  // *** THÊM TRƯỜNG NÀY ***
+  @Column({
+    type: 'enum',
+    enum: ['student', 'teacher'],
+    nullable: false,
+  })
+  senderRole: SenderRole;
+
   @Column({ type: 'text', nullable: true })
   message: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   audioUrl: string;
 
+  @Column({ type: 'text', nullable: true })
+  imageUrl: string;
+
   @Column({ type: 'boolean', default: false })
   isRevoked: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  isRead: boolean;
 
   @CreateDateColumn()
   createdAt: Date;
