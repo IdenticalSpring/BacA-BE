@@ -53,6 +53,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ChatModule } from './chat/chat.module';
+import { MessageModule } from './message/message.module';
 @Module({
   imports: [
     MulterModule.register({
@@ -135,6 +136,7 @@ import { ChatModule } from './chat/chat.module';
     QuestionModule,
     StudentQuestionAnswerModule,
     ChatModule,
+    MessageModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],

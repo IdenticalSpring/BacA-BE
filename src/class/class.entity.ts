@@ -12,6 +12,7 @@ import { ClassSchedule } from '../classSchedule/classSchedule.entity';
 import { LessonBySchedule } from '../lesson_by_schedule/lesson_by_schedule.entity';
 import { Student } from 'src/student/student.entity';
 import { ClassTestScheduleEntity } from 'src/classTestSchedule/classTestSchedule.entity';
+import { Message } from 'src/message/message.entity';
 
 @Entity('class')
 export class Class {
@@ -51,4 +52,7 @@ export class Class {
     (classTestSchedule) => classTestSchedule.class,
   )
   classTestSchedules: ClassTestScheduleEntity[];
+
+  @OneToMany(() => Message, (message) => message.class)
+  messages: Message[];
 }

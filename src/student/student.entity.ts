@@ -16,6 +16,7 @@ import { Student_homework_count } from 'src/student_homework_count/student_homew
 import { Student_lesson_count } from 'src/student-lesson-count/student-lesson-count.entity';
 import { Vocabulary } from 'src/vocabulary/vocabulary.entity';
 import { Student_vocabulary } from 'src/student_vocabulary/student_vocabulary.entity';
+import { Message } from 'src/message/message.entity';
 
 @Entity('student') // Đặt tên bảng đúng với MySQL
 export class Student {
@@ -98,4 +99,7 @@ export class Student {
     (student_vocabulary) => student_vocabulary.student,
   )
   student_vocabularies: Student_vocabulary[];
+
+  @OneToMany(() => Message, (message) => message.senderStudent)
+  sentMessages: Message[];
 }
