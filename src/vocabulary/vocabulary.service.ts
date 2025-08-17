@@ -116,47 +116,47 @@ export class VocabularyService {
     return vocabulary;
   }
 
-  async create(
-    createVocabularyDto: CreateVocabularyDto,
-    mp3File?: Express.Multer.File,
-  ): Promise<Vocabulary> {
-    const { homeworkId, studentId, ...rest } = createVocabularyDto;
-    if (createVocabularyDto?.imageUrl === 'undefined') {
-      rest.imageUrl = null;
-    }
-    // Tìm teacher theo ID
-    const homework = await this.homeworkRepository.findOne({
-      where: { id: homeworkId, isDelete: false },
-    });
+  // async create(
+  //   createVocabularyDto: CreateVocabularyDto,
+  //   mp3File?: Express.Multer.File,
+  // ): Promise<Vocabulary> {
+  //   const { homeworkId, studentId, ...rest } = createVocabularyDto;
+  //   if (createVocabularyDto?.imageUrl === 'undefined') {
+  //     rest.imageUrl = null;
+  //   }
+  //   // Tìm teacher theo ID
+  //   const homework = await this.homeworkRepository.findOne({
+  //     where: { id: homeworkId, isDelete: false },
+  //   });
 
-    if (!homework) {
-      throw new NotFoundException(`Teacher with ID ${homeworkId} not found`);
-    }
-    let student = null;
-    if (studentId) {
-      student = await this.studentRepository.findOne({
-        where: { id: studentId, isDelete: false },
-      });
+  //   if (!homework) {
+  //     throw new NotFoundException(`Teacher with ID ${homeworkId} not found`);
+  //   }
+  //   let student = null;
+  //   if (studentId) {
+  //     student = await this.studentRepository.findOne({
+  //       where: { id: studentId, isDelete: false },
+  //     });
 
-      if (!student) {
-        throw new NotFoundException(`Teacher with ID ${studentId} not found`);
-      }
-    }
-    let mp3Url: string | null = null;
-    if (mp3File) {
-      console.log('Uploading MP3 file...');
-      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
-      console.log('MP3 uploaded:', mp3Url);
-    }
-    const vocabularyEntity = this.vocabularyRepository.create({
-      ...rest,
-      audioUrl: mp3Url || null,
-      homework,
-      student,
-    });
+  //     if (!student) {
+  //       throw new NotFoundException(`Teacher with ID ${studentId} not found`);
+  //     }
+  //   }
+  //   let mp3Url: string | null = null;
+  //   if (mp3File) {
+  //     console.log('Uploading MP3 file...');
+  //     mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
+  //     console.log('MP3 uploaded:', mp3Url);
+  //   }
+  //   const vocabularyEntity = this.vocabularyRepository.create({
+  //     ...rest,
+  //     audioUrl: mp3Url || null,
+  //     homework,
+  //     student,
+  //   });
 
-    return await this.vocabularyRepository.save(vocabularyEntity);
-  }
+  //   return await this.vocabularyRepository.save(vocabularyEntity);
+  // }
   // async bulkCreateWithFiles(
   //   dtos: CreateVocabularyDto[],
   //   mp3Files: Express.Multer.File[],
@@ -209,9 +209,92 @@ export class VocabularyService {
   //   );
   // }
 
+  // async bulkCreateWithFiles(
+  //   dtos: CreateVocabularyDto[],
+  //   mp3Files: Express.Multer.File[],
+  // ): Promise<Vocabulary[]> {
+  //   const result: Vocabulary[] = [];
+
+  //   for (let index = 0; index < dtos.length; index++) {
+  //     const dto = dtos[index];
+  //     const { homeworkId, studentId, ...rest } = dto;
+
+  //     if (dto?.imageUrl === 'undefined') {
+  //       rest.imageUrl = null;
+  //     }
+
+  //     const homework = await this.homeworkRepository.findOne({
+  //       where: { id: homeworkId, isDelete: false },
+  //     });
+
+  //     if (!homework) {
+  //       throw new NotFoundException(`Homework with ID ${homeworkId} not found`);
+  //     }
+
+  //     let student = null;
+  //     if (studentId) {
+  //       student = await this.studentRepository.findOne({
+  //         where: { id: studentId, isDelete: false },
+  //       });
+
+  //       if (!student) {
+  //         throw new NotFoundException(`Student with ID ${studentId} not found`);
+  //       }
+  //     }
+
+  //     let mp3Url: string | null = null;
+  //     if (mp3Files[index] && mp3Files[index].size > 0) {
+  //       console.log('Uploading MP3 file...');
+  //       mp3Url = await CloudinaryService.uploadBuffer(mp3Files[index].buffer);
+  //       console.log('MP3 uploaded:', mp3Url);
+  //     }
+
+  //     const vocabularyEntity = this.vocabularyRepository.create({
+  //       ...rest,
+  //       audioUrl: mp3Url || null,
+  //       homework,
+  //       student,
+  //     });
+
+  //     const saved = await this.vocabularyRepository.save(vocabularyEntity);
+  //     result.push(saved);
+  //   }
+
+  //   return result;
+  // }
+  async create(createVocabularyDto: CreateVocabularyDto): Promise<Vocabulary> {
+    const { homeworkId, studentId, ...rest } = createVocabularyDto;
+    if (createVocabularyDto?.imageUrl === 'undefined') {
+      rest.imageUrl = null;
+    }
+    const homework = await this.homeworkRepository.findOne({
+      where: { id: homeworkId, isDelete: false },
+    });
+
+    if (!homework) {
+      throw new NotFoundException(`Homework with ID ${homeworkId} not found`);
+    }
+    let student = null;
+    if (studentId) {
+      student = await this.studentRepository.findOne({
+        where: { id: studentId, isDelete: false },
+      });
+
+      if (!student) {
+        throw new NotFoundException(`Student with ID ${studentId} not found`);
+      }
+    }
+    // Không xử lý mp3File nữa
+    const vocabularyEntity = this.vocabularyRepository.create({
+      ...rest,
+      homework,
+      student,
+    });
+
+    return await this.vocabularyRepository.save(vocabularyEntity);
+  }
   async bulkCreateWithFiles(
     dtos: CreateVocabularyDto[],
-    mp3Files: Express.Multer.File[],
   ): Promise<Vocabulary[]> {
     const result: Vocabulary[] = [];
 
@@ -242,16 +325,9 @@ export class VocabularyService {
         }
       }
 
-      let mp3Url: string | null = null;
-      if (mp3Files[index] && mp3Files[index].size > 0) {
-        console.log('Uploading MP3 file...');
-        mp3Url = await CloudinaryService.uploadBuffer(mp3Files[index].buffer);
-        console.log('MP3 uploaded:', mp3Url);
-      }
-
+      // Không xử lý mp3File nữa
       const vocabularyEntity = this.vocabularyRepository.create({
         ...rest,
-        audioUrl: mp3Url || null,
         homework,
         student,
       });
@@ -263,13 +339,61 @@ export class VocabularyService {
     return result;
   }
 
+  // async update(
+  //   id: number,
+  //   updateVocabularyDto: UpdateVocabularyDto,
+  //   mp3File?: Express.Multer.File,
+  // ): Promise<Vocabulary> {
+  //   const { homeworkId, studentId, ...rest } = updateVocabularyDto;
+  //   // Tìm class cần update
+  //   const vocabularyEntity = await this.findOne(id);
+  //   if (!vocabularyEntity) {
+  //     throw new NotFoundException(`Vocabulary with ID ${id} not found`);
+  //   }
+  //   if (updateVocabularyDto?.imageUrl === 'undefined') {
+  //     rest.imageUrl = vocabularyEntity.imageUrl;
+  //   }
+  //   if (homeworkId !== undefined) {
+  //     const homework = await this.homeworkRepository.findOne({
+  //       where: { id: homeworkId, isDelete: false },
+  //     });
+
+  //     if (!homework) {
+  //       throw new NotFoundException(`Homework with ID ${homeworkId} not found`);
+  //     }
+
+  //     vocabularyEntity.homework = homework;
+  //   }
+  //   if (studentId) {
+  //     const student = await this.studentRepository.findOne({
+  //       where: { id: studentId, isDelete: false },
+  //     });
+
+  //     if (!student) {
+  //       throw new NotFoundException(`Teacher with ID ${studentId} not found`);
+  //     }
+  //     vocabularyEntity.student = student;
+  //   }
+  //   let mp3Url: string | null = null;
+  //   if (mp3File) {
+  //     console.log('Uploading MP3 file...');
+  //     mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
+  //     console.log('MP3 uploaded:', mp3Url);
+  //   }
+  //   if (mp3Url) {
+  //     vocabularyEntity.audioUrl = mp3Url;
+  //   }
+  //   // Cập nhật các field còn lại
+  //   Object.assign(vocabularyEntity, rest);
+
+  //   return await this.vocabularyRepository.save(vocabularyEntity);
+  // }
+
   async update(
     id: number,
     updateVocabularyDto: UpdateVocabularyDto,
-    mp3File?: Express.Multer.File,
   ): Promise<Vocabulary> {
     const { homeworkId, studentId, ...rest } = updateVocabularyDto;
-    // Tìm class cần update
     const vocabularyEntity = await this.findOne(id);
     if (!vocabularyEntity) {
       throw new NotFoundException(`Vocabulary with ID ${id} not found`);
@@ -294,24 +418,16 @@ export class VocabularyService {
       });
 
       if (!student) {
-        throw new NotFoundException(`Teacher with ID ${studentId} not found`);
+        throw new NotFoundException(`Student with ID ${studentId} not found`);
       }
       vocabularyEntity.student = student;
     }
-    let mp3Url: string | null = null;
-    if (mp3File) {
-      console.log('Uploading MP3 file...');
-      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
-      console.log('MP3 uploaded:', mp3Url);
-    }
-    if (mp3Url) {
-      vocabularyEntity.audioUrl = mp3Url;
-    }
-    // Cập nhật các field còn lại
+    // Không xử lý mp3File nữa
     Object.assign(vocabularyEntity, rest);
 
     return await this.vocabularyRepository.save(vocabularyEntity);
   }
+
   async remove(id: number): Promise<void> {
     // const result = await this.homeWorkRepository.delete(id);
     // if (result.affected === 0) {

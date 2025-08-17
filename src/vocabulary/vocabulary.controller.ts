@@ -49,15 +49,25 @@ export class VocabularyController {
       homeworkId,
     );
   }
+  // @Post('student/homework/')
+  // async findVocabularyByHomeworkIdAndStudentIdForStudent(
+  //   @Body() findByStudentAndHomework: FindByStudentAndHomework,
+  // ): Promise<Vocabulary[]> {
+  //   const { studentId, homeworkId } = findByStudentAndHomework;
+  //   return await this.vocabularyService.findVocabularyByHomeworkIdAndStudentIdForStudent(
+  //     findByStudentAndHomework,
+  //   );
+  // }
+
   @Post('student/homework/')
   async findVocabularyByHomeworkIdAndStudentIdForStudent(
     @Body() findByStudentAndHomework: FindByStudentAndHomework,
   ): Promise<Vocabulary[]> {
-    const { studentId, homeworkId } = findByStudentAndHomework;
     return await this.vocabularyService.findVocabularyByHomeworkIdAndStudentIdForStudent(
       findByStudentAndHomework,
     );
   }
+
   @Get('student/:id')
   async findOneForStudent(
     @Param('id', ParseIntPipe) id: number,
@@ -65,40 +75,66 @@ export class VocabularyController {
     return await this.vocabularyService.findOneForStudent(id);
   }
 
+  // @Post()
+  // @UseInterceptors(FileInterceptor('mp3File'))
+  // async create(
+  //   @Body() createVocabularyDto: CreateVocabularyDto,
+  //   @UploadedFile() mp3File: Express.Multer.File,
+  // ): Promise<Vocabulary> {
+  //   return await this.vocabularyService.create(createVocabularyDto, mp3File);
+  // }
+
   @Post()
-  @UseInterceptors(FileInterceptor('mp3File'))
   async create(
     @Body() createVocabularyDto: CreateVocabularyDto,
-    @UploadedFile() mp3File: Express.Multer.File,
   ): Promise<Vocabulary> {
-    return await this.vocabularyService.create(createVocabularyDto, mp3File);
-  }
-  @Post('bulk-create')
-  @UseInterceptors(AnyFilesInterceptor())
-  async bulkCreate(
-    @Body() body: any,
-    @UploadedFiles() files: Express.Multer.File[],
-  ): Promise<Vocabulary[]> {
-    const vocabularies = JSON.parse(body.vocabularies);
-    return await this.vocabularyService.bulkCreateWithFiles(
-      vocabularies,
-      files,
-    );
+    return await this.vocabularyService.create(createVocabularyDto);
   }
 
+  // @Post('bulk-create')
+  // @UseInterceptors(AnyFilesInterceptor())
+  // async bulkCreate(
+  //   @Body() body: any,
+  //   @UploadedFiles() files: Express.Multer.File[],
+  // ): Promise<Vocabulary[]> {
+  //   const vocabularies = JSON.parse(body.vocabularies);
+  //   return await this.vocabularyService.bulkCreateWithFiles(
+  //     vocabularies,
+  //     files,
+  //   );
+  // }
+
+  @Post('bulk-create')
+  async bulkCreate(
+    // 👇 Sửa lại kiểu dữ liệu của body cho chặt chẽ hơn
+    @Body() vocabularies: CreateVocabularyDto[],
+  ): Promise<Vocabulary[]> {
+    // Bây giờ bạn không cần 'body.vocabularies' nữa
+    return await this.vocabularyService.bulkCreateWithFiles(vocabularies);
+  }
+
+  // @Put(':id')
+  // @UseInterceptors(FileInterceptor('mp3File'))
+  // async update(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body() updateVocabularyDto: UpdateVocabularyDto,
+  //   @UploadedFile() mp3File: Express.Multer.File,
+  // ): Promise<Vocabulary> {
+  //   return await this.vocabularyService.update(
+  //     id,
+  //     updateVocabularyDto,
+  //     mp3File,
+  //   );
+  // }
+
   @Put(':id')
-  @UseInterceptors(FileInterceptor('mp3File'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateVocabularyDto: UpdateVocabularyDto,
-    @UploadedFile() mp3File: Express.Multer.File,
   ): Promise<Vocabulary> {
-    return await this.vocabularyService.update(
-      id,
-      updateVocabularyDto,
-      mp3File,
-    );
+    return await this.vocabularyService.update(id, updateVocabularyDto);
   }
+
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.vocabularyService.remove(id);

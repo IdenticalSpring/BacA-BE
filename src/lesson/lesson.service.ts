@@ -97,10 +97,74 @@ export class LessonService {
     return lesson;
   }
 
-  async create(
-    createLessonDto: CreateLessonDto,
-    mp3File?: Express.Multer.File,
-  ): Promise<Lesson> {
+  // async create(
+  //   createLessonDto: CreateLessonDto,
+  //   mp3File?: Express.Multer.File,
+  // ): Promise<Lesson> {
+  //   const { teacherId, ...rest } = createLessonDto;
+
+  //   // Tìm teacher theo ID
+  //   const teacher = await this.teacherRepository.findOne({
+  //     where: { id: teacherId, isDelete: false },
+  //   });
+
+  //   if (!teacher) {
+  //     throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
+  //   }
+  //   let mp3Url: string | null = null;
+  //   if (mp3File) {
+  //     console.log('Uploading MP3 file...');
+  //     mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
+  //     console.log('MP3 uploaded:', mp3Url);
+  //   }
+  //   // Tạo class và gán teacher
+  //   const lessonEntity = this.lessonRepository.create({
+  //     ...rest,
+  //     linkSpeech: mp3Url || null,
+  //     teacher, // Gán trực tiếp teacher vào entity
+  //   });
+
+  //   return await this.lessonRepository.save(lessonEntity);
+  // }
+
+  // async update(
+  //   id: number,
+  //   updateLessonDto: UpdateLessonDto,
+  //   mp3File?: Express.Multer.File,
+  // ): Promise<Lesson> {
+  //   const { teacherId, ...rest } = updateLessonDto;
+  //   // Tìm class cần update
+  //   const lessonEntity = await this.findOne(id);
+  //   if (!lessonEntity) {
+  //     throw new NotFoundException(`Lesson with ID ${id} not found`);
+  //   }
+  //   if (teacherId !== undefined) {
+  //     const teacher = await this.teacherRepository.findOne({
+  //       where: { id: teacherId },
+  //     });
+
+  //     if (!teacher) {
+  //       throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
+  //     }
+
+  //     lessonEntity.teacher = teacher;
+  //   }
+  //   let mp3Url: string | null = null;
+  //   if (mp3File) {
+  //     console.log('Uploading MP3 file...');
+  //     mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
+  //     console.log('MP3 uploaded:', mp3Url);
+  //   }
+  //   if (mp3Url) {
+  //     lessonEntity.linkSpeech = mp3Url;
+  //   }
+  //   // Cập nhật các field còn lại
+  //   Object.assign(lessonEntity, rest);
+
+  //   return await this.lessonRepository.save(lessonEntity);
+  // }
+
+  async create(createLessonDto: CreateLessonDto): Promise<Lesson> {
     const { teacherId, ...rest } = createLessonDto;
 
     // Tìm teacher theo ID
@@ -111,27 +175,17 @@ export class LessonService {
     if (!teacher) {
       throw new NotFoundException(`Teacher with ID ${teacherId} not found`);
     }
-    let mp3Url: string | null = null;
-    if (mp3File) {
-      console.log('Uploading MP3 file...');
-      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
-      console.log('MP3 uploaded:', mp3Url);
-    }
-    // Tạo class và gán teacher
+
+    // Không xử lý mp3File nữa
     const lessonEntity = this.lessonRepository.create({
       ...rest,
-      linkSpeech: mp3Url || null,
-      teacher, // Gán trực tiếp teacher vào entity
+      teacher,
     });
 
     return await this.lessonRepository.save(lessonEntity);
   }
 
-  async update(
-    id: number,
-    updateLessonDto: UpdateLessonDto,
-    mp3File?: Express.Multer.File,
-  ): Promise<Lesson> {
+  async update(id: number, updateLessonDto: UpdateLessonDto): Promise<Lesson> {
     const { teacherId, ...rest } = updateLessonDto;
     // Tìm class cần update
     const lessonEntity = await this.findOne(id);
@@ -149,16 +203,8 @@ export class LessonService {
 
       lessonEntity.teacher = teacher;
     }
-    let mp3Url: string | null = null;
-    if (mp3File) {
-      console.log('Uploading MP3 file...');
-      mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
-      console.log('MP3 uploaded:', mp3Url);
-    }
-    if (mp3Url) {
-      lessonEntity.linkSpeech = mp3Url;
-    }
-    // Cập nhật các field còn lại
+
+    // Không xử lý mp3File nữa
     Object.assign(lessonEntity, rest);
 
     return await this.lessonRepository.save(lessonEntity);

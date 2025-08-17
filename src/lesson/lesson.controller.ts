@@ -45,23 +45,36 @@ export class LessonController {
     return await this.lessonService.findOne(id);
   }
 
+  // @Post()
+  // @UseInterceptors(FileInterceptor('mp3File'))
+  // async create(
+  //   @Body() createLessonDto: CreateLessonDto,
+  //   @UploadedFile() mp3File: Express.Multer.File,
+  // ): Promise<Lesson> {
+  //   return await this.lessonService.create(createLessonDto, mp3File);
+  // }
+
+  // @Put(':id')
+  // @UseInterceptors(FileInterceptor('mp3File'))
+  // async update(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body() updateLessonDto: UpdateLessonDto,
+  //   @UploadedFile() mp3File: Express.Multer.File,
+  // ): Promise<Lesson> {
+  //   return await this.lessonService.update(id, updateLessonDto, mp3File);
+  // }
+
   @Post()
-  @UseInterceptors(FileInterceptor('mp3File'))
-  async create(
-    @Body() createLessonDto: CreateLessonDto,
-    @UploadedFile() mp3File: Express.Multer.File,
-  ): Promise<Lesson> {
-    return await this.lessonService.create(createLessonDto, mp3File);
+  async create(@Body() createLessonDto: CreateLessonDto): Promise<Lesson> {
+    return await this.lessonService.create(createLessonDto);
   }
 
   @Put(':id')
-  @UseInterceptors(FileInterceptor('mp3File'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateLessonDto: UpdateLessonDto,
-    @UploadedFile() mp3File: Express.Multer.File,
   ): Promise<Lesson> {
-    return await this.lessonService.update(id, updateLessonDto, mp3File);
+    return await this.lessonService.update(id, updateLessonDto);
   }
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
