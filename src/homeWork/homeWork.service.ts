@@ -5,6 +5,7 @@ import { HomeWork } from './homeWork.entity';
 import {
   CreateHomeWorkDto,
   findHomeWorkByLevelAndTeacherIdDto,
+  ReassignHomeWorksDto,
   textToSpeechDto,
   UpdateHomeWorkDto,
 } from './homeWork.dto';
@@ -89,6 +90,32 @@ export class HomeWorkService {
     });
 
     return await this.homeWorkRepository.save(homeWorkEntity);
+  }
+
+  async reassignHomeWorks(
+    reassignDto: ReassignHomeWorksDto,
+  ): Promise<{ updatedCount: number }> {
+    const { oldTeacherId, newTeacherId } = reassignDto;
+
+    // 1. Kiểm tra giáo viên mới có tồn tại không
+    const newTeacher = await this.teacherRepository.findOne({
+      where: { id: newTeacherId, isDelete: false },
+    });
+
+    if (!newTeacher) {
+      throw new NotFoundException(
+        `New teacher with ID ${newTeacherId} not found.`,
+      );
+    }
+
+    // 2. Sử dụng query builder để cập nhật teacher cho tất cả bài tập của giáo viên cũ
+    const updateResult = await this.homeWorkRepository.update(
+      { teacher: { id: oldTeacherId } }, // Điều kiện: tìm các bài tập của teacher cũ
+      { teacher: newTeacher }, // Dữ liệu cập nhật: gán teacher mới
+    );
+
+    // 3. Trả về số lượng bản ghi đã được cập nhật
+    return { updatedCount: updateResult.affected };
   }
 
   async update(

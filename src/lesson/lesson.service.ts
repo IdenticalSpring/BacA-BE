@@ -5,6 +5,7 @@ import { Lesson } from './lesson.entity';
 import {
   CreateLessonDto,
   findLessonByLevelAndTeacherIdDto,
+  ReassignLessonsDto,
   UpdateLessonDto,
 } from './lesson.dto';
 import { google } from 'googleapis';
@@ -95,6 +96,54 @@ export class LessonService {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
     }
     return lesson;
+  }
+
+  async reassignLessons(
+    reassignDto: ReassignLessonsDto,
+  ): Promise<{ updatedCount: number }> {
+    const { oldTeacherId, newTeacherId } = reassignDto;
+
+    // 1. Kiểm tra xem giáo viên mới có tồn tại không
+    const newTeacher = await this.teacherRepository.findOne({
+      where: { id: newTeacherId, isDelete: false },
+    });
+
+    if (!newTeacher) {
+      throw new NotFoundException(
+        `New teacher with ID ${newTeacherId} not found.`,
+      );
+    }
+
+    // 2. Tìm tất cả các bài học của giáo viên cũ
+    const lessonsToUpdate = await this.lessonRepository.find({
+      where: { teacher: { id: oldTeacherId } },
+    });
+
+    if (lessonsToUpdate.length === 0) {
+      // Không có bài học nào để cập nhật, trả về thành công với count = 0
+      return { updatedCount: 0 };
+    }
+
+    // 3. Cập nhật teacher mới cho tất cả các bài học đã tìm thấy
+    // Dùng vòng lặp và save từng cái để kích hoạt các event (nếu có)
+    // Hoặc dùng query builder để hiệu quả hơn với số lượng lớn
+
+    // Cách 1: Dùng query builder (hiệu quả cao)
+    const updateResult = await this.lessonRepository.update(
+      { teacher: { id: oldTeacherId } }, // Điều kiện: tìm các bài học của teacher cũ
+      { teacher: newTeacher }, // Dữ liệu cập nhật: gán teacher mới
+    );
+
+    return { updatedCount: updateResult.affected };
+
+    /*
+    // Cách 2: Dùng vòng lặp (dễ đọc hơn, nhưng kém hiệu quả hơn với hàng ngàn bản ghi)
+    for (const lesson of lessonsToUpdate) {
+      lesson.teacher = newTeacher;
+    }
+    await this.lessonRepository.save(lessonsToUpdate); // TypeORM đủ thông minh để cập nhật hàng loạt trong một transaction
+    return { updatedCount: lessonsToUpdate.length };
+    */
   }
 
   // async create(

@@ -66,3 +66,10 @@ export class textToSpeechDto {
   @IsNumber()
   voiceSpeed?: string;
 }
+export class ReassignHomeWorksDto {
+  @IsInt()
+  oldTeacherId: number;
+
+  @IsInt()
+  newTeacherId: number;
+}

@@ -14,6 +14,7 @@ import { LessonService } from './lesson.service';
 import {
   CreateLessonDto,
   findLessonByLevelAndTeacherIdDto,
+  ReassignLessonsDto,
   UpdateLessonDto,
 } from './lesson.dto';
 import { Lesson } from './lesson.entity';
@@ -67,6 +68,18 @@ export class LessonController {
   @Post()
   async create(@Body() createLessonDto: CreateLessonDto): Promise<Lesson> {
     return await this.lessonService.create(createLessonDto);
+  }
+
+  // 👇 THÊM ENDPOINT MỚI VÀO ĐÂY
+  @Put('reassign-teacher')
+  async reassignTeacherForLessons(
+    @Body() reassignDto: ReassignLessonsDto,
+  ): Promise<{ message: string; updatedCount: number }> {
+    const result = await this.lessonService.reassignLessons(reassignDto);
+    return {
+      message: `Successfully reassigned ${result.updatedCount} lessons from teacher ${reassignDto.oldTeacherId} to teacher ${reassignDto.newTeacherId}.`,
+      updatedCount: result.updatedCount,
+    };
   }
 
   @Put(':id')

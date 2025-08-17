@@ -15,6 +15,7 @@ import { HomeWorkService } from './homeWork.service';
 import {
   CreateHomeWorkDto,
   findHomeWorkByLevelAndTeacherIdDto,
+  ReassignHomeWorksDto,
   textToSpeechDto,
   UpdateHomeWorkDto,
 } from './homeWork.dto';
@@ -53,6 +54,19 @@ export class HomeWorkController {
   ): Promise<HomeWork> {
     return await this.homeworkService.create(createHomeWorkDto);
   }
+
+  // 👇 THÊM ENDPOINT MỚI VÀO ĐÂY
+  @Put('reassign-teacher')
+  async reassignTeacherForHomeWorks(
+    @Body() reassignDto: ReassignHomeWorksDto,
+  ): Promise<{ message: string; updatedCount: number }> {
+    const result = await this.homeworkService.reassignHomeWorks(reassignDto);
+    return {
+      message: `Successfully reassigned ${result.updatedCount} homeworks from teacher ${reassignDto.oldTeacherId} to teacher ${reassignDto.newTeacherId}.`,
+      updatedCount: result.updatedCount,
+    };
+  }
+
   @UseInterceptors(FileInterceptor('mp3File'))
   @Put(':id')
   async update(

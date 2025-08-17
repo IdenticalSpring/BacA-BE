@@ -52,3 +52,11 @@ export class findLessonByLevelAndTeacherIdDto {
   @IsInt()
   teacherId: number;
 }
+
+export class ReassignLessonsDto {
+  @IsInt()
+  oldTeacherId: number;
+
+  @IsInt()
+  newTeacherId: number;
+}
