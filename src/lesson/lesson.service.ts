@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Lesson } from './lesson.entity';
 import {
   CreateLessonDto,
@@ -101,9 +101,13 @@ export class LessonService {
   async reassignLessons(
     reassignDto: ReassignLessonsDto,
   ): Promise<{ updatedCount: number }> {
-    const { oldTeacherId, newTeacherId } = reassignDto;
+    const { newTeacherId, lessonIds } = reassignDto;
 
-    // 1. Kiểm tra xem giáo viên mới có tồn tại không
+    // Nếu không có ID nào được gửi lên, không làm gì cả
+    if (!lessonIds || lessonIds.length === 0) {
+      return { updatedCount: 0 };
+    }
+
     const newTeacher = await this.teacherRepository.findOne({
       where: { id: newTeacherId, isDelete: false },
     });
@@ -114,36 +118,13 @@ export class LessonService {
       );
     }
 
-    // 2. Tìm tất cả các bài học của giáo viên cũ
-    const lessonsToUpdate = await this.lessonRepository.find({
-      where: { teacher: { id: oldTeacherId } },
-    });
-
-    if (lessonsToUpdate.length === 0) {
-      // Không có bài học nào để cập nhật, trả về thành công với count = 0
-      return { updatedCount: 0 };
-    }
-
-    // 3. Cập nhật teacher mới cho tất cả các bài học đã tìm thấy
-    // Dùng vòng lặp và save từng cái để kích hoạt các event (nếu có)
-    // Hoặc dùng query builder để hiệu quả hơn với số lượng lớn
-
-    // Cách 1: Dùng query builder (hiệu quả cao)
+    // Sử dụng toán tử `In` của TypeORM để cập nhật tất cả các lesson có ID trong mảng
     const updateResult = await this.lessonRepository.update(
-      { teacher: { id: oldTeacherId } }, // Điều kiện: tìm các bài học của teacher cũ
-      { teacher: newTeacher }, // Dữ liệu cập nhật: gán teacher mới
+      { id: In(lessonIds) }, // Điều kiện: id nằm trong mảng lessonIds
+      { teacher: newTeacher },
     );
 
     return { updatedCount: updateResult.affected };
-
-    /*
-    // Cách 2: Dùng vòng lặp (dễ đọc hơn, nhưng kém hiệu quả hơn với hàng ngàn bản ghi)
-    for (const lesson of lessonsToUpdate) {
-      lesson.teacher = newTeacher;
-    }
-    await this.lessonRepository.save(lessonsToUpdate); // TypeORM đủ thông minh để cập nhật hàng loạt trong một transaction
-    return { updatedCount: lessonsToUpdate.length };
-    */
   }
 
   // async create(

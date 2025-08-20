@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsInt,
   IsDateString,
+  IsArray,
 } from 'class-validator';
 
 export class CreateLessonDto {
@@ -54,9 +55,13 @@ export class findLessonByLevelAndTeacherIdDto {
 }
 
 export class ReassignLessonsDto {
-  @IsInt()
-  oldTeacherId: number;
+  // @IsInt()
+  // oldTeacherId: number;
 
   @IsInt()
   newTeacherId: number;
+
+  @IsArray()
+  @IsInt({ each: true }) // Đảm bảo mỗi phần tử trong mảng là một số nguyên
+  lessonIds: number[];
 }

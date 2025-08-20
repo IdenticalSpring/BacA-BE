@@ -62,7 +62,7 @@ export class HomeWorkController {
   ): Promise<{ message: string; updatedCount: number }> {
     const result = await this.homeworkService.reassignHomeWorks(reassignDto);
     return {
-      message: `Successfully reassigned ${result.updatedCount} homeworks from teacher ${reassignDto.oldTeacherId} to teacher ${reassignDto.newTeacherId}.`,
+      message: `Successfully reassigned ${result.updatedCount} homeworks to teacher ${reassignDto.newTeacherId}.`,
       updatedCount: result.updatedCount,
     };
   }

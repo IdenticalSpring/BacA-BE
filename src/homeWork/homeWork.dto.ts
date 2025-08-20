@@ -5,6 +5,7 @@ import {
   IsInt,
   IsDateString,
   IsNumber,
+  IsArray,
 } from 'class-validator';
 
 export class CreateHomeWorkDto {
@@ -67,9 +68,13 @@ export class textToSpeechDto {
   voiceSpeed?: string;
 }
 export class ReassignHomeWorksDto {
-  @IsInt()
-  oldTeacherId: number;
+  // @IsInt()
+  // oldTeacherId: number;
 
   @IsInt()
   newTeacherId: number;
+
+  @IsArray()
+  @IsInt({ each: true })
+  homeWorkIds: number[];
 }

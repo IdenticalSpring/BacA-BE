@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { HomeWork } from './homeWork.entity';
 import {
   CreateHomeWorkDto,
@@ -95,9 +95,12 @@ export class HomeWorkService {
   async reassignHomeWorks(
     reassignDto: ReassignHomeWorksDto,
   ): Promise<{ updatedCount: number }> {
-    const { oldTeacherId, newTeacherId } = reassignDto;
+    const { newTeacherId, homeWorkIds } = reassignDto;
 
-    // 1. Kiểm tra giáo viên mới có tồn tại không
+    if (!homeWorkIds || homeWorkIds.length === 0) {
+      return { updatedCount: 0 };
+    }
+
     const newTeacher = await this.teacherRepository.findOne({
       where: { id: newTeacherId, isDelete: false },
     });
@@ -108,13 +111,11 @@ export class HomeWorkService {
       );
     }
 
-    // 2. Sử dụng query builder để cập nhật teacher cho tất cả bài tập của giáo viên cũ
     const updateResult = await this.homeWorkRepository.update(
-      { teacher: { id: oldTeacherId } }, // Điều kiện: tìm các bài tập của teacher cũ
-      { teacher: newTeacher }, // Dữ liệu cập nhật: gán teacher mới
+      { id: In(homeWorkIds) }, // Điều kiện: id nằm trong mảng homeWorkIds
+      { teacher: newTeacher },
     );
 
-    // 3. Trả về số lượng bản ghi đã được cập nhật
     return { updatedCount: updateResult.affected };
   }
 

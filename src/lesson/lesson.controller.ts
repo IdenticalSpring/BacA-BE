@@ -77,7 +77,7 @@ export class LessonController {
   ): Promise<{ message: string; updatedCount: number }> {
     const result = await this.lessonService.reassignLessons(reassignDto);
     return {
-      message: `Successfully reassigned ${result.updatedCount} lessons from teacher ${reassignDto.oldTeacherId} to teacher ${reassignDto.newTeacherId}.`,
+      message: `Successfully reassigned ${result.updatedCount} lessons from teacher to teacher ${reassignDto.newTeacherId}.`,
       updatedCount: result.updatedCount,
     };
   }
