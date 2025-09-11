@@ -37,6 +37,12 @@ export class LessonByScheduleController {
       classID,
     );
   }
+  @Get('class/schedule/:classID')
+  async findAllScheduleOfClass(
+    @Param('classID', ParseIntPipe) classID: number,
+  ): Promise<Schedule[]> {
+    return await this.lessonByScheduleService.findAllScheduleOfClass(classID);
+  }
   @Get('homework/:homeworkId')
   async findLessonByScheduleByHomeworkId(
     @Param('homeworkId', ParseIntPipe) homeworkId: number,

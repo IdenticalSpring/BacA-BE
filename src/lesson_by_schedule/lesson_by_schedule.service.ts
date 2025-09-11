@@ -37,6 +37,22 @@ export class LessonByScheduleService {
       relations: ['class', 'schedule'],
     });
   }
+  async findAllScheduleOfClass(classID: number): Promise<Schedule[]> {
+    const lessons = await this.lessonByScheduleRepository.find({
+      where: { class: { id: classID }, isDelete: false },
+      relations: ['class', 'schedule'],
+    });
+
+    const uniqueSchedules = new Map<number, Schedule>();
+
+    lessons.forEach((lesson) => {
+      if (lesson.schedule) {
+        uniqueSchedules.set(lesson.schedule.id, lesson.schedule);
+      }
+    });
+
+    return Array.from(uniqueSchedules.values());
+  }
   async getLessonByScheduleByHomeworkId(
     homeworkId: number,
   ): Promise<LessonBySchedule> {
