@@ -42,7 +42,7 @@ export class ClassController {
 
   @Post()
   @UseGuards(AuthGuard)
-  @Roles('admin')
+  @Roles('admin', 'teacher')
   async create(@Body() createClassDto: CreateClassDto): Promise<Class> {
     console.log('createClassDto', createClassDto);
     return await this.classService.create(createClassDto);
