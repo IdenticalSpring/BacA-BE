@@ -4,6 +4,9 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ContentPage } from 'src/contentpage/contentpage.entity';
 import axios from 'axios';
+import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
+import { ChatService } from 'src/chat/chat.service';
+import { ChatGateway } from 'src/chat/chat.gateway';
 
 @Injectable()
 export class GeminiService {
@@ -12,6 +15,11 @@ export class GeminiService {
   constructor(
     @InjectRepository(ContentPage)
     private contentPageRepository: Repository<ContentPage>,
+    @InjectRepository(ChatTopic)
+    private chatTopicRepository: Repository<ChatTopic>, 
+
+    private readonly chatService: ChatService, 
+    private readonly chatGateway: ChatGateway,
   ) {
     const apiKey = process.env.GEMINI_API_KEY;
     this.genAI = new GoogleGenerativeAI(apiKey);
@@ -101,5 +109,106 @@ export class GeminiService {
     const result = await model.generateContent([prompt, ...imageParts]);
     const response = await result.response;
     return response.text();
+  }
+
+  async createAIConversation(
+    topic: string,
+    level: string,
+    name: string,
+    imageUrl?: string,
+  ): Promise<string> {
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    let prompt = `
+You are a friendly English conversation partner helping ESL students practice speaking.
+Start the chat with a warm, natural greeting using the student's name.
+Then ask 2–3 engaging questions related to the given topic.
+Questions must fit the student's English level:
+- Beginner: short, simple, daily-life questions.
+- Intermediate: casual and slightly complex.
+- Advanced: deeper, discussion-type questions.
+
+Avoid bold, italics, or markdown formatting.
+Return only natural-sounding English dialogue.
+
+Topic: ${topic}
+Student name: ${name}
+English level: ${level}
+`;
+
+    let imageParts = [];
+    if (imageUrl && imageUrl.trim().length > 0) {
+      try {
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const base64Image = Buffer.from(response.data).toString('base64');
+
+        imageParts = [
+          {
+            inlineData: {
+              data: base64Image,
+              mimeType: response.headers['content-type'] || 'image/jpeg',
+            },
+          },
+        ];
+
+        prompt += `\nUse the provided image as context if it's relevant to the topic.`;
+      } catch (error) {
+        console.error('Error downloading image:', error);
+        prompt += `\n(Note: Could not load the image from ${imageUrl}.)`;
+      }
+    }
+
+    const result = await model.generateContent([prompt, ...imageParts]);
+    const response = await result.response;
+    return response.text();
+  }
+
+  async replyToStudentAnswer(data: {
+    classId: number;
+    studentId: number;
+    teacherId: number;
+    answer: string;
+  }): Promise<string> {
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    // 1️⃣ Find the current active topic for this class
+    const activeTopic = await this.chatTopicRepository.findOne({
+      where: { classId: data.classId, active: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!activeTopic) {
+      throw new Error(`No active topic found for class ${data.classId}`);
+    }
+
+    // 2️⃣ Build the AI prompt using topic + student's answer
+    const prompt = `
+You are an encouraging English teacher continuing a conversation practice with an ESL student.
+The current topic is: "${activeTopic.title}".
+Here is the student's latest answer:
+"${data.answer}"
+
+Please reply naturally in English:
+- Stay on topic.
+- Ask one follow-up question to keep the conversation going.
+- Match the student's approximate English level (simple grammar if beginner).
+- Do NOT use bold, italics, or markdown.
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const aiReply = response.text();
+
+    const chat = await this.chatService.createChat({
+      classId: data.classId,
+      teacherId: data.teacherId,
+      studentId: data.studentId,
+      senderRole: 'teacher',
+      message: aiReply,
+    });
+
+    this.chatGateway.notifyNewChat(data.classId, chat);
+
+    return aiReply;
   }
 }

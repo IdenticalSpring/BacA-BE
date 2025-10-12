@@ -54,6 +54,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ChatModule } from './chat/chat.module';
 import { MessageModule } from './message/message.module';
+import { ChatTopicModule } from './chat-topic/chat-topic.module';
 @Module({
   imports: [
     MulterModule.register({
@@ -137,6 +138,7 @@ import { MessageModule } from './message/message.module';
     StudentQuestionAnswerModule,
     ChatModule,
     MessageModule,
+    ChatTopicModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],

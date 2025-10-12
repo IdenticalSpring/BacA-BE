@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, ParseIntPipe } from '@nestjs/common';
 import { GeminiService } from './gemini.service';
 
 @Controller('chatbot')
@@ -36,5 +36,21 @@ export class GeminiController {
       safeImageUrl,
     );
     return { response };
+  }
+
+  @Post('student-answer')
+  async handleStudentAnswer(
+    @Body('classId', ParseIntPipe) classId: number,
+    @Body('studentId', ParseIntPipe) studentId: number,
+    @Body('teacherId', ParseIntPipe) teacherId: number,
+    @Body('answer') answer: string,
+  ): Promise<{ aiReply: string }> {
+    const aiReply = await this.chatbotService.replyToStudentAnswer({
+      classId,
+      studentId,
+      teacherId,
+      answer,
+    });
+    return { aiReply };
   }
 }
