@@ -4,7 +4,8 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class FilesService {
   saveFile(file: Express.Multer.File) {
-    const baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn'; //http://localhost:8000
+    const baseUrl = "http://localhost:8000"; 
+    // //process.env.API_BASE_URL || 'https://api.happyclass.com.vn'; //http://localhost:8000
     // https://api.happyclass.com.vn
     return {
       originalName: file.originalname,

@@ -1,4 +1,4 @@
-// src/chat/ws-auth.guard.ts
+// src/message/ws-auth.guard.ts
 import {
   CanActivate,
   ExecutionContext,
