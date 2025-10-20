@@ -23,9 +23,10 @@ export class MessageService {
 
   async createMessage(
     createMessageDto: CreateMessageDto,
-    sender: Student | Teacher,
+    sender: Partial<Student> | Partial<Teacher>,
     senderType: 'student' | 'teacher',
   ): Promise<Message> {
+  
     const { content, imageUrl, audioUrl, classId } = createMessageDto;
 
     const targetClass = await this.classRepository.findOneBy({ id: classId });

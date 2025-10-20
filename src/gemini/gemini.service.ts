@@ -117,7 +117,7 @@ export class GeminiService {
     name: string,
     imageUrl?: string,
   ): Promise<string> {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     let prompt = `
 You are a friendly English conversation partner helping ESL students practice speaking.
