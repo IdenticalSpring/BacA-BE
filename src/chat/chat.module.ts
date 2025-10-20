@@ -10,10 +10,11 @@ import { Teacher } from 'src/teacher/teacher.entity';
 import { Class } from 'src/class/class.entity';
 import { GeminiModule } from 'src/gemini/gemini.module';
 import { WsAuthGuard } from 'src/message/ws-auth.guard'; // ✅ add this import
+import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Chat, Student, Teacher, Class]),
+    TypeOrmModule.forFeature([Chat, Student, Teacher, Class,ChatTopic]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secretKey', // ✅ must match guard secret
       signOptions: { expiresIn: '7d' },

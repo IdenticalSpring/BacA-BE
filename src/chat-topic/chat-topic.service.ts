@@ -102,4 +102,8 @@ export class ChatTopicService {
       order: { createdAt: 'DESC' },
     });
   }
+  async deactivateTopic(topicId: number) {
+    await this.chatTopicRepository.update({ id: topicId }, { active: false });
+  }
+  
 }

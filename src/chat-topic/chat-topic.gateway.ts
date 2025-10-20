@@ -1,52 +1,74 @@
+// src/chat-topic/chat-topic.gateway.ts
 import {
   WebSocketGateway,
-  SubscribeMessage,
-  MessageBody,
   WebSocketServer,
+  SubscribeMessage,
   ConnectedSocket,
+  MessageBody,
 } from '@nestjs/websockets';
-import { UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { UseGuards, Logger } from '@nestjs/common';
 import { WsAuthGuard } from 'src/message/ws-auth.guard';
 import { ChatTopicService } from './chat-topic.service';
-import { ChatTopic } from './chat-topic.entity';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class ChatTopicGateway {
   @WebSocketServer()
   server: Server;
 
+  private readonly logger = new Logger(ChatTopicGateway.name);
+
   constructor(private readonly chatTopicService: ChatTopicService) {}
 
+  /**
+   * Student joins their class topic room.
+   */
   @UseGuards(WsAuthGuard)
-  @SubscribeMessage('joinTopicRoom')
-  handleJoinTopicRoom(
+  @SubscribeMessage('joinClassTopic')
+  handleJoinClassTopic(
     @MessageBody() data: { classId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const room = String(data.classId);
+    const room = `class-${data.classId}`;
     client.join(room);
-    console.log(`Client ${client.id} joined topic room ${room}`);
-    client.emit('joinedTopicRoom', { classId: data.classId });
+    this.logger.log(`Client ${client.id} joined topic room ${room}`);
+    client.emit('joinedClassTopic', { room });
   }
 
+  /**
+   * Teacher creates a new topic for a class.
+   */
   @UseGuards(WsAuthGuard)
-  @SubscribeMessage('broadcastTopic')
-  async handleBroadcastTopic(
-    @MessageBody() data: { classId: number },
-    @ConnectedSocket() client: Socket,
+  @SubscribeMessage('createTopic')
+  async handleCreateTopic(
+    @MessageBody()
+    payload: {
+      classId: number;
+      teacherId: number;
+      title: string;
+      level: string;
+      imageUrl?: string;
+      audioUrl?: string;
+    },
   ) {
-    const latestTopic = await this.chatTopicService.getLatestTopicByClassId(
-      data.classId,
-    );
-    if (latestTopic) {
-      this.server.to(String(data.classId)).emit('newTopic', latestTopic);
-      console.log(`Broadcasted topic for class ${data.classId}`);
-    }
+    const result = await this.chatTopicService.createTopic(payload);
+    const room = `class-${payload.classId}`;
+
+    // broadcast to everyone in that class
+    this.server.to(room).emit('newTopic', result.topic);
+    this.logger.log(`New topic broadcasted to room ${room}`);
   }
 
-  notifyTopicChange(classId: number, topic: ChatTopic) {
-    this.server.to(String(classId)).emit('newTopic', topic);
-    console.log(`Auto-notified new topic for class ${classId}`);
+  /**
+   * Manually broadcast topic from service (for REST-created topic)
+   */
+  notifyNewTopic(classId: number, topic: any) {
+    try {
+      const room = `class-${classId}`;
+      this.server.to(room).emit('newTopic', topic);
+      this.logger.log(`Topic ${topic.id} broadcasted to ${room}`);
+    } catch (err) {
+      this.logger.error(`notifyNewTopic error: ${err.message}`);
+    }
   }
 }

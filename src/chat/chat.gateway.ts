@@ -20,16 +20,12 @@ export class ChatGateway {
 
   constructor(private readonly chatService: ChatService) {}
 
-  /**
-   * Generate unique room name for each teacher–student conversation
-   */
+  /** Generate unique room name for each teacher–student chat */
   private getRoomName(classId: number, studentId: number): string {
     return `${classId}-${studentId}`;
   }
 
-  /**
-   * Join a private 1-to-1 chat room between teacher and student
-   */
+  /** Join a private 1–1 chat room */
   @UseGuards(WsAuthGuard)
   @SubscribeMessage('joinPrivateChat')
   handleJoinPrivateChat(
@@ -42,28 +38,91 @@ export class ChatGateway {
     client.emit('joinedPrivateChat', { room });
   }
 
-  /**
-   * Send private message from teacher↔student
-   */
+  /** Handle sending private messages */
   @UseGuards(WsAuthGuard)
   @SubscribeMessage('sendPrivateChat')
   async handleSendPrivateChat(
     @MessageBody() dto: CreateChatDto,
     @ConnectedSocket() client: Socket,
   ) {
-    // Save chat to database
-    const chat = await this.chatService.createChat(dto);
+    this.logger.log('💬 [CHAT DEBUG] Received sendPrivateChat event:');
+    console.log('🧾 Full DTO:', dto);
 
-    // Emit to corresponding private room
-    const room = this.getRoomName(dto.classId, dto.studentId);
-    this.server.to(room).emit('newPrivateChat', chat);
+    try {
+      // 1️⃣ Save message
+      const chat = await this.chatService.createChat(dto);
+      const room = this.getRoomName(dto.classId, dto.studentId);
 
-    this.logger.log(`Private chat sent to room ${room}`);
+      this.server.to(room).emit('newPrivateChat', chat);
+      this.logger.log(`📩 Message sent to room ${room}`);
+
+      // 2️⃣ Check if sender is student
+      if (dto.senderRole === 'student') {
+        this.logger.log(
+          `👩‍🎓 [CHAT DEBUG] Student message detected. Checking for active topic in class ${dto.classId}...`,
+        );
+
+        const activeTopic = await this.chatService.getActiveTopicByClassId(
+          dto.classId,
+        );
+        console.log('🧩 [CHAT DEBUG] Active topic found:', activeTopic);
+
+        if (activeTopic && activeTopic.active) {
+          this.logger.log(
+            `🤖 [CHAT DEBUG] Active topic "${activeTopic.title}" found — triggering Gemini auto-reply...`,
+          );
+
+          // Call AI
+          const aiReply = await this.chatService.autoReplyForActiveTopic({
+            classId: dto.classId,
+            studentId: dto.studentId,
+            teacherId: dto.teacherId,
+            answer: dto.message || '',
+          });
+
+          if (aiReply && aiReply.trim().length > 0) {
+            this.logger.log(
+              `✅ [CHAT DEBUG] AI reply generated successfully: ${aiReply.substring(
+                0,
+                100,
+              )}...`,
+            );
+
+            // Save & emit AI message
+            const aiChat = await this.chatService.createChat({
+              classId: dto.classId,
+              studentId: dto.studentId,
+              teacherId: dto.teacherId,
+              senderRole: 'teacher',
+              message: aiReply,
+            });
+
+            console.log('🤖 [CHAT DEBUG] Emitting AI reply to room:', room);
+            this.server.to(room).emit('newPrivateChat', aiChat);
+            this.logger.log(`📤 AI reply emitted to ${room}`);
+          } else {
+            this.logger.warn(
+              `⚠️ [CHAT DEBUG] AI returned an empty reply for topic "${activeTopic.title}".`,
+            );
+          }
+        } else {
+          this.logger.log(
+            `ℹ️ [CHAT DEBUG] No active topic found for class ${dto.classId}. Skipping AI reply.`,
+          );
+        }
+      } else {
+        this.logger.log(
+          `👨‍🏫 [CHAT DEBUG] Sender is teacher — normal message flow only.`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `❌ [CHAT DEBUG] Error in handleSendPrivateChat: ${err.message}`,
+        err.stack,
+      );
+    }
   }
-
-  /**
-   * Revoke (delete/recall) a chat message in private chat
-   */
+  /** Revoke chat message */
   @UseGuards(WsAuthGuard)
   @SubscribeMessage('revokePrivateChat')
   async handleRevokePrivateChat(
@@ -75,12 +134,10 @@ export class ChatGateway {
     });
     const room = this.getRoomName(data.classId, data.studentId);
     this.server.to(room).emit('privateChatRevoked', chat);
-    this.logger.log(`Chat ${data.chatId} revoked in room ${room}`);
+    this.logger.log(`Chat ${data.chatId} revoked in ${room}`);
   }
 
-  /**
-   * Mark messages as read in a private chat
-   */
+  /** Mark messages as read */
   @UseGuards(WsAuthGuard)
   @SubscribeMessage('markPrivateRead')
   async handlePrivateRead(
@@ -98,27 +155,20 @@ export class ChatGateway {
     );
     const room = this.getRoomName(data.classId, data.studentId);
     this.server.to(room).emit('privateMessagesRead', data);
-    this.logger.log(`Messages marked as read for room ${room}`);
+    this.logger.log(`Messages marked as read in room ${room}`);
   }
 
-  /**
-   * ✅ Legacy compatibility — still allows GeminiService / ChatTopicService
-   *    to broadcast chat messages using the old notifyNewChat() method.
-   *    If student info is provided, send to private room; otherwise broadcast to class.
-   */
+  /** Compatibility method for AI/system messages */
   notifyNewChat(classId: number, chat: any) {
     try {
       const studentId = chat?.student?.id || chat?.studentId;
-
       if (studentId) {
-        // Send to private room between teacher and student
         const room = this.getRoomName(classId, studentId);
         this.server.to(room).emit('newPrivateChat', chat);
-        this.logger.log(`notifyNewChat: Sent to private room ${room}`);
+        this.logger.log(`notifyNewChat: Sent to ${room}`);
       } else {
-        // Fallback to entire class broadcast (group mode)
         this.server.to(String(classId)).emit('newChat', chat);
-        this.logger.log(`notifyNewChat: Sent to class room ${classId}`);
+        this.logger.log(`notifyNewChat: Sent to class ${classId}`);
       }
     } catch (error) {
       this.logger.error(`notifyNewChat error: ${error.message}`);

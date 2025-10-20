@@ -6,6 +6,7 @@ import {
   Param,
   BadRequestException,
   ParseIntPipe,
+  Patch,
 } from '@nestjs/common';
 import { ChatTopicService } from './chat-topic.service';
 
@@ -39,9 +40,15 @@ export class ChatTopicController {
     };
   }
 
-
+  @Patch('deactivate/:topicId')
+  async deactivateTopic(@Param('topicId') topicId: string) {
+    const id = Number(topicId);
+    await this.chatTopicService.deactivateTopic(id);
+    return { success: true };
+  }
+  
   @Get('latest/:classId')
-  async getLatestTopicByClassId(@Param('classId') classId: string) {
+  async getActiveTopicByClassId(@Param('classId') classId: string) {
     const parsedClassId = Number(classId);
     if (isNaN(parsedClassId)) throw new BadRequestException('Invalid classId');
     const topic = await this.chatTopicService.getLatestTopicByClassId(parsedClassId);
