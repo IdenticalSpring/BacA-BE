@@ -8,6 +8,10 @@ import { Teacher } from '../teacher/teacher.entity';
 import { Class } from '../class/class.entity';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
+import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class ChatService {
@@ -212,6 +216,59 @@ export class ChatService {
         return '';
       }
 
+      let audioData: Buffer;
+
+      try {
+        const response = await axios.post(
+          'http://45.13.132.111:5000/tts',
+          {
+            text: aiReply,
+            voice: 'af_heart',
+            voiceSpeed: '0.8',
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              // apikey: process.env.API_TTS_KEY,
+            },
+          },
+        );
+
+        audioData = response.data.audioData; // Trả về buffer
+      } catch (error) {
+        console.error(
+          'Error converting text to speech:',
+          error?.response?.data?.message,
+        );
+        audioData = null;
+      }
+
+      let audioBuffer: Buffer;
+
+      // Nếu API trả về base64
+      if (typeof audioData === 'string') {
+        audioBuffer = Buffer.from(audioData, 'base64');
+      } else {
+        audioBuffer = Buffer.from(audioData);
+      }
+
+      // Đảm bảo thư mục uploads tồn tại
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      // Tạo tên file ngẫu nhiên
+      const fileName = `tts-${randomUUID()}.mp3`;
+      const filePath = path.join(uploadDir, fileName);
+
+      // Ghi file xuống disk
+      fs.writeFileSync(filePath, audioBuffer);
+
+      // Tạo URL public
+      const baseUrl = 'https://api.happyclass.com.vn';
+      const fileUrl = `${baseUrl}/uploads/${fileName}`;
+
       console.log('💾 [AI DEBUG] Saving AI reply to database...');
       const teacherChat = await this.createChat({
         classId: data.classId,
@@ -219,6 +276,7 @@ export class ChatService {
         studentId: data.studentId,
         senderRole: 'teacher',
         message: aiReply,
+        audioUrl: fileUrl,
       });
 
       console.log(
@@ -231,6 +289,4 @@ export class ChatService {
       return '';
     }
   }
-
-  
 }
