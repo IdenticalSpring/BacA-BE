@@ -43,12 +43,14 @@ export class GeminiController {
     @Body('classId', ParseIntPipe) classId: number,
     @Body('studentId', ParseIntPipe) studentId: number,
     @Body('teacherId', ParseIntPipe) teacherId: number,
+    @Body('audioUrl') audioUrl: string,
     @Body('answer') answer: string,
   ): Promise<{ aiReply: string }> {
     const aiReply = await this.chatbotService.replyToStudentAnswer({
       classId,
       studentId,
       teacherId,
+      audioUrl,
       answer,
     });
     return { aiReply };

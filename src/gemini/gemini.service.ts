@@ -19,12 +19,27 @@ export class GeminiService {
     private chatTopicRepository: Repository<ChatTopic>, 
 
     private readonly chatService: ChatService, 
+    
     private readonly chatGateway: ChatGateway,
   ) {
     const apiKey = process.env.GEMINI_API_KEY;
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
+  private guessMimeFromUrl(url: string): string {
+    const ext = (url.split("?")[0].split(".").pop() || "").toLowerCase();
+    const map: Record<string, string> = {
+      mp3: "audio/mpeg",
+      m4a: "audio/mp4",
+      mp4: "audio/mp4",
+      wav: "audio/wav",
+      webm: "audio/webm",
+      ogg: "audio/ogg",
+      flac: "audio/flac",
+      aac: "audio/aac",
+    };
+    return map[ext] || "application/octet-stream";
+  }
   async enhanceDescription(description: string): Promise<string> {
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
@@ -168,37 +183,64 @@ English level: ${level}
     studentId: number;
     teacherId: number;
     answer: string;
+    audioUrl?: string;   // 👈 add this
   }): Promise<string> {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    // 1️⃣ Find the current active topic for this class
+    // ✅ use a current model
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  
+    // 1) find active topic
     const activeTopic = await this.chatTopicRepository.findOne({
       where: { classId: data.classId, active: true },
       order: { createdAt: 'DESC' },
     });
-
     if (!activeTopic) {
       throw new Error(`No active topic found for class ${data.classId}`);
     }
-
-    // 2️⃣ Build the AI prompt using topic + student's answer
+  
+    // 2) build prompt
     const prompt = `
-You are an encouraging English teacher continuing a conversation practice with an ESL student.
-The current topic is: "${activeTopic.title}".
-Here is the student's latest answer:
-"${data.answer}"
-
-Please reply naturally in English:
-- Stay on topic.
-- Ask one follow-up question to keep the conversation going.
-- Match the student's approximate English level (simple grammar if beginner).
-- Do NOT use bold, italics, or markdown.
-`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const aiReply = response.text();
-
+  You are an encouraging English teacher continuing a conversation practice with an ESL student.
+  Topic: "${activeTopic.title}"
+  Student's latest answer: "${data.answer}"
+  
+  Please reply naturally in English:
+  - Stay on topic.
+  - Ask one follow-up question to keep the conversation going.
+  - Match the student's approximate English level (simple grammar if beginner).
+  - Do NOT use bold, italics, or markdown.
+  If an audio clip is provided, use it to infer pronunciation, intent, or extra context.
+  `.trim();
+  
+    // 3) assemble parts (text + optional audio)
+    const parts: any[] = [{ text: prompt }];
+  
+    if (data.audioUrl && data.audioUrl.trim().length > 0) {
+      try {
+        const resp = await axios.get<ArrayBuffer>(data.audioUrl, { responseType: 'arraybuffer' });
+        const buf = Buffer.from(resp.data);
+        const base64 = buf.toString('base64');
+  
+        // prefer server mime; fallback to extension
+        const mimeType =
+          (resp.headers['content-type'] as string) ||
+          this.guessMimeFromUrl(data.audioUrl);
+  
+        parts.push({
+          inlineData: { data: base64, mimeType },
+        });
+      } catch (e) {
+        // don’t fail the whole request—just continue text-only
+        console.error('Audio download failed:', e?.message || e);
+      }
+    }
+  
+    // 4) call Gemini
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts }],
+    });
+    const aiReply = result.response.text();
+  
+    // 5) save & notify
     const chat = await this.chatService.createChat({
       classId: data.classId,
       teacherId: data.teacherId,
@@ -206,9 +248,9 @@ Please reply naturally in English:
       senderRole: 'teacher',
       message: aiReply,
     });
-
     this.chatGateway.notifyNewChat(data.classId, chat);
-
+  
     return aiReply;
   }
+  
 }
