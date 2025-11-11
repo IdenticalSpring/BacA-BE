@@ -11,27 +11,22 @@ import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
-function inferAudioMimeFromUrl(url: string): string {
-  const u = (url || '').toLowerCase();
-  if (u.endsWith('.webm')) return 'audio/webm';
-  if (u.endsWith('.mp3')) return 'audio/mpeg';
-  if (u.endsWith('.wav')) return 'audio/wav';
-  if (u.endsWith('.m4a')) return 'audio/mp4';
-  if (u.endsWith('.ogg')) return 'audio/ogg';
-  if (u.endsWith('.aac')) return 'audio/aac';
-  return 'audio/webm';
+import { randomUUID } from 'crypto';function inferAudioMimeFromUrl(url: string): string {
+  const u = (url || "").toLowerCase();
+  if (u.endsWith(".webm")) return "audio/webm";
+  if (u.endsWith(".mp3")) return "audio/mpeg";
+  if (u.endsWith(".wav")) return "audio/wav";
+  if (u.endsWith(".m4a")) return "audio/mp4";
+  if (u.endsWith(".ogg")) return "audio/ogg";
+  if (u.endsWith(".aac")) return "audio/aac";
+  return "audio/webm";
 }
 
-async function fetchAsBase64(
-  url: string,
-): Promise<{ base64: string; size: number }> {
-  const res = await axios.get<ArrayBuffer>(url, {
-    responseType: 'arraybuffer',
-  });
+async function fetchAsBase64(url: string): Promise<{ base64: string; size: number }> {
+  const res = await axios.get<ArrayBuffer>(url, { responseType: "arraybuffer" });
   // @ts-ignore
   const buf: Buffer = Buffer.from(res.data);
-  return { base64: buf.toString('base64'), size: buf.byteLength };
+  return { base64: buf.toString("base64"), size: buf.byteLength };
 }
 @Injectable()
 export class ChatService {
@@ -200,52 +195,55 @@ export class ChatService {
 
       // Build recent history text
       // Build convo context (you already have recentChats above)
-      const history = recentChats.reverse().map((chat) => {
-        const role = chat.senderRole === 'student' ? 'Student' : 'Teacher';
-        const payload = chat.message?.trim()
-          ? chat.message.trim()
-          : chat.audioUrl
-            ? '[AUDIO]'
-            : '[...]';
-        return `${role}: ${payload}`;
-      });
-      const conversationContext = history.join('\n');
+const history = recentChats.reverse().map((chat) => {
+  const role = chat.senderRole === 'student' ? 'Student' : 'Teacher';
+  const payload = chat.message?.trim()
+    ? chat.message.trim()
+    : chat.audioUrl
+      ? "[AUDIO]"
+      : "[...]";
+  return `${role}: ${payload}`;
+});
+const conversationContext = history.join('\n');
 
-      const instruction = '';
-      // Build contents in the same shape as your working script
-      const contents: any[] = [
-        {
-          role: 'user',
-          parts: [{ text: instruction }],
-        },
-      ];
+const instruction =
+  `You are a friendly and patient English teacher continuing a conversation practice with an ESL student.\n\n` +
+  `Context:\n` +
+  `Topic: "${activeTopic.title}"\n` +
+  `Conversation so far:\n${conversationContext}\n\n` +
+  (data.audioUrl
+    ? `The student just answered by audio. The attached audio is the student's answer; listen and base your reply on it.`
+    : `The student just said: "${data.answer || ""}"`) +
+  `\n\nYour task:\n` +
+  `- Continue naturally and stay on topic.\n` +
+  `- Keep tone encouraging and conversational.\n` +
+  `- Ask exactly one relevant follow-up question.\n` +
+  `- Do not use markdown formatting.`;
 
-      if (data.audioUrl) {
-        try {
-          const mimeType = inferAudioMimeFromUrl(data.audioUrl);
-          const { base64, size } = await fetchAsBase64(data.audioUrl);
+// Build contents in the same shape as your working script
+const contents: any[] = [{
+  role: "user",
+  parts: [{ text: instruction }]
+}];
 
-          // Hard guard: Gemini inline limits (keep under ~20MB; use Files API if larger)
-          console.log(
-            `[AI] Attaching audio -> mime=${mimeType}, bytes=${size}`,
-          );
-          contents[0].parts.push({ inlineData: { data: base64, mimeType } });
-        } catch (e) {
-          console.warn(
-            '⚠️ [AI] Failed to fetch/attach audio; falling back to text-only:',
-            e,
-          );
-        }
-      }
+if (data.audioUrl) {
+  try {
+    const mimeType = inferAudioMimeFromUrl(data.audioUrl);
+    const { base64, size } = await fetchAsBase64(data.audioUrl);
 
-      console.log(
-        '🚀 [AI] Sending to Gemini (hasAudio =',
-        !!data.audioUrl,
-        ')',
-      );
-      const result = await model.generateContent({ contents });
-      const response = await result.response;
-      const aiReply = (response.text() || '').trim();
+    // Hard guard: Gemini inline limits (keep under ~20MB; use Files API if larger)
+    console.log(`[AI] Attaching audio -> mime=${mimeType}, bytes=${size}`);
+    contents[0].parts.push({ inlineData: { data: base64, mimeType } });
+  } catch (e) {
+    console.warn("⚠️ [AI] Failed to fetch/attach audio; falling back to text-only:", e);
+  }
+}
+
+console.log('🚀 [AI] Sending to Gemini (hasAudio =', !!data.audioUrl, ')');
+const result = await model.generateContent({ contents });
+const response = await result.response;
+const aiReply = (response.text() || "").trim();
+
 
       console.log('🤖 [AI DEBUG] Raw Gemini reply:', aiReply);
 
