@@ -11,7 +11,8 @@ import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';function inferAudioMimeFromUrl(url: string): string {
+import { randomUUID } from 'crypto';import { GeminiKeyRotator } from 'src/common/gemini-key-rotator';
+function inferAudioMimeFromUrl(url: string): string {
   const u = (url || "").toLowerCase();
   if (u.endsWith(".webm")) return "audio/webm";
   if (u.endsWith(".mp3")) return "audio/mpeg";
@@ -31,6 +32,7 @@ async function fetchAsBase64(url: string): Promise<{ base64: string; size: numbe
 @Injectable()
 export class ChatService {
   private genAI: GoogleGenerativeAI;
+  private geminiRotator = new GeminiKeyRotator({ cooldownMs: 90_000 });
 
   constructor(
     @InjectRepository(Chat)
@@ -44,7 +46,6 @@ export class ChatService {
     @InjectRepository(ChatTopic)
     private chatTopicRepository: Repository<ChatTopic>,
   ) {
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
 
   async createChat(dto: CreateChatDto): Promise<Chat> {
@@ -160,28 +161,15 @@ export class ChatService {
     answer: string;
     audioUrl?: string | null;
   }): Promise<string> {
-    console.log(
-      '🧩 [AI DEBUG] autoReplyForActiveTopic called with data:',
-      data,
-    );
-
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    console.log('🧩 [AI DEBUG] autoReplyForActiveTopic called with data:', data);
 
     try {
-      console.log('🔍 [AI DEBUG] Searching for active topic...');
+      // --- unchanged: fetch activeTopic, recent chats, build history/instruction/contents ---
       const activeTopic = await this.chatTopicRepository.findOne({
         where: { classId: data.classId, active: true },
         order: { createdAt: 'DESC' },
       });
-
-      console.log('🧩 [AI DEBUG] Active topic result:', activeTopic);
-
-      if (!activeTopic) {
-        console.log(
-          `⚠️ [AI DEBUG] No active topic found for class ${data.classId}. Skipping AI reply.`,
-        );
-        return '';
-      }
+      if (!activeTopic) return '';
 
       const recentChats = await this.chatRepository.find({
         where: {
@@ -193,119 +181,85 @@ export class ChatService {
         take: 6,
       });
 
-      // Build recent history text
-      // Build convo context (you already have recentChats above)
-const history = recentChats.reverse().map((chat) => {
-  const role = chat.senderRole === 'student' ? 'Student' : 'Teacher';
-  const payload = chat.message?.trim()
-    ? chat.message.trim()
-    : chat.audioUrl
-      ? "[AUDIO]"
-      : "[...]";
-  return `${role}: ${payload}`;
-});
-const conversationContext = history.join('\n');
+      const history = recentChats.reverse().map((chat) => {
+        const role = chat.senderRole === 'student' ? 'Student' : 'Teacher';
+        const payload = chat.message?.trim()
+          ? chat.message.trim()
+          : chat.audioUrl
+            ? '[AUDIO]'
+            : '[...]';
+        return `${role}: ${payload}`;
+      });
+      const conversationContext = history.join('\n');
 
-const instruction =
-  `You are a friendly and patient English teacher continuing a conversation practice with an ESL student.\n\n` +
-  `Context:\n` +
-  `Topic: "${activeTopic.title}"\n` +
-  `Conversation so far:\n${conversationContext}\n\n` +
-  (data.audioUrl
-    ? `The student just answered by audio. The attached audio is the student's answer; listen and base your reply on it.`
-    : `The student just said: "${data.answer || ""}"`) +
-  `\n\nYour task:\n` +
-  `- Continue naturally and stay on topic.\n` +
-  `- Keep tone encouraging and conversational.\n` +
-  `- Ask exactly one relevant follow-up question.\n` +
-  `- Do not use markdown formatting.`;
+      const instruction =
+        `You are a friendly and patient English teacher continuing a conversation practice with an ESL student.\n\n` +
+        `Context:\n` +
+        `Topic: "${activeTopic.title}"\n` +
+        `Conversation so far:\n${conversationContext}\n\n` +
+        (data.audioUrl
+          ? `The student just answered by audio. The attached audio is the student's answer; listen and base your reply on it.`
+          : `The student just said: "${data.answer || ''}"`) +
+        `\n\nYour task:\n` +
+        `- Continue naturally and stay on topic. If the topic is told you to create question about something just give the question only\n` +
+        `- Keep tone encouraging and conversational. keep the answer short\n` +
+        `- Ask exactly one relevant follow-up question.\n` +
+        `- Do not use markdown formatting.`;
 
-// Build contents in the same shape as your working script
-const contents: any[] = [{
-  role: "user",
-  parts: [{ text: instruction }]
-}];
+      const contents: any[] = [{ role: 'user', parts: [{ text: instruction }] }];
 
-if (data.audioUrl) {
-  try {
-    const mimeType = inferAudioMimeFromUrl(data.audioUrl);
-    const { base64, size } = await fetchAsBase64(data.audioUrl);
+      if (data.audioUrl) {
+        try {
+          const mimeType = inferAudioMimeFromUrl(data.audioUrl);
+          const { base64, size } = await fetchAsBase64(data.audioUrl);
+          console.log(`[AI] Attaching audio -> mime=${mimeType}, bytes=${size}`);
+          contents[0].parts.push({ inlineData: { data: base64, mimeType } });
+        } catch (e) {
+          console.warn('⚠️ [AI] Failed to fetch/attach audio; falling back to text-only:', e);
+        }
+      }
 
-    // Hard guard: Gemini inline limits (keep under ~20MB; use Files API if larger)
-    console.log(`[AI] Attaching audio -> mime=${mimeType}, bytes=${size}`);
-    contents[0].parts.push({ inlineData: { data: base64, mimeType } });
-  } catch (e) {
-    console.warn("⚠️ [AI] Failed to fetch/attach audio; falling back to text-only:", e);
-  }
-}
-
-console.log('🚀 [AI] Sending to Gemini (hasAudio =', !!data.audioUrl, ')');
-const result = await model.generateContent({ contents });
-const response = await result.response;
-const aiReply = (response.text() || "").trim();
-
+      console.log('🚀 [AI] Sending to Gemini with rotating keys…');
+      const aiReply = await this.geminiRotator.generateWithRotation({
+        model: 'gemini-2.5-flash',
+        contents,
+        // Optional: tune temperature/attempts
+        temperature: 0.6,
+        // maxAttempts defaults to keys.length * 2
+      });
 
       console.log('🤖 [AI DEBUG] Raw Gemini reply:', aiReply);
 
-      if (!aiReply) {
-        console.log('⚠️ [AI DEBUG] Gemini returned empty reply.');
-        return '';
-      }
+      if (!aiReply) return '';
 
+      // --- your existing TTS + file save code (unchanged) ---
       let audioData: Buffer;
-
       try {
         const response = await axios.post(
           'http://45.13.132.111:5000/tts',
-          {
-            text: aiReply,
-            voice: 'af_heart',
-            voiceSpeed: '0.8',
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              // apikey: process.env.API_TTS_KEY,
-            },
-          },
+          { text: aiReply, voice: 'af_heart', voiceSpeed: '0.8' },
+          { headers: { 'Content-Type': 'application/json' } },
         );
-
-        audioData = response.data.audioData; // Trả về buffer
+        audioData = response.data.audioData;
       } catch (error) {
-        console.error(
-          'Error converting text to speech:',
-          error?.response?.data?.message,
-        );
-        audioData = null;
+        console.error('Error converting text to speech:', error?.response?.data?.message);
+        audioData = null as any;
       }
 
-      let audioBuffer: Buffer;
+      const audioBuffer = typeof audioData === 'string'
+        ? Buffer.from(audioData, 'base64')
+        : Buffer.from(audioData);
 
-      // Nếu API trả về base64
-      if (typeof audioData === 'string') {
-        audioBuffer = Buffer.from(audioData, 'base64');
-      } else {
-        audioBuffer = Buffer.from(audioData);
-      }
-
-      // Đảm bảo thư mục uploads tồn tại
       const uploadDir = path.join(process.cwd(), 'uploads');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-      // Tạo tên file ngẫu nhiên
       const fileName = `tts-${randomUUID()}.mp3`;
       const filePath = path.join(uploadDir, fileName);
-
-      // Ghi file xuống disk
       fs.writeFileSync(filePath, audioBuffer);
 
-      // Tạo URL public
       const baseUrl = 'https://api.happyclass.com.vn';
       const fileUrl = `${baseUrl}/uploads/${fileName}`;
 
-      console.log('💾 [AI DEBUG] Saving AI reply to database...');
       const teacherChat = await this.createChat({
         classId: data.classId,
         teacherId: data.teacherId,
@@ -315,10 +269,6 @@ const aiReply = (response.text() || "").trim();
         audioUrl: fileUrl,
       });
 
-      console.log(
-        `✅ [AI DEBUG] AI reply saved successfully. Message ID: ${teacherChat.id}`,
-      );
-
       return teacherChat.message;
     } catch (error) {
       console.error('❌ [AI DEBUG] Error in AI auto-reply:', error);
@@ -326,3 +276,4 @@ const aiReply = (response.text() || "").trim();
     }
   }
 }
+
