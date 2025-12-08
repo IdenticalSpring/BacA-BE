@@ -48,6 +48,13 @@ export class Chat {
   @Column({ type: 'boolean', default: false })
   isRead: boolean;
 
+  // AI Chatbot fields
+  @Column({ type: 'boolean', default: false })
+  isAI: boolean;
+
+  @Column({ type: 'int', nullable: true })
+  senderID: number;
+
   @CreateDateColumn()
   createdAt: Date;
 }

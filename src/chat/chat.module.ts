@@ -14,15 +14,15 @@ import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Chat, Student, Teacher, Class,ChatTopic]),
+    TypeOrmModule.forFeature([Chat, Student, Teacher, Class, ChatTopic]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secretKey', // ✅ must match guard secret
+      secret: process.env.JWT_SECRET || 'secretKey',
       signOptions: { expiresIn: '7d' },
     }),
     forwardRef(() => GeminiModule),
   ],
   controllers: [ChatController],
-  providers: [ChatService, ChatGateway, WsAuthGuard], // ✅ register guard
-  exports: [ChatService, ChatGateway, JwtModule], // ✅ export JwtModule for reuse
+  providers: [ChatService, ChatGateway, WsAuthGuard],
+  exports: [ChatService, ChatGateway, JwtModule],
 })
 export class ChatModule {}

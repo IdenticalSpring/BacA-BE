@@ -38,26 +38,34 @@ export class ChatGateway {
     client.emit('joinedPrivateChat', { room });
   }
 
-  /** Handle sending private messages */
+  /** Handle sending private messages with AI support */
   @UseGuards(WsAuthGuard)
   @SubscribeMessage('sendPrivateChat')
   async handleSendPrivateChat(
     @MessageBody() dto: CreateChatDto,
     @ConnectedSocket() client: Socket,
   ) {
-    this.logger.log('💬 [CHAT DEBUG] Received sendPrivateChat event:');
-    console.log('🧾 Full DTO:', dto);
+    this.logger.log('💬 [ChatGateway] Received sendPrivateChat event');
+    console.log('🧾 DTO:', { ...dto, message: dto.message?.substring(0, 50) });
 
     try {
-      // 1️⃣ Save message
-      const chat = await this.chatService.createChat(dto);
       const room = this.getRoomName(dto.classId, dto.studentId);
+      
+      // 🔥 FIX: Auto-join client to private room to ensure they receive AI responses
+      if (!client.rooms.has(room)) {
+        client.join(room);
+        this.logger.log(`🔧 [AUTO-JOIN] Client ${client.id} auto-joined room ${room}`);
+      }
 
+      // Use new sendMessage method which handles AI processing
+      const chat = await this.chatService.sendMessage(dto);
+
+      // Emit the message (could be user or AI response)
       this.server.to(room).emit('newPrivateChat', chat);
-      this.logger.log(`📩 Message sent to room ${room}`);
+      this.logger.log(`📩 Message sent to room ${room} (isAI: ${chat.isAI})`);
 
-      // 2️⃣ Check if sender is student
-      if (dto.senderRole === 'student') {
+      // Legacy AI check (kept for backward compatibility)
+      if (dto.senderRole === 'student' && !dto.isAI) {
         this.logger.log(
           `👩‍🎓 [CHAT DEBUG] Student message detected. Checking for active topic in class ${dto.classId}...`,
         );
@@ -72,31 +80,24 @@ export class ChatGateway {
             `🤖 [CHAT DEBUG] Active topic "${activeTopic.title}" found — triggering Gemini auto-reply...`,
           );
 
-          // Call AI
-          const aiReply = await this.chatService.autoReplyForActiveTopic({
+          // Call AI and get the full Chat object
+          const aiChat = await this.chatService.autoReplyForActiveTopic({
             classId: dto.classId,
             studentId: dto.studentId,
             teacherId: dto.teacherId,
             answer: dto.message || '',
+            audioUrl: dto.audioUrl || null,
           });
 
-          if (aiReply && aiReply.trim().length > 0) {
+          if (aiChat) {
             this.logger.log(
-              `✅ [CHAT DEBUG] AI reply generated successfully: ${aiReply.substring(
+              `✅ [CHAT DEBUG] AI reply generated successfully: ${aiChat.message?.substring(
                 0,
                 100,
               )}...`,
             );
 
-            // Save & emit AI message
-            const aiChat = await this.chatService.createChat({
-              classId: dto.classId,
-              studentId: dto.studentId,
-              teacherId: dto.teacherId,
-              senderRole: 'teacher',
-              message: aiReply,
-            });
-
+            // Emit AI message
             console.log('🤖 [CHAT DEBUG] Emitting AI reply to room:', room);
             this.server.to(room).emit('newPrivateChat', aiChat);
             this.logger.log(`📤 AI reply emitted to ${room}`);

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,8 +18,10 @@ export class GeminiService {
     @InjectRepository(ChatTopic)
     private chatTopicRepository: Repository<ChatTopic>, 
 
+    @Inject(forwardRef(() => ChatService))
     private readonly chatService: ChatService, 
     
+    @Inject(forwardRef(() => ChatGateway))
     private readonly chatGateway: ChatGateway,
   ) {
     const apiKey = process.env.GEMINI_API_KEY;

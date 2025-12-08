@@ -34,6 +34,10 @@ export class CreateChatDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isAI?: boolean;
 }
 
 export class RevokeChatDto {
