@@ -29,6 +29,9 @@ async function bootstrap() {
   });
   app.use(bodyParser.json({ limit: '100mb' }));
   app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
-  await app.listen(process.env.PORT ?? 8000);
+  
+  const port = process.env.PORT ?? 8000;
+  await app.listen(port);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
 }
 bootstrap();

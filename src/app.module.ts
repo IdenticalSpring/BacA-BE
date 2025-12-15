@@ -92,7 +92,7 @@ import { ChatTopicModule } from './chat-topic/chat-topic.module';
         LessonBySchedule,
         __dirname + '/**/*.entity{.ts,.js}',
       ], // Tự động quét tất cả entity
-      synchronize: true, // Chỉ dùng trong dev, tránh dùng production
+      synchronize: process.env.DB_SYNCHRONIZE === 'true', // Chỉ dùng trong dev, tránh dùng production
       // logging: true,
     }),
     AuthModule,
@@ -127,6 +127,9 @@ import { ChatTopicModule } from './chat-topic/chat-topic.module';
     HomeWorkModule,
     SidebarModule,
     SkillModule,
+    ChatModule,
+    MessageModule,
+    ChatTopicModule,
     GeminiModule,
     NotificationModule,
     UserNotificationModule,
@@ -136,9 +139,6 @@ import { ChatTopicModule } from './chat-topic/chat-topic.module';
     Student_vocabularyModule,
     QuestionModule,
     StudentQuestionAnswerModule,
-    ChatModule,
-    MessageModule,
-    ChatTopicModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],

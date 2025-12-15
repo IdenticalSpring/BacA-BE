@@ -25,6 +25,9 @@ export class GeminiService {
     private readonly chatGateway: ChatGateway,
   ) {
     const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not configured in environment variables');
+    }
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
@@ -43,7 +46,7 @@ export class GeminiService {
     return map[ext] || "application/octet-stream";
   }
   async enhanceDescription(description: string): Promise<string> {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // Lấy prompt từ ContentPage (giả sử id = 1, bạn có thể điều chỉnh logic)
     const contentPage = await this.contentPageRepository.findOne({
@@ -61,28 +64,43 @@ export class GeminiService {
     lessonPlan: string,
     imageUrls: string[],
   ): Promise<string> {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    try {
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    // Ghép danh sách URL ảnh
-    const imagesReference = imageUrls
-      .map((url, index) => `Image ${index + 1}: ${url}`)
-      .join('\n');
+      // Ghép danh sách URL ảnh
+      const imagesReference = imageUrls && imageUrls.length > 0
+        ? imageUrls.map((url, index) => `Image ${index + 1}: ${url}`).join('\n')
+        : '';
 
-    // Lấy prompt từ ContentPage
-    const contentPage = await this.contentPageRepository.findOne({
-      where: { id: 1 },
-    });
-    const defaultPrompt = `Create a lesson plan for an English lesson with the following requirements: ${lessonPlan}. Use the following images as references:\n${imagesReference}. Return the result without bold or italic.`;
-    const prompt = defaultPrompt;
-    console.log('Prompt:', prompt); // Debugging line to check the prompt
+      // Lấy prompt từ ContentPage
+      const contentPage = await this.contentPageRepository.findOne({
+        where: { id: 1 },
+      });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+      // Tạo default prompt
+      const defaultPrompt = `Create a lesson plan for an English lesson with the following requirements: ${lessonPlan}.${imagesReference ? ` Use the following images as references:\n${imagesReference}.` : ''} Return the result without bold or italic.`;
+      
+      // Sử dụng promptLessonPlan từ DB nếu có, thay thế các biến động
+      let prompt: string;
+      if (contentPage?.promptLessonPlan) {
+        prompt = contentPage.promptLessonPlan
+          .replace(/\$\{lessonPlan\}/g, lessonPlan)
+          .replace(/\$\{imagesReference\}/g, imagesReference || 'No images provided');
+      } else {
+        prompt = defaultPrompt;
+      }
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error('❌ [Gemini] Error enhancing lesson plan:', error.message);
+      throw new Error(`Failed to enhance lesson plan: ${error.message || 'Unknown error'}`);
+    }
   }
 
   async analyzeWithImage(question: string, imageUrl: string): Promise<string> {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const hasQuestion = question && question.trim().length > 0;
     const hasImage = imageUrl && imageUrl.trim().length > 0;

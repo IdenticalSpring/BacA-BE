@@ -20,6 +20,8 @@ export class Vocabulary {
   audioUrl: string;
   @Column({ type: 'longtext', nullable: true })
   textToSpeech: string;
+  @Column({ type: 'text', nullable: true })
+  definition: string;
   @ManyToOne(() => HomeWork, (homeworkEntity) => homeworkEntity.vocabularies, {
     onDelete: 'CASCADE',
   })

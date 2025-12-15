@@ -11,6 +11,9 @@ export class CreateVocabularyDto {
   @IsString()
   textToSpeech: string;
   @IsOptional()
+  @IsString()
+  definition?: string;
+  @IsOptional()
   @IsBoolean()
   isDelete: boolean;
   @IsInt()
