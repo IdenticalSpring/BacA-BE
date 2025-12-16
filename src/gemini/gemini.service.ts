@@ -64,39 +64,114 @@ export class GeminiService {
     lessonPlan: string,
     imageUrls: string[],
   ): Promise<string> {
-    try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const maxRetries = 2; // Giảm xuống 2 để nhanh hơn
+    const models = [
+      'gemini-2.5-flash',     // Stable, less quota pressure
+      'gemini-2.0-flash', // Experimental backup
+    ];
+    let lastError: Error;
 
-      // Ghép danh sách URL ảnh
-      const imagesReference = imageUrls && imageUrls.length > 0
-        ? imageUrls.map((url, index) => `Image ${index + 1}: ${url}`).join('\n')
-        : '';
-
-      // Lấy prompt từ ContentPage
-      const contentPage = await this.contentPageRepository.findOne({
-        where: { id: 1 },
-      });
-
-      // Tạo default prompt
-      const defaultPrompt = `Create a lesson plan for an English lesson with the following requirements: ${lessonPlan}.${imagesReference ? ` Use the following images as references:\n${imagesReference}.` : ''} Return the result without bold or italic.`;
+    for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
+      const currentModel = models[modelIndex];
       
-      // Sử dụng promptLessonPlan từ DB nếu có, thay thế các biến động
-      let prompt: string;
-      if (contentPage?.promptLessonPlan) {
-        prompt = contentPage.promptLessonPlan
-          .replace(/\$\{lessonPlan\}/g, lessonPlan)
-          .replace(/\$\{imagesReference\}/g, imagesReference || 'No images provided');
-      } else {
-        prompt = defaultPrompt;
-      }
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          console.log(`🤖 [Gemini] Attempt ${attempt + 1}/${maxRetries} with model: ${currentModel}`);
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
-    } catch (error) {
-      console.error('❌ [Gemini] Error enhancing lesson plan:', error.message);
-      throw new Error(`Failed to enhance lesson plan: ${error.message || 'Unknown error'}`);
+          const model = this.genAI.getGenerativeModel({
+            model: currentModel,
+            generationConfig: {
+              maxOutputTokens: 8192,
+              temperature: 0.7,
+            },
+          });
+
+          // Giới hạn số lượng ảnh để tránh timeout
+          const maxImages = 5;
+          const limitedImageUrls = imageUrls?.slice(0, maxImages) || [];
+
+          // Ghép danh sách URL ảnh
+          const imagesReference =
+            limitedImageUrls.length > 0
+              ? limitedImageUrls.map((url, index) => `Image ${index + 1}: ${url}`).join('\n')
+              : '';
+
+          // Lấy prompt từ ContentPage
+          const contentPage = await this.contentPageRepository.findOne({
+            where: { id: 1 },
+          });
+
+          // Tạo default prompt
+          const defaultPrompt = `Create a lesson plan for an English lesson with the following requirements: ${lessonPlan}.${imagesReference ? ` Use the following images as references:\n${imagesReference}.` : ''} Return the result without bold or italic.`;
+
+          // Sử dụng promptLessonPlan từ DB nếu có, thay thế các biến động
+          let prompt: string;
+          if (contentPage?.promptLessonPlan) {
+            prompt = contentPage.promptLessonPlan
+              .replace(/\$\{lessonPlan\}/g, lessonPlan)
+              .replace(/\$\{imagesReference\}/g, imagesReference || 'No images provided');
+          } else {
+            prompt = defaultPrompt;
+          }
+
+          console.log('🤖 [Gemini] Sending request with prompt length:', prompt.length);
+          console.log('🖼️ [Gemini] Number of images:', limitedImageUrls.length);
+
+          // Thêm timeout wrapper
+          const timeoutPromise = new Promise<string>((_, reject) => {
+            setTimeout(() => reject(new Error('Gemini API timeout after 60 seconds')), 60000);
+          });
+
+          const generatePromise = model.generateContent(prompt).then((result) => result.response.text());
+
+          const response = await Promise.race([generatePromise, timeoutPromise]);
+
+          console.log('✅ [Gemini] Response received successfully');
+          return response;
+        } catch (error) {
+          lastError = error;
+          console.error(`❌ [Gemini] Attempt ${attempt + 1} failed:`, error.message);
+
+          // Nếu là lỗi 503 (overloaded), thử lại sau một khoảng thời gian
+          if (error.message.includes('503') || error.message.includes('overloaded')) {
+            if (attempt < maxRetries - 1) {
+              const delayMs = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
+              console.log(`⏳ [Gemini] Waiting ${delayMs}ms before retry...`);
+              await new Promise((resolve) => setTimeout(resolve, delayMs));
+              continue;
+            }
+            // Nếu hết retry cho model này, thử model tiếp theo
+            console.log(`🔄 [Gemini] Model ${currentModel} overloaded, trying next model...`);
+            break;
+          }
+
+          // Nếu không phải lỗi 503, throw ngay
+          throw this.formatError(error);
+        }
+      }
     }
+
+    // Nếu tất cả models và retries đều fail
+    console.error('❌ [Gemini] All models and retries failed');
+    throw this.formatError(lastError);
+  }
+
+  private formatError(error: any): Error {
+    // Return more specific error messages
+    if (error.message.includes('timeout')) {
+      return new Error('Request took too long. Please try with fewer images or simpler content.');
+    }
+    if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests')) {
+      return new Error('API quota exceeded. Please wait a few minutes or try again tomorrow. You can also create a new API key at https://aistudio.google.com/app/apikey');
+    }
+    if (error.message.includes('503') || error.message.includes('overloaded')) {
+      return new Error('AI service is temporarily overloaded. Please try again in a few moments.');
+    }
+    if (error.message.includes('network')) {
+      return new Error('Network error. Please check your connection.');
+    }
+
+    return new Error(`Failed to enhance lesson plan: ${error.message || 'Unknown error'}`);
   }
 
   async analyzeWithImage(question: string, imageUrl: string): Promise<string> {

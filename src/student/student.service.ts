@@ -7,7 +7,7 @@ import { Class } from 'src/class/class.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationService } from 'src/notification/notification.service';
-import { CreateNotificationDto } from 'src/notification/notification.dto';
+import { CreateNotificationDto } from 'src/notification/notification.dto';  
 
 @Injectable()
 export class StudentService {
@@ -66,8 +66,18 @@ export class StudentService {
   }
   async create(createStudentDto: CreateStudentDto): Promise<Student> {
     const { classID, ...rest } = createStudentDto;
-    const student = this.studentRepository.create(rest);
 
+    // Check username đã tồn tại chưa
+    const existingUsername = await this.studentRepository.findOne({
+      where: { username: createStudentDto.username },
+    });
+    if (existingUsername) {
+      throw new NotFoundException(
+        `Username '${createStudentDto.username}' already exists. Please use a different username.`,
+      );
+    }
+
+    // Check trùng lặp name + classID
     if (classID) {
       const classEntity = await this.classRepository.findOne({
         where: { id: classID },
@@ -75,11 +85,28 @@ export class StudentService {
       if (!classEntity) {
         throw new NotFoundException(`Class with ID ${classID} not found`);
       }
+
+      // Kiểm tra xem đã có học sinh cùng tên trong lớp chưa
+      const duplicateStudent = await this.studentRepository.findOne({
+        where: {
+          name: createStudentDto.name,
+          class: classEntity,
+          isDelete: false,
+        },
+      });
+
+      if (duplicateStudent) {
+        throw new NotFoundException(
+          `Student '${createStudentDto.name}' already exists in this class. Please check again.`,
+        );
+      }
+
+      const student = this.studentRepository.create(rest);
       student.class = classEntity;
+      return await this.studentRepository.save(student);
     }
 
-    // Đã xóa logic upload file và Cloudinary
-
+    const student = this.studentRepository.create(rest);
     return await this.studentRepository.save(student);
   }
 
@@ -177,5 +204,26 @@ export class StudentService {
       message: `Yêu cầu xóa học sinh ${studentName} đã được gửi đến admin`,
       notification,
     };
+  }
+
+  // Tìm tất cả học sinh trùng lặp (chỉ để xem, KHÔNG xóa)
+  async findDuplicateStudents(): Promise<any[]> {
+    const query = `
+      SELECT 
+        s1.name, 
+        s1.classID,
+        c.name as className,
+        GROUP_CONCAT(s1.id ORDER BY s1.id) as studentIds,
+        COUNT(*) as duplicateCount
+      FROM student s1
+      LEFT JOIN class c ON s1.classID = c.id
+      WHERE s1.isDelete = false
+      GROUP BY s1.name, s1.classID
+      HAVING COUNT(*) > 1
+      ORDER BY duplicateCount DESC, s1.name
+    `;
+
+    const duplicates = await this.studentRepository.query(query);
+    return duplicates;
   }
 }

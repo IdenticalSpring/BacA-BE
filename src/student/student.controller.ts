@@ -76,4 +76,10 @@ export class StudentController {
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.studentService.remove(id);
   }
+
+  // API để xem các học sinh trùng lặp (CHỈ XEM, KHÔNG XÓA)
+  @Get('duplicates/find')
+  async findDuplicates(): Promise<any[]> {
+    return await this.studentService.findDuplicateStudents();
+  }
 }

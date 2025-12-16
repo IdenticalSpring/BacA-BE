@@ -17,11 +17,26 @@ export class GeminiController {
     @Body('lessonPlan') lessonPlan: string,
     @Body('imageUrls') imageUrls: string[],
   ): Promise<{ response: string }> {
-    const response = await this.chatbotService.enhanceLessonPlan(
-      lessonPlan,
-      imageUrls || [],
-    );
-    return { response };
+    try {
+      console.log('📥 [Controller] Received enhance-lesson-plan request');
+      console.log('📝 Lesson plan length:', lessonPlan?.length || 0);
+      console.log('🖼️ Images count:', imageUrls?.length || 0);
+
+      if (!lessonPlan || lessonPlan.trim().length === 0) {
+        throw new Error('Lesson plan content is required');
+      }
+
+      const response = await this.chatbotService.enhanceLessonPlan(
+        lessonPlan,
+        imageUrls || [],
+      );
+      
+      console.log('✅ [Controller] Response sent successfully');
+      return { response };
+    } catch (error) {
+      console.error('❌ [Controller] Error in enhance-lesson-plan:', error.message);
+      throw error;
+    }
   }
   @Post('analyze')
   async analyzeWithImage(
