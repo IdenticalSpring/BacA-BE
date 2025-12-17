@@ -11,6 +11,10 @@ import { ChatGateway } from 'src/chat/chat.gateway';
 @Injectable()
 export class GeminiService {
   private genAI: GoogleGenerativeAI;
+  private apiKeys: string[];
+  private currentKeyIndex: number = 0;
+  private keyFailureCounts: Map<string, number> = new Map();
+  private readonly MAX_FAILURES_PER_KEY = 3;
 
   constructor(
     @InjectRepository(ContentPage)
@@ -24,11 +28,62 @@ export class GeminiService {
     @Inject(forwardRef(() => ChatGateway))
     private readonly chatGateway: ChatGateway,
   ) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not configured in environment variables');
+    // Load all available API keys from .env
+    this.apiKeys = [
+      process.env.GEMINI_KEY1,
+      process.env.GEMINI_KEY2,
+      process.env.GEMINI_KEY3,
+      process.env.GEMINI_KEY4,
+      process.env.GEMINI_KEY5,
+      process.env.GEMINI_KEY6,
+      process.env.GEMINI_KEY7,
+      process.env.GEMINI_KEY8,
+      process.env.GEMINI_KEY9,
+      process.env.GEMINI_KEY10,
+    ].filter(key => key && key.trim().length > 0); // Only use valid keys
+
+    if (this.apiKeys.length === 0) {
+      throw new Error('No valid GEMINI_KEY found in environment variables');
     }
-    this.genAI = new GoogleGenerativeAI(apiKey);
+    
+    // Initialize with first key
+    this.genAI = new GoogleGenerativeAI(this.apiKeys[0]);
+  }
+
+  /**
+   * Rotate to next available API key
+   */
+  private rotateApiKey(): void {
+    const startIndex = this.currentKeyIndex;
+    let attempts = 0;
+
+    // Try to find a key that hasn't failed too many times
+    while (attempts < this.apiKeys.length) {
+      this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+      const currentKey = this.apiKeys[this.currentKeyIndex];
+      const failures = this.keyFailureCounts.get(currentKey) || 0;
+
+      if (failures < this.MAX_FAILURES_PER_KEY) {
+        this.genAI = new GoogleGenerativeAI(currentKey);
+        return;
+      }
+
+      attempts++;
+    }
+
+    // If all keys have failed, reset failure counts and use next key
+    this.keyFailureCounts.clear();
+    this.currentKeyIndex = (startIndex + 1) % this.apiKeys.length;
+    this.genAI = new GoogleGenerativeAI(this.apiKeys[this.currentKeyIndex]);
+  }
+
+  /**
+   * Mark current key as failed (for quota/rate limit errors)
+   */
+  private markCurrentKeyAsFailed(): void {
+    const currentKey = this.apiKeys[this.currentKeyIndex];
+    const failures = (this.keyFailureCounts.get(currentKey) || 0) + 1;
+    this.keyFailureCounts.set(currentKey, failures);
   }
 
   private guessMimeFromUrl(url: string): string {
@@ -76,8 +131,6 @@ export class GeminiService {
       
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          console.log(`🤖 [Gemini] Attempt ${attempt + 1}/${maxRetries} with model: ${currentModel}`);
-
           const model = this.genAI.getGenerativeModel({
             model: currentModel,
             generationConfig: {
@@ -114,9 +167,6 @@ export class GeminiService {
             prompt = defaultPrompt;
           }
 
-          console.log('🤖 [Gemini] Sending request with prompt length:', prompt.length);
-          console.log('🖼️ [Gemini] Number of images:', limitedImageUrls.length);
-
           // Thêm timeout wrapper
           const timeoutPromise = new Promise<string>((_, reject) => {
             setTimeout(() => reject(new Error('Gemini API timeout after 60 seconds')), 60000);
@@ -126,22 +176,31 @@ export class GeminiService {
 
           const response = await Promise.race([generatePromise, timeoutPromise]);
 
-          console.log('✅ [Gemini] Response received successfully');
           return response;
         } catch (error) {
           lastError = error;
-          console.error(`❌ [Gemini] Attempt ${attempt + 1} failed:`, error.message);
+
+          // Nếu là lỗi quota (429), thử rotate sang key khác
+          if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests')) {
+            this.markCurrentKeyAsFailed();
+            
+            if (this.apiKeys.length > 1) {
+              this.rotateApiKey();
+              // Retry với key mới
+              continue;
+            } else {
+              throw this.formatError(error);
+            }
+          }
 
           // Nếu là lỗi 503 (overloaded), thử lại sau một khoảng thời gian
           if (error.message.includes('503') || error.message.includes('overloaded')) {
             if (attempt < maxRetries - 1) {
               const delayMs = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
-              console.log(`⏳ [Gemini] Waiting ${delayMs}ms before retry...`);
               await new Promise((resolve) => setTimeout(resolve, delayMs));
               continue;
             }
             // Nếu hết retry cho model này, thử model tiếp theo
-            console.log(`🔄 [Gemini] Model ${currentModel} overloaded, trying next model...`);
             break;
           }
 
@@ -152,7 +211,6 @@ export class GeminiService {
     }
 
     // Nếu tất cả models và retries đều fail
-    console.error('❌ [Gemini] All models and retries failed');
     throw this.formatError(lastError);
   }
 
