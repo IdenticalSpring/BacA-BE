@@ -80,31 +80,66 @@ export class ChatGateway {
             `🤖 [CHAT DEBUG] Active topic "${activeTopic.title}" found — triggering Gemini auto-reply...`,
           );
 
-          // Call AI and get the full Chat object
-          const aiChat = await this.chatService.autoReplyForActiveTopic({
+          // 🔔 Emit typing indicator - AI is processing
+          this.server.to(room).emit('teacherTyping', {
             classId: dto.classId,
             studentId: dto.studentId,
-            teacherId: dto.teacherId,
-            answer: dto.message || '',
-            audioUrl: dto.audioUrl || null,
+            isTyping: true,
+            teacherName: 'AI Assistant',
           });
+          console.log('⌨️ [TYPING] Emitted typing indicator to room:', room);
 
-          if (aiChat) {
-            this.logger.log(
-              `✅ [CHAT DEBUG] AI reply generated successfully: ${aiChat.message?.substring(
-                0,
-                100,
-              )}...`,
-            );
+          try {
+            // Call AI and get the full Chat object
+            const aiChat = await this.chatService.autoReplyForActiveTopic({
+              classId: dto.classId,
+              studentId: dto.studentId,
+              teacherId: dto.teacherId,
+              answer: dto.message || '',
+              audioUrl: dto.audioUrl || null,
+            });
 
-            // Emit AI message
-            console.log('🤖 [CHAT DEBUG] Emitting AI reply to room:', room);
-            this.server.to(room).emit('newPrivateChat', aiChat);
-            this.logger.log(`📤 AI reply emitted to ${room}`);
-          } else {
-            this.logger.warn(
-              `⚠️ [CHAT DEBUG] AI returned an empty reply for topic "${activeTopic.title}".`,
-            );
+            if (aiChat) {
+              this.logger.log(
+                `✅ [CHAT DEBUG] AI reply generated successfully: ${aiChat.message?.substring(
+                  0,
+                  100,
+                )}...`,
+              );
+
+              // 🔕 Stop typing indicator
+              this.server.to(room).emit('teacherTyping', {
+                classId: dto.classId,
+                studentId: dto.studentId,
+                isTyping: false,
+              });
+
+              // Emit AI message
+              console.log('🤖 [CHAT DEBUG] Emitting AI reply to room:', room);
+              this.server.to(room).emit('newPrivateChat', aiChat);
+              this.logger.log(`📤 AI reply emitted to ${room}`);
+            } else {
+              // Stop typing even if no reply
+              this.server.to(room).emit('teacherTyping', {
+                classId: dto.classId,
+                studentId: dto.studentId,
+                isTyping: false,
+              });
+              
+              this.logger.warn(
+                `⚠️ [CHAT DEBUG] AI returned an empty reply for topic "${activeTopic.title}".`,
+              );
+            }
+          } catch (aiError) {
+            // Stop typing on error
+            this.server.to(room).emit('teacherTyping', {
+              classId: dto.classId,
+              studentId: dto.studentId,
+              isTyping: false,
+            });
+            
+            this.logger.error(`❌ [AI ERROR] ${aiError.message}`);
+            throw aiError;
           }
         } else {
           this.logger.log(

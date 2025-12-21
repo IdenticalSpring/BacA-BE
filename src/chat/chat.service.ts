@@ -104,11 +104,17 @@ export class ChatService {
       `💬 [ChatService] Chat saved: ${savedChat.id}, senderRole=${savedChat.senderRole}`,
     );
 
+    // Mục đích: Đảm bảo có đầy đủ relation student, teacher để Frontend không bị lỗi filter
+    const fullChat = await this.chatRepository.findOne({
+      where: { id: savedChat.id },
+      relations: ['student', 'teacher'],
+    });
+
     // AI handling is now done in Gateway to avoid duplication
     // The createChat() method just saves the message
 
     // 3️⃣ Return the user's original message
-    return savedChat;
+    return fullChat;
   }
 
   async getChatsByClass(classId: number): Promise<Chat[]> {

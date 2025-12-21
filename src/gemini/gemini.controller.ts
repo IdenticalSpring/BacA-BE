@@ -1,9 +1,31 @@
-import { Controller, Post, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Body, ParseIntPipe, Get } from '@nestjs/common';
 import { GeminiService } from './gemini.service';
 
 @Controller('chatbot')
 export class GeminiController {
   constructor(private readonly chatbotService: GeminiService) {}
+
+  /**
+   * Monitor API key rotation status
+   * GET /chatbot/key-status
+   */
+  @Get('key-status')
+  getKeyStatus() {
+    return this.chatbotService.getKeyRotationStatus();
+  }
+
+  /**
+   * Reset all API key failure counts (admin endpoint)
+   * POST /chatbot/reset-keys
+   */
+  @Post('reset-keys')
+  resetKeys() {
+    this.chatbotService.resetKeyFailures();
+    return { 
+      message: 'All API key failure and usage counts have been reset',
+      status: this.chatbotService.getKeyRotationStatus(),
+    };
+  }
 
   @Post('enhance')
   async enhanceDescription(
