@@ -31,6 +31,11 @@ export class TeacherController {
     return await this.teacherService.create(createTeacherDto);
   }
 
+  @Put(':id/toggle-disable')
+  async toggleDisable(@Param('id', ParseIntPipe) id: number): Promise<Teacher> {
+    return await this.teacherService.toggleDisable(id);
+  }
+
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,

@@ -12,7 +12,7 @@ export class TeacherService {
   ) {}
 
   async findAll(): Promise<Teacher[]> {
-    return await this.teacherRepository.find({ where: { isDelete: false } });
+    return await this.teacherRepository.find();
   }
 
   async findOne(id: number): Promise<Teacher> {
@@ -46,5 +46,14 @@ export class TeacherService {
     if (result.affected === 0) {
       throw new NotFoundException(`Teacher with ID ${id} not found`);
     }
+  }
+
+  async toggleDisable(id: number): Promise<Teacher> {
+    const teacher = await this.teacherRepository.findOne({ where: { id } });
+    if (!teacher) {
+      throw new NotFoundException(`Teacher with ID ${id} not found`);
+    }
+    teacher.isDelete = !teacher.isDelete;
+    return await this.teacherRepository.save(teacher);
   }
 }
