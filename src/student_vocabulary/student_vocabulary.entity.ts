@@ -17,6 +17,10 @@ export class Student_vocabulary {
   @Column({ type: 'text', nullable: true })
   text: string;
 
+  // Student's own definition / explanation of the vocabulary (optional)
+  @Column({ type: 'text', nullable: true })
+  definition?: string;
+
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
   @ManyToOne(

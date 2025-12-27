@@ -11,6 +11,10 @@ export class CreateStudentVocabularyDto {
   @IsString()
   text: string;
 
+  @IsOptional()
+  @IsString()
+  definition?: string;
+
   @IsInt()
   vocabularyId: number;
   @IsInt()
