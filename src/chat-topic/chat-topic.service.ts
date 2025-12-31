@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 import { ChatTopic } from './chat-topic.entity';
@@ -8,9 +8,16 @@ import { Teacher } from 'src/teacher/teacher.entity';
 import { GeminiService } from 'src/gemini/gemini.service';
 import { ChatService } from 'src/chat/chat.service';
 import { ChatGateway } from 'src/chat/chat.gateway';
+import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class ChatTopicService {
+  private readonly logger = new Logger(ChatTopicService.name);
+  private readonly TTS_API_URL = 'http://45.13.132.111:5000/tts';
+
   constructor(
     @InjectRepository(ChatTopic)
     private chatTopicRepository: Repository<ChatTopic>,
@@ -73,6 +80,59 @@ export class ChatTopicService {
       data.imageUrl,
     );
 
+    // 4.5️⃣ Generate TTS audio for the AI message
+    let aiAudioUrl: string | null = null;
+    try {
+      this.logger.log(`🔊 [TTS] Generating audio for AI first message (${aiText.length} chars)...`);
+      
+      // Tính timeout dựa trên độ dài text (tối thiểu 30s, tối đa 120s)
+      const estimatedTimeout = Math.min(120000, Math.max(30000, aiText.length * 100));
+      this.logger.log(`🔊 [TTS] Using timeout: ${estimatedTimeout}ms`);
+      
+      const ttsResponse = await axios.post(
+        this.TTS_API_URL,
+        {
+          text: aiText,
+          voice: 'af_heart',
+          voiceSpeed: '0.8',
+        },
+        { 
+          headers: { 'Content-Type': 'application/json' },
+          timeout: estimatedTimeout
+        }
+      );
+
+      const responseData = ttsResponse.data;
+      
+      // Handle different TTS response formats
+      if (responseData.audioData) {
+        // Save audio to local storage
+        const audioBuffer = Buffer.from(responseData.audioData, 'base64');
+        const fileName = `tts-topic-${randomUUID()}.wav`;
+        const uploadDir = path.join(process.cwd(), 'uploads');
+        
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const filePath = path.join(uploadDir, fileName);
+        fs.writeFileSync(filePath, audioBuffer);
+        
+        // Use dynamic base URL from environment or default to production
+        const baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn';
+        aiAudioUrl = `${baseUrl}/uploads/${fileName}`;
+        this.logger.log(`✅ [TTS] Audio saved locally: ${aiAudioUrl}`);
+      } else {
+        // New format: direct URL
+        aiAudioUrl = responseData.url || responseData.audio_url || (typeof responseData === 'string' ? responseData : null);
+      }
+      
+      this.logger.log(`✅ [TTS] Audio generated for first message: ${aiAudioUrl}`);
+    } catch (ttsError) {
+      this.logger.error(`🔇 [TTS] TTS Server Error for first message: ${ttsError.message}`);
+      // Continue without audio - message will still be sent
+    }
+
     // 5️⃣ Send AI message to all students in the class
     const classInfo = await this.classRepository.findOne({
       where: { id: data.classId },
@@ -87,13 +147,14 @@ export class ChatTopicService {
           studentId: student.id,
           senderRole: 'teacher',
           message: aiText,
+          audioUrl: aiAudioUrl, // ✅ Include audio URL for first AI message
         });
 
         this.chatGateway.notifyNewChat(data.classId, chat);
       }
     }
 
-    return { topic: newTopic, aiMessage: aiText };
+    return { topic: newTopic, aiMessage: aiText, aiAudioUrl };
   }
 
   async getLatestTopicByClassId(classId: number): Promise<ChatTopic | null> {

@@ -259,6 +259,10 @@ export class ChatService {
       // BƯỚC B: Gọi TTS Server
       let botAudioUrl = null;
       try {
+        // Tính timeout dựa trên độ dài text (tối thiểu 30s, tối đa 120s)
+        const estimatedTimeout = Math.min(120000, Math.max(30000, aiText.length * 100));
+        this.logger.log(`🔊 [AI] TTS request with timeout: ${estimatedTimeout}ms for ${aiText.length} chars`);
+        
         const ttsResponse = await axios.post(
           this.TTS_API_URL,
           {
@@ -268,7 +272,7 @@ export class ChatService {
           },
           { 
             headers: { 'Content-Type': 'application/json' },
-            timeout: 10000 
+            timeout: estimatedTimeout 
           }
         );
 
@@ -276,9 +280,9 @@ export class ChatService {
         
         // Xử lý nhiều format response từ TTS server
         if (responseData.audioData) {
-          // Format cũ: trả về base64 trong audioData
+          // Save audio to local storage
           const audioBuffer = Buffer.from(responseData.audioData, 'base64');
-          const fileName = `tts-ai-${randomUUID()}.mp3`;
+          const fileName = `tts-ai-${randomUUID()}.wav`;
           const uploadDir = path.join(process.cwd(), 'uploads');
           
           if (!fs.existsSync(uploadDir)) {
@@ -287,7 +291,11 @@ export class ChatService {
 
           const filePath = path.join(uploadDir, fileName);
           fs.writeFileSync(filePath, audioBuffer);
-          botAudioUrl = `https://api.happyclass.com.vn/uploads/${fileName}`;
+          
+          // Use dynamic base URL from environment or default to production
+          const baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn';
+          botAudioUrl = `${baseUrl}/uploads/${fileName}`;
+          this.logger.log(`✅ [AI] Audio saved locally: ${botAudioUrl}`);
         } else {
           // Format mới: trả về URL trực tiếp
           botAudioUrl = responseData.url || responseData.audio_url || (typeof responseData === 'string' ? responseData : null);
@@ -438,32 +446,34 @@ export class ChatService {
       if (!aiReply) return null;
 
       // TTS Processing
-      let audioData: Buffer;
+      let audioUrl: string | null = null;
       try {
         const response = await axios.post(
           'http://45.13.132.111:5000/tts',
           { text: aiReply, voice: 'af_heart', voiceSpeed: '0.8' },
-          { headers: { 'Content-Type': 'application/json' } },
+          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 },
         );
-        audioData = response.data.audioData;
+        
+        if (response.data.audioData) {
+          const audioBuffer = Buffer.from(response.data.audioData, 'base64');
+          const fileName = `tts-reply-${randomUUID()}.wav`;
+          const uploadDir = path.join(process.cwd(), 'uploads');
+          
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+
+          const filePath = path.join(uploadDir, fileName);
+          fs.writeFileSync(filePath, audioBuffer);
+          
+          // Use dynamic base URL from environment or default to production
+          const baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn';
+          audioUrl = `${baseUrl}/uploads/${fileName}`;
+          this.logger.log(`✅ [AI] TTS audio saved: ${audioUrl}`);
+        }
       } catch (error) {
-        this.logger.error('Error converting text to speech:', error?.response?.data?.message);
-        audioData = null as any;
+        this.logger.error('Error converting text to speech:', error?.message);
       }
-
-      const audioBuffer = typeof audioData === 'string'
-        ? Buffer.from(audioData, 'base64')
-        : Buffer.from(audioData);
-
-      const uploadDir = path.join(process.cwd(), 'uploads');
-      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-      const fileName = `tts-${randomUUID()}.mp3`;
-      const filePath = path.join(uploadDir, fileName);
-      fs.writeFileSync(filePath, audioBuffer);
-
-      const baseUrl = 'https://api.happyclass.com.vn';
-      const fileUrl = `${baseUrl}/uploads/${fileName}`;
 
       const teacherChat = await this.createChat({
         classId: data.classId,
@@ -471,7 +481,7 @@ export class ChatService {
         studentId: data.studentId,
         senderRole: 'teacher',
         message: aiReply,
-        audioUrl: fileUrl,
+        audioUrl: audioUrl,
       });
 
       // Return full Chat object instead of just message text
