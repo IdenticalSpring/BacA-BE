@@ -72,6 +72,14 @@ export class StudentController {
     return await this.studentService.requestDeleteStudent(id);
   }
 
+  @Put(':id/change-password')
+  async changePassword(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { newPassword: string },
+  ): Promise<any> {
+    return await this.studentService.changePassword(id, body.newPassword);
+  }
+
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return await this.studentService.remove(id);

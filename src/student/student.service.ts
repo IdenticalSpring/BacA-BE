@@ -130,6 +130,12 @@ export class StudentService {
     // Đã xóa logic upload file và Cloudinary
 
     Object.assign(student, rest);
+
+    // Nếu có thay đổi password và password không rỗng, bật cờ hasCustomPassword
+    if (rest.password && rest.password.trim() !== '') {
+      student.hasCustomPassword = true;
+    }
+
     return await this.studentRepository.save(student);
   }
 
@@ -204,6 +210,24 @@ export class StudentService {
       message: `Yêu cầu xóa học sinh ${studentName} đã được gửi đến admin`,
       notification,
     };
+  }
+
+  // Đổi mật khẩu cho học sinh - bật cờ hasCustomPassword
+  async changePassword(
+    id: number,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const student = await this.findOne(id);
+
+    if (!newPassword || newPassword.trim() === '') {
+      throw new NotFoundException('Mật khẩu mới không được để trống');
+    }
+
+    student.password = newPassword;
+    student.hasCustomPassword = true;
+    await this.studentRepository.save(student);
+
+    return { message: 'Đổi mật khẩu thành công' };
   }
 
   // Tìm tất cả học sinh trùng lặp (chỉ để xem, KHÔNG xóa)

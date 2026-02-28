@@ -53,6 +53,11 @@ export class AuthController {
     return { token };
   }
 
+  @Post('student/check-password')
+  async checkStudentPassword(@Body() body: { username: string }) {
+    return this.authService.checkStudentRequiresPassword(body.username);
+  }
+
   @Post('protected')
   @UseGuards(AuthGuard('jwt'))
   getProtectedData(@Req() req: Request) {

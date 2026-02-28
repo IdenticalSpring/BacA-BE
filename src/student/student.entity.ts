@@ -50,8 +50,12 @@ export class Student {
   @Column({ length: 50, unique: true, nullable: false })
   username: string;
 
-  @Column({ length: 255, nullable: false })
+  @Column({ length: 255, nullable: true, default: null })
   password: string;
+
+  @Column({ type: 'boolean', default: false })
+  hasCustomPassword: boolean;
+
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
 

@@ -101,7 +101,7 @@ export class AuthService {
     return { userId: teacher.id, username: teacher.username, role: 'teacher' };
   }
 
-  async validateStudent(username: string, password: string): Promise<any> {
+  async validateStudent(username: string, password?: string): Promise<any> {
     const student = await this.studentRepository.findOne({
       where: { username },
     });
@@ -110,11 +110,27 @@ export class AuthService {
       throw new BadRequestException('Invalid credentials');
     }
 
-    if (password !== student.password) {
-      throw new BadRequestException('Invalid credentials');
+    // Nếu học sinh đã chủ động đặt mật khẩu → bắt buộc nhập đúng
+    if (student.hasCustomPassword) {
+      if (!password || password !== student.password) {
+        throw new BadRequestException('Invalid credentials');
+      }
     }
+    // hasCustomPassword = false → cho đăng nhập không cần mật khẩu
 
     return { userId: student.id, username: student.username, role: 'student' };
+  }
+
+  async checkStudentRequiresPassword(username: string): Promise<{ requiresPassword: boolean }> {
+    const student = await this.studentRepository.findOne({
+      where: { username },
+    });
+
+    if (!student) {
+      throw new BadRequestException('Tài khoản không tồn tại');
+    }
+
+    return { requiresPassword: student.hasCustomPassword };
   }
 
   async generateToken(payload: any): Promise<string> {

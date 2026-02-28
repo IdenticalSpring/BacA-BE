@@ -24,8 +24,9 @@ export class CreateStudentDto {
   @IsString()
   username: string;
 
+  @IsOptional()
   @IsString()
-  password: string;
+  password?: string;
 
   @IsOptional()
   @IsString()
@@ -50,11 +51,13 @@ export class UpdateStudentDto {
   // @IsDate()
   // birthOfDate?: Date;
 
+  @IsOptional()
   @IsString()
-  username: string;
+  username?: string;
 
+  @IsOptional()
   @IsString()
-  password: string;
+  password?: string;
 
   @IsOptional()
   @IsString()

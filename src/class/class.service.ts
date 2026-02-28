@@ -37,8 +37,7 @@ export class ClassService {
       throw new NotFoundException(`Class with ID ${id} not found`);
     }
     classEntity.students.forEach((student) => {
-      delete student.username;
-      delete student.password;
+      delete student.password; // Giữ username và hasCustomPassword, chỉ xóa password
     });
     return classEntity;
   }
@@ -52,8 +51,7 @@ export class ClassService {
       throw new NotFoundException(`Class with AccessID ${accessId} not found`);
     }
     classEntity.students.forEach((student) => {
-      delete student.username;
-      delete student.password;
+      delete student.password; // Giữ username và hasCustomPassword, chỉ xóa password
     });
     return classEntity;
   }
