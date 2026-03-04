@@ -83,7 +83,7 @@ import { ChatTopicModule } from './chat-topic/chat-topic.module';
       port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
-      database: 'schooldb',
+      database: process.env.DB_NAME,
       entities: [
         Lesson,
         ClassSchedule,

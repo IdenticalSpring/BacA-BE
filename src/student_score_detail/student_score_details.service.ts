@@ -53,7 +53,16 @@ export class StudentScoreDetailsService {
   ): Promise<StudentScoreDetails[]> {
     return this.studentScoreDetailsRepository.find({
       where: { studentScore: { student: { id: studentId } } },
-      relations: ['studentScore', 'testSkill'], // Lấy thông tin khóa ngoại
+      relations: ['studentScore', 'testSkill'],
+    });
+  }
+
+  async getScoreDetailsByStudentScoreId(
+    studentScoreId: number,
+  ): Promise<StudentScoreDetails[]> {
+    return this.studentScoreDetailsRepository.find({
+      where: { studentScoreID: studentScoreId },
+      relations: ['studentScore', 'testSkill'],
     });
   }
 

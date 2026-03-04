@@ -23,6 +23,20 @@ export class StudentScoreDetailsController {
     return this.service.findAll();
   }
 
+  @Get('student/:studentId')
+  async getScoreDetailsByStudentId(
+    @Param('studentId') studentId: number,
+  ): Promise<StudentScoreDetails[]> {
+    return this.service.getScoreDetailsByStudentId(studentId);
+  }
+
+  @Get('score/:scoreId')
+  async getScoreDetailsByStudentScoreId(
+    @Param('scoreId') scoreId: number,
+  ): Promise<StudentScoreDetails[]> {
+    return this.service.getScoreDetailsByStudentScoreId(scoreId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: number): Promise<StudentScoreDetails> {
     return this.service.findOne(id);
@@ -41,12 +55,6 @@ export class StudentScoreDetailsController {
     @Body() updateDto: UpdateStudentScoreDetailsDto,
   ): Promise<StudentScoreDetails> {
     return this.service.update(id, updateDto);
-  }
-  @Get('student/:studentId')
-  async getScoreDetailsByStudentId(
-    @Param('studentId') studentId: number,
-  ): Promise<StudentScoreDetails[]> {
-    return this.service.getScoreDetailsByStudentId(studentId);
   }
 
   @Delete(':id')

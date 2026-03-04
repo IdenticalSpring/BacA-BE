@@ -33,10 +33,6 @@ export class VocabularyController {
   ): Promise<Vocabulary[]> {
     return await this.vocabularyService.findVocabularyByHomeworkId(homeworkId);
   }
-  @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Vocabulary> {
-    return await this.vocabularyService.findOne(id);
-  }
   @Get('student')
   async findAllForStudent(): Promise<Vocabulary[]> {
     return await this.vocabularyService.findAllForStudent();
@@ -73,6 +69,10 @@ export class VocabularyController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Vocabulary> {
     return await this.vocabularyService.findOneForStudent(id);
+  }
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Vocabulary> {
+    return await this.vocabularyService.findOne(id);
   }
 
   // @Post()

@@ -23,11 +23,16 @@ export class CloudinaryService {
     try {
       console.log('Uploading buffer to Cloudinary...');
 
+      // Upload vào folder dev/ khi chạy local, root khi production
+      const folder = process.env.CLOUDINARY_FOLDER || '';
+      const uploadOptions: Record<string, any> = { resource_type: 'auto' };
+      if (folder) uploadOptions.folder = folder;
+
       // Chuyển Buffer thành Stream
       const stream = Readable.from(buffer);
       return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          { resource_type: 'auto' },
+          uploadOptions,
           (error, result) => {
             if (error) {
               console.error('Cloudinary Upload Error:', error);
@@ -48,11 +53,15 @@ export class CloudinaryService {
   static async uploadMultipleBuffers(buffers: Buffer[]): Promise<string[]> {
     try {
       console.log('Uploading multiple buffers to Cloudinary...');
+      const folder = process.env.CLOUDINARY_FOLDER || '';
+      const uploadOptions: Record<string, any> = { resource_type: 'auto' };
+      if (folder) uploadOptions.folder = folder;
+
       const uploadPromises = buffers.map((buffer) => {
         const stream = Readable.from(buffer);
         return new Promise<string>((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { resource_type: 'auto' },
+            uploadOptions,
             (error, result) => {
               if (error) {
                 console.error('Cloudinary Upload Error:', error);
