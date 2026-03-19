@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StudentScoreEntity } from './studentScore.entity';
@@ -14,6 +14,19 @@ export class StudentScoreService {
   async create(
     createStudentScoreDto: CreateStudentScoreDto,
   ): Promise<StudentScoreEntity> {
+    const existedScore = await this.studentScoreRepository.findOne({
+      where: {
+        studentID: createStudentScoreDto.studentID,
+        classTestScheduleID: createStudentScoreDto.classTestScheduleID,
+      },
+    });
+
+    if (existedScore) {
+      throw new ConflictException(
+        'Student already has a score for this test schedule',
+      );
+    }
+
     const studentScoreEntity = this.studentScoreRepository.create(
       createStudentScoreDto,
     );

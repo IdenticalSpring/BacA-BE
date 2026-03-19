@@ -128,6 +128,44 @@ export class GeminiService {
     };
     return map[ext] || "application/octet-stream";
   }
+
+  private enforceSingleQuestionReply(text: string): string {
+    const normalized = (text || '').replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return 'That sounds good. Can you tell me a bit more?';
+    }
+
+    const sentences = normalized.match(/[^.!?]+[.!?]?/g) || [normalized];
+    const output: string[] = [];
+    let questionUsed = false;
+
+    for (const rawSentence of sentences) {
+      const sentence = rawSentence.trim();
+      if (!sentence) {
+        continue;
+      }
+
+      if (sentence.includes('?')) {
+        if (!questionUsed) {
+          const firstQuestionPart = sentence.split('?')[0].trim();
+          if (firstQuestionPart) {
+            output.push(`${firstQuestionPart}?`);
+            questionUsed = true;
+          }
+        }
+        continue;
+      }
+
+      output.push(sentence);
+    }
+
+    if (!questionUsed) {
+      output.push('Can you tell me a bit more?');
+    }
+
+    return output.join(' ').replace(/\s+/g, ' ').trim();
+  }
+
   async enhanceDescription(description: string): Promise<string> {
     const maxRetries = 3;
     let lastError: Error;
@@ -508,7 +546,8 @@ English level: ${level}
   
   Please reply naturally in English:
   - Stay on topic.
-  - Ask one follow-up question to keep the conversation going.
+  - Include exactly ONE follow-up question only (use exactly one '?' in total).
+  - Do not ask multiple questions.
   - Match the student's approximate English level (simple grammar if beginner).
   - Do NOT use bold, italics, or markdown.
   If an audio clip is provided, use it to infer pronunciation, intent, or extra context.
@@ -541,7 +580,7 @@ English level: ${level}
     const result = await model.generateContent({
       contents: [{ role: 'user', parts }],
     });
-    const aiReply = result.response.text();
+    const aiReply = this.enforceSingleQuestionReply(result.response.text());
   
     // 5) save & notify
     const chat = await this.chatService.createChat({

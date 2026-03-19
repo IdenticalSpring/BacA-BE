@@ -254,6 +254,8 @@ export class ChatService {
         aiText = await this.callGeminiTextOnly(userContent);
       }
 
+      aiText = this.enforceSingleQuestionReply(aiText);
+
       this.logger.log(`✅ [AI] Gemini replied: "${aiText.substring(0, 100)}..."`);
 
       // BƯỚC B: Gọi TTS Server
@@ -359,13 +361,61 @@ export class ChatService {
    * Helper: Gọi Gemini Text-Only (Fallback)
    */
   private async callGeminiTextOnly(text: string): Promise<string> {
-    const prompt = `You are a friendly English teacher. The student says: "${text}". Reply naturally and encouragingly. Keep it under 2 sentences.`;
+    const prompt = `You are a friendly English teacher. The student says: "${text}". Reply naturally and encouragingly in 1-2 short sentences, and include exactly ONE follow-up question only.`;
     try {
-      return await this.geminiService.enhanceDescription(prompt);
+      const rawReply = await this.geminiService.enhanceDescription(prompt);
+      return this.enforceSingleQuestionReply(rawReply);
     } catch (e) {
       this.logger.error(`Gemini Text Error: ${e.message}`);
-      return "I hear you! That's very interesting.";
+      return "I hear you! That's very interesting. Can you tell me a bit more?";
     }
+  }
+
+  private enforceSingleQuestionReply(text: string): string {
+    const normalized = (text || '').replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return 'That sounds good. Can you tell me a bit more?';
+    }
+
+    const sentences = normalized.match(/[^.!?]+[.!?]?/g) || [normalized];
+    const output: string[] = [];
+    let questionUsed = false;
+
+    for (const rawSentence of sentences) {
+      const sentence = rawSentence.trim();
+      if (!sentence) {
+        continue;
+      }
+
+      if (sentence.includes('?')) {
+        if (!questionUsed) {
+          const firstQuestionPart = sentence.split('?')[0].trim();
+          if (firstQuestionPart) {
+            output.push(`${firstQuestionPart}?`);
+            questionUsed = true;
+          }
+        }
+        continue;
+      }
+
+      output.push(sentence);
+    }
+
+    if (!questionUsed) {
+      output.push('Can you tell me a bit more?');
+    }
+
+    let finalText = output.join(' ').replace(/\s+/g, ' ').trim();
+    const questionCount = (finalText.match(/\?/g) || []).length;
+
+    if (questionCount > 1) {
+      const firstIndex = finalText.indexOf('?');
+      const firstPart = finalText.slice(0, firstIndex + 1);
+      const restPart = finalText.slice(firstIndex + 1).replace(/\?/g, '.');
+      finalText = `${firstPart}${restPart}`.replace(/\s+/g, ' ').trim();
+    }
+
+    return finalText;
   }
 
   async autoReplyForActiveTopic(data: {
@@ -417,9 +467,10 @@ export class ChatService {
           ? `The student just answered by audio. The attached audio is the student's answer; listen and base your reply on it.`
           : `The student just said: "${data.answer || ''}"`) +
         `\n\nYour task:\n` +
-        `- Continue naturally and stay on topic. If the topic is told you to create question about something just give the question only\n` +
-        `- Keep tone encouraging and conversational. keep the answer short\n` +
-        `- Ask exactly one relevant follow-up question.\n` +
+        `- Continue naturally and stay on topic.\n` +
+        `- Keep tone encouraging and conversational, with short and clear wording.\n` +
+        `- Include exactly ONE follow-up question only (use exactly one '?' in total).\n` +
+        `- Do not ask multiple questions or provide a list of questions.\n` +
         `- Do not use markdown formatting.`;
 
       const contents: any[] = [{ role: 'user', parts: [{ text: instruction }] }];
@@ -441,16 +492,18 @@ export class ChatService {
         temperature: 0.6,
       });
 
-      this.logger.log(`🤖 [AI] Gemini reply: ${aiReply?.substring(0, 100)}...`);
+      const safeAiReply = this.enforceSingleQuestionReply(aiReply);
 
-      if (!aiReply) return null;
+      this.logger.log(`🤖 [AI] Gemini reply: ${safeAiReply?.substring(0, 100)}...`);
+
+      if (!safeAiReply) return null;
 
       // TTS Processing
       let audioUrl: string | null = null;
       try {
         const response = await axios.post(
           'http://45.13.132.111:5000/tts',
-          { text: aiReply, voice: 'af_heart', voiceSpeed: '0.8' },
+          { text: safeAiReply, voice: 'af_heart', voiceSpeed: '0.8' },
           { headers: { 'Content-Type': 'application/json' }, timeout: 60000 },
         );
         
@@ -480,7 +533,7 @@ export class ChatService {
         teacherId: data.teacherId,
         studentId: data.studentId,
         senderRole: 'teacher',
-        message: aiReply,
+        message: safeAiReply,
         audioUrl: audioUrl,
       });
 
