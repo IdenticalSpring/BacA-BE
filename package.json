@@ -6,8 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "postinstall": "npm run install:tts",
-    "install:tts": "python3 -m pip install -r scripts/requirements-tts.txt || python -m pip install -r scripts/requirements-tts.txt",
+    "postinstall": "node scripts/setup-tts.js",
+    "install:tts": "node scripts/setup-tts.js",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",

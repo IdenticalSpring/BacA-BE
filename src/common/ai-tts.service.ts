@@ -10,7 +10,7 @@ const execFileAsync = promisify(execFile);
 @Injectable()
 export class AiTtsService {
   private readonly logger = new Logger(AiTtsService.name);
-  private readonly pythonBin = process.env.TTS_PYTHON_BIN?.trim() || 'python';
+  private readonly pythonBin = this.resolvePythonBin();
   private readonly workerScriptPath =
     process.env.TTS_WORKER_SCRIPT?.trim() ||
     path.join(process.cwd(), 'scripts', 'tts_worker.py');
@@ -22,6 +22,24 @@ export class AiTtsService {
   private readonly baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn';
 
   private warnedMissingWorker = false;
+
+  private resolvePythonBin(): string {
+    const configuredPython = process.env.TTS_PYTHON_BIN?.trim();
+    if (configuredPython) {
+      return configuredPython;
+    }
+
+    const venvPython =
+      process.platform === 'win32'
+        ? path.join(process.cwd(), '.venv_tts', 'Scripts', 'python.exe')
+        : path.join(process.cwd(), '.venv_tts', 'bin', 'python');
+
+    if (fs.existsSync(venvPython)) {
+      return venvPython;
+    }
+
+    return 'python3';
+  }
 
   private ensureWorkerAvailable(): boolean {
     const exists = fs.existsSync(this.workerScriptPath);
