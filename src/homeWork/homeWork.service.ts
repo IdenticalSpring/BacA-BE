@@ -20,19 +20,24 @@ import { Teacher } from 'src/teacher/teacher.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import axios from 'axios';
 import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
+import { AiTtsService } from 'src/common/ai-tts.service';
+import * as fs from 'fs';
+import * as path from 'path';
 dotenv.config();
 @Injectable()
 export class HomeWorkService {
   private readonly logger = new Logger(HomeWorkService.name);
   private readonly ttsBaseUrls = this.buildTtsBaseUrls();
-  private readonly defaultVoice = 'af_heart';
+  private readonly defaultVoice = 'en-US-JennyNeural';
   private readonly defaultVoiceSpeed = '0.8';
-  private readonly ttsfreeUrl = 'https://ttsfree.com/api/v1/tts';
   private readonly ttsRequestTimeoutMs = Number(process.env.TTS_REQUEST_TIMEOUT_MS || 45000);
   private readonly ttsVoicesTimeoutMs = Number(process.env.TTS_VOICES_TIMEOUT_MS || 15000);
   private readonly ttsRetryCount = Number(process.env.TTS_RETRY_COUNT || 1);
-  private readonly ttsApiKey = process.env.API_TTS_KEY?.trim();
-  private hasWarnedMissingTtsfreeKey = false;
+  private readonly ttsUseCustomServerFirst =
+    (process.env.TTS_USE_CUSTOM_SERVER_FIRST || 'false').toLowerCase() === 'true';
+  private readonly ttsCacheTtlMs = Number(process.env.TTS_CACHE_TTL_MS || 3600000);
+  private readonly ttsCacheMaxEntries = Number(process.env.TTS_CACHE_MAX_ENTRIES || 500);
+  private readonly ttsCache = new Map<string, { audioBase64: string; expiresAt: number }>();
 
   constructor(
     @InjectRepository(HomeWork)
@@ -41,6 +46,7 @@ export class HomeWorkService {
     private readonly teacherRepository: Repository<Teacher>,
     @InjectRepository(LessonBySchedule)
     private readonly lessonByScheduleRepository: Repository<LessonBySchedule>,
+    private readonly aiTtsService: AiTtsService,
   ) {}
 
   private buildTtsBaseUrls(): string[] {
@@ -119,9 +125,88 @@ export class HomeWorkService {
     return this.ttsBaseUrls[0] || 'http://45.13.132.111:5000';
   }
 
+  private resolveRequestedVoice(voice?: string): string {
+    if (typeof voice !== 'string') {
+      return this.defaultVoice;
+    }
+
+    const normalizedVoice = voice.trim();
+    if (!normalizedVoice) {
+      return this.defaultVoice;
+    }
+
+    if (/^\d+$/.test(normalizedVoice)) {
+      return this.defaultVoice;
+    }
+
+    return normalizedVoice;
+  }
+
+  private getTtsCacheKey(text: string, voice: string): string {
+    return `${voice}::${text.trim()}`;
+  }
+
+  private getCachedTtsAudio(cacheKey: string): string | null {
+    const cached = this.ttsCache.get(cacheKey);
+    if (!cached) {
+      return null;
+    }
+
+    if (Date.now() >= cached.expiresAt) {
+      this.ttsCache.delete(cacheKey);
+      return null;
+    }
+
+    return cached.audioBase64;
+  }
+
+  private setCachedTtsAudio(cacheKey: string, audioBase64: string): void {
+    if (this.ttsCache.size >= this.ttsCacheMaxEntries) {
+      const oldestKey = this.ttsCache.keys().next().value;
+      if (oldestKey) {
+        this.ttsCache.delete(oldestKey);
+      }
+    }
+
+    this.ttsCache.set(cacheKey, {
+      audioBase64,
+      expiresAt: Date.now() + this.ttsCacheTtlMs,
+    });
+  }
+
+  private extractAudioPayload(responseData: unknown): string | null {
+    if (!responseData) {
+      return null;
+    }
+
+    if (typeof responseData === 'string' && responseData.trim()) {
+      return responseData;
+    }
+
+    if (typeof responseData === 'object') {
+      const data = responseData as Record<string, unknown>;
+      const candidates = [
+        data.audioData,
+        data.url,
+        data.audio_url,
+        data.audioUrl,
+        data.result,
+      ];
+
+      for (const candidate of candidates) {
+        if (typeof candidate === 'string' && candidate.trim()) {
+          return candidate;
+        }
+      }
+    }
+
+    return null;
+  }
+
   private async requestTtsAudioFromCustomServer(
     baseUrl: string,
     textToSpeechDto: textToSpeechDto,
+    resolvedVoice: string,
   ): Promise<string> {
     const maxAttempts = Math.max(1, this.ttsRetryCount + 1);
 
@@ -131,7 +216,7 @@ export class HomeWorkService {
           `${baseUrl}/tts`,
           {
             text: textToSpeechDto.textToSpeech,
-            voice: textToSpeechDto.voice ?? this.defaultVoice,
+            voice: resolvedVoice,
             voiceSpeed: textToSpeechDto.voiceSpeed ?? this.defaultVoiceSpeed,
           },
           {
@@ -142,12 +227,12 @@ export class HomeWorkService {
           },
         );
 
-        const audioData = response?.data?.audioData;
-        if (!audioData) {
-          throw new BadGatewayException('TTS response missing audioData');
+        const audioPayload = this.extractAudioPayload(response?.data);
+        if (!audioPayload) {
+          throw new BadGatewayException('TTS response missing audio payload');
         }
 
-        return audioData;
+        return audioPayload;
       } catch (error) {
         const canRetry = attempt < maxAttempts && this.isRetryableTtsError(error);
         if (!canRetry) {
@@ -164,36 +249,38 @@ export class HomeWorkService {
     throw new ServiceUnavailableException(`TTS request failed after ${maxAttempts} attempts`);
   }
 
-  private async requestTtsAudioFromTtsfree(
+  private async requestTtsAudioFromLocalProvider(
     textToSpeechDto: textToSpeechDto,
+    resolvedVoice: string,
   ): Promise<string> {
-    if (!this.ttsApiKey) {
-      throw new Error('API_TTS_KEY is not configured');
-    }
-
-    const response = await axios.post(
-      this.ttsfreeUrl,
+    const localAudioUrl = await this.aiTtsService.synthesizeToAudioUrl(
+      textToSpeechDto.textToSpeech,
       {
-        text: textToSpeechDto.textToSpeech,
-        voiceService: 'servicebin',
-        voiceID: 'en-US',
-        voiceSpeed: '0',
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: this.ttsApiKey,
-        },
-        timeout: this.ttsRequestTimeoutMs,
+        outputFormat: 'mp3',
+        provider: 'auto',
+        voiceId: resolvedVoice,
       },
     );
 
-    const audioData = response?.data?.audioData;
-    if (!audioData) {
-      throw new BadGatewayException('TTSFREE response missing audioData');
+    if (!localAudioUrl) {
+      throw new Error('Local TTS provider did not return audio URL');
     }
 
-    return audioData;
+    const fileName = localAudioUrl.split('/').pop();
+    if (fileName) {
+      const localPath = path.join(process.cwd(), 'uploads', fileName);
+      if (fs.existsSync(localPath)) {
+        const fileBuffer = fs.readFileSync(localPath);
+        return fileBuffer.toString('base64');
+      }
+    }
+
+    const response = await axios.get(localAudioUrl, {
+      responseType: 'arraybuffer',
+      timeout: this.ttsRequestTimeoutMs,
+    });
+
+    return Buffer.from(response.data).toString('base64');
   }
 
   async findAll(): Promise<HomeWork[]> {
@@ -370,48 +457,80 @@ export class HomeWorkService {
   //   }
   // }
   async textToSpeech(textToSpeechDto: textToSpeechDto): Promise<string> {
-    const customServerErrors: string[] = [];
+    const safeText = textToSpeechDto?.textToSpeech?.trim();
+    if (!safeText) {
+      throw new ServiceUnavailableException('TTS conversion failed: textToSpeech is empty');
+    }
 
-    for (const baseUrl of this.ttsBaseUrls) {
+    const resolvedVoice = this.resolveRequestedVoice(textToSpeechDto.voice);
+    const cacheKey = this.getTtsCacheKey(safeText, resolvedVoice);
+    const cachedAudio = this.getCachedTtsAudio(cacheKey);
+    if (cachedAudio) {
+      return cachedAudio;
+    }
+
+    const errors: string[] = [];
+
+    const runLocalProvider = async (): Promise<string | null> => {
       try {
-        return await this.requestTtsAudioFromCustomServer(baseUrl, textToSpeechDto);
-      } catch (error) {
-        const message = this.extractTtsErrorMessage(error);
-        customServerErrors.push(`${baseUrl}/tts => ${message}`);
-        this.logger.error(`Error converting text to speech via ${baseUrl}/tts: ${message}`);
-      }
-    }
-
-    if (!this.ttsApiKey) {
-      if (!this.hasWarnedMissingTtsfreeKey) {
-        this.logger.warn(
-          'API_TTS_KEY is not configured. TTS fallback to ttsfree.com is disabled.',
+        const audio = await this.requestTtsAudioFromLocalProvider(
+          { ...textToSpeechDto, textToSpeech: safeText, voice: resolvedVoice },
+          resolvedVoice,
         );
-        this.hasWarnedMissingTtsfreeKey = true;
+        this.setCachedTtsAudio(cacheKey, audio);
+        return audio;
+      } catch (localError) {
+        const localMessage = this.extractTtsErrorMessage(localError);
+        errors.push(`local(edge-tts/gTTS) => ${localMessage}`);
+        this.logger.error(`Error converting text to speech via local provider: ${localMessage}`);
+        return null;
+      }
+    };
+
+    const runCustomServers = async (): Promise<string | null> => {
+      for (const baseUrl of this.ttsBaseUrls) {
+        try {
+          const audio = await this.requestTtsAudioFromCustomServer(
+            baseUrl,
+            { ...textToSpeechDto, textToSpeech: safeText, voice: resolvedVoice },
+            resolvedVoice,
+          );
+          this.setCachedTtsAudio(cacheKey, audio);
+          return audio;
+        } catch (error) {
+          const message = this.extractTtsErrorMessage(error);
+          errors.push(`${baseUrl}/tts => ${message}`);
+          this.logger.error(`Error converting text to speech via ${baseUrl}/tts: ${message}`);
+        }
       }
 
-      throw new ServiceUnavailableException(
-        `TTS conversion failed: ${customServerErrors.join(' | ')}`,
-      );
+      return null;
+    };
+
+    const firstAttempt = this.ttsUseCustomServerFirst
+      ? await runCustomServers()
+      : await runLocalProvider();
+
+    if (firstAttempt) {
+      return firstAttempt;
     }
 
-    try {
-      return await this.requestTtsAudioFromTtsfree(textToSpeechDto);
-    } catch (ttsfreeError) {
-      const ttsfreeMessage = this.extractTtsErrorMessage(ttsfreeError);
-      this.logger.error(`Error converting text to speech via ${this.ttsfreeUrl}: ${ttsfreeMessage}`);
+    const secondAttempt = this.ttsUseCustomServerFirst
+      ? await runLocalProvider()
+      : await runCustomServers();
 
-      const combinedMessage = [
-        ...customServerErrors,
-        `${this.ttsfreeUrl} => ${ttsfreeMessage}`,
-      ].join(' | ');
-
-      throw new ServiceUnavailableException(
-        `TTS conversion failed: ${combinedMessage}`,
-      );
+    if (secondAttempt) {
+      return secondAttempt;
     }
+
+    throw new ServiceUnavailableException(`TTS conversion failed: ${errors.join(' | ')}`);
   }
   async voices(): Promise<any> {
+    const localProviderHealth = this.aiTtsService.isProviderReady();
+    if (localProviderHealth.ok && !this.ttsUseCustomServerFirst) {
+      return [this.defaultVoice];
+    }
+
     const voiceErrors: string[] = [];
 
     for (const baseUrl of this.ttsBaseUrls) {
@@ -443,6 +562,15 @@ export class HomeWorkService {
 
   async getTtsHealth(): Promise<{ baseUrl: string; ok: boolean; detail?: string }> {
     const primaryUrl = this.getPrimaryTtsBaseUrl();
+    const localProviderHealth = this.aiTtsService.isProviderReady();
+
+    if (localProviderHealth.ok) {
+      return {
+        baseUrl: 'local(edge-tts/gTTS)',
+        ok: true,
+      };
+    }
+
     try {
       const response = await axios.get(`${primaryUrl}/voices`, {
         timeout: this.ttsVoicesTimeoutMs,

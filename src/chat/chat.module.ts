@@ -11,6 +11,7 @@ import { Class } from 'src/class/class.entity';
 import { GeminiModule } from 'src/gemini/gemini.module';
 import { WsAuthGuard } from 'src/message/ws-auth.guard'; // ✅ add this import
 import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
+import { AiTtsService } from 'src/common/ai-tts.service';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
     forwardRef(() => GeminiModule),
   ],
   controllers: [ChatController],
-  providers: [ChatService, ChatGateway, WsAuthGuard],
+  providers: [ChatService, ChatGateway, WsAuthGuard, AiTtsService],
   exports: [ChatService, ChatGateway, JwtModule],
 })
 export class ChatModule {}

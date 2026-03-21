@@ -10,6 +10,7 @@ import { Student } from 'src/student/student.entity';
 import { Teacher } from 'src/teacher/teacher.entity';
 import { GeminiModule } from 'src/gemini/gemini.module';
 import { ChatModule } from 'src/chat/chat.module';
+import { AiTtsService } from 'src/common/ai-tts.service';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { ChatModule } from 'src/chat/chat.module';
     ChatModule,
   ],
   controllers: [ChatTopicController],
-  providers: [ChatTopicService, FilesService, ChatTopicGateway],
+  providers: [ChatTopicService, FilesService, ChatTopicGateway, AiTtsService],
   exports: [TypeOrmModule, ChatTopicService, ChatTopicGateway],
 })
 export class ChatTopicModule {}

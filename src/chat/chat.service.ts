@@ -11,8 +11,8 @@ import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
 import { GeminiKeyRotator } from 'src/common/gemini-key-rotator';
+import { AiTtsService } from 'src/common/ai-tts.service';
 
 function inferAudioMimeFromUrl(url: string): string {
   const u = (url || "").toLowerCase();
@@ -63,10 +63,6 @@ export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private geminiRotator = new GeminiKeyRotator({ cooldownMs: 90_000 });
   private readonly AI_BOT_ID = 97777;
-  private readonly TTS_BASE_URL = (
-    process.env.TTS_BASE_URL || 'http://45.13.132.111:5000'
-  ).replace(/\/+$/, '');
-  private readonly TTS_API_URL = `${this.TTS_BASE_URL}/tts`;
 
   constructor(
     @InjectRepository(Chat)
@@ -81,6 +77,7 @@ export class ChatService {
     private chatTopicRepository: Repository<ChatTopic>,
     @Inject(forwardRef(() => GeminiService))
     private readonly geminiService: GeminiService,
+    private readonly aiTtsService: AiTtsService,
   ) {}
 
   async createChat(dto: CreateChatDto): Promise<Chat> {
@@ -261,54 +258,20 @@ export class ChatService {
 
       this.logger.log(`✅ [AI] Gemini replied: "${aiText.substring(0, 100)}..."`);
 
-      // BƯỚC B: Gọi TTS Server
+      // BƯỚC B: Gọi AI TTS Provider
       let botAudioUrl = null;
       try {
-        // Tính timeout dựa trên độ dài text (tối thiểu 30s, tối đa 120s)
-        const estimatedTimeout = Math.min(120000, Math.max(30000, aiText.length * 100));
-        this.logger.log(`🔊 [AI] TTS request ${this.TTS_API_URL} with timeout: ${estimatedTimeout}ms for ${aiText.length} chars`);
-        
-        const ttsResponse = await axios.post(
-          this.TTS_API_URL,
-          {
-            text: aiText,
-            voice: 'af_heart',
-            voiceSpeed: '0.8',
-          },
-          { 
-            headers: { 'Content-Type': 'application/json' },
-            timeout: estimatedTimeout 
-          }
-        );
+        botAudioUrl = await this.aiTtsService.synthesizeToAudioUrl(aiText, {
+          outputFormat: 'mp3',
+        });
 
-        const responseData = ttsResponse.data;
-        
-        // Xử lý nhiều format response từ TTS server
-        if (responseData.audioData) {
-          // Save audio to local storage
-          const audioBuffer = Buffer.from(responseData.audioData, 'base64');
-          const fileName = `tts-ai-${randomUUID()}.wav`;
-          const uploadDir = path.join(process.cwd(), 'uploads');
-          
-          if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-          }
-
-          const filePath = path.join(uploadDir, fileName);
-          fs.writeFileSync(filePath, audioBuffer);
-          
-          // Use dynamic base URL from environment or default to production
-          const baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn';
-          botAudioUrl = `${baseUrl}/uploads/${fileName}`;
-          this.logger.log(`✅ [AI] Audio saved locally: ${botAudioUrl}`);
+        if (botAudioUrl) {
+          this.logger.log(`🔊 [AI] TTS Audio generated: ${botAudioUrl}`);
         } else {
-          // Format mới: trả về URL trực tiếp
-          botAudioUrl = responseData.url || responseData.audio_url || (typeof responseData === 'string' ? responseData : null);
+          this.logger.warn('🔇 [AI] TTS provider returned empty audio URL. Sending text only.');
         }
-        
-        this.logger.log(`🔊 [AI] TTS Audio generated: ${botAudioUrl}`);
       } catch (ttsError) {
-        this.logger.error(`🔇 [AI] TTS Server Error: ${ttsError.message}`);
+        this.logger.error(`🔇 [AI] TTS Provider Error: ${ttsError.message}`);
       }
 
       // BƯỚC C: Lưu tin nhắn AI vào DB
@@ -504,28 +467,12 @@ export class ChatService {
       // TTS Processing
       let audioUrl: string | null = null;
       try {
-        const response = await axios.post(
-          this.TTS_API_URL,
-          { text: safeAiReply, voice: 'af_heart', voiceSpeed: '0.8' },
-          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 },
-        );
-        
-        if (response.data.audioData) {
-          const audioBuffer = Buffer.from(response.data.audioData, 'base64');
-          const fileName = `tts-reply-${randomUUID()}.wav`;
-          const uploadDir = path.join(process.cwd(), 'uploads');
-          
-          if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-          }
+        audioUrl = await this.aiTtsService.synthesizeToAudioUrl(safeAiReply, {
+          outputFormat: 'mp3',
+        });
 
-          const filePath = path.join(uploadDir, fileName);
-          fs.writeFileSync(filePath, audioBuffer);
-          
-          // Use dynamic base URL from environment or default to production
-          const baseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn';
-          audioUrl = `${baseUrl}/uploads/${fileName}`;
-          this.logger.log(`✅ [AI] TTS audio saved: ${audioUrl}`);
+        if (audioUrl) {
+          this.logger.log(`✅ [AI] TTS audio ready: ${audioUrl}`);
         }
       } catch (error) {
         this.logger.error('Error converting text to speech:', error?.message);

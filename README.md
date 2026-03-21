@@ -45,29 +45,41 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## TTS configuration (vocabulary audio)
+## TTS configuration (edge-tts + gTTS)
 
-Set these variables in `.env` to make TTS stable across network issues:
+This backend now uses a **local Python worker**:
+- Primary: `edge-tts`
+- Fallback: `gTTS`
+
+Install Python packages:
 
 ```bash
-# Comma-separated list, server will try in order and auto-append built-in fallbacks
+pip install -r scripts/requirements-tts.txt
+```
+
+Set these variables in `.env`:
+
+```bash
+# Optional custom TTS server(s) - still tried first for compatibility
 TTS_BASE_URLS=http://localhost:5000,http://45.13.132.111:5000
+TTS_BASE_URL=http://localhost:5000
 
-# Optional single URL (used when TTS_BASE_URLS is not set)
-TTS_BASE_URL=http://45.13.132.111:5000
+# Local Python worker settings
+TTS_PYTHON_BIN=python
+TTS_WORKER_SCRIPT=./scripts/tts_worker.py
+TTS_PROCESS_TIMEOUT_MS=90000
 
-# Optional: enables external fallback to https://ttsfree.com/api/v1/tts
-API_TTS_KEY=your_ttsfree_api_key
+# edge-tts defaults
+TTS_EDGE_VOICE=en-US-JennyNeural
+TTS_EDGE_RATE=+0%
 
-# Optional network tuning
-TTS_REQUEST_TIMEOUT_MS=45000
-TTS_VOICES_TIMEOUT_MS=15000
-TTS_RETRY_COUNT=1
+# gTTS fallback language
+TTS_GTTS_LANG=en
 ```
 
 Notes:
-- If all custom TTS endpoints fail and `API_TTS_KEY` is not set, `/homeworks/textToSpeech` returns `503`.
-- `/homeworks/textToSpeech/voices` returns default voice fallback when upstream voice endpoints are unavailable.
+- If custom `/tts` servers fail, backend auto-falls back to local `edge-tts/gTTS`.
+- If Python environment is missing required packages, `/homeworks/textToSpeech` can return `503`.
 
 ## Run tests
 
