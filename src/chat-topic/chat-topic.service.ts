@@ -16,7 +16,10 @@ import { randomUUID } from 'crypto';
 @Injectable()
 export class ChatTopicService {
   private readonly logger = new Logger(ChatTopicService.name);
-  private readonly TTS_API_URL = 'http://45.13.132.111:5000/tts';
+  private readonly TTS_BASE_URL = (
+    process.env.TTS_BASE_URL || 'http://45.13.132.111:5000'
+  ).replace(/\/+$/, '');
+  private readonly TTS_API_URL = `${this.TTS_BASE_URL}/tts`;
 
   constructor(
     @InjectRepository(ChatTopic)

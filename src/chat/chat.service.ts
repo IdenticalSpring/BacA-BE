@@ -63,7 +63,10 @@ export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private geminiRotator = new GeminiKeyRotator({ cooldownMs: 90_000 });
   private readonly AI_BOT_ID = 97777;
-  private readonly TTS_API_URL = 'http://45.13.132.111:5000/tts';
+  private readonly TTS_BASE_URL = (
+    process.env.TTS_BASE_URL || 'http://45.13.132.111:5000'
+  ).replace(/\/+$/, '');
+  private readonly TTS_API_URL = `${this.TTS_BASE_URL}/tts`;
 
   constructor(
     @InjectRepository(Chat)
@@ -263,7 +266,7 @@ export class ChatService {
       try {
         // Tính timeout dựa trên độ dài text (tối thiểu 30s, tối đa 120s)
         const estimatedTimeout = Math.min(120000, Math.max(30000, aiText.length * 100));
-        this.logger.log(`🔊 [AI] TTS request with timeout: ${estimatedTimeout}ms for ${aiText.length} chars`);
+        this.logger.log(`🔊 [AI] TTS request ${this.TTS_API_URL} with timeout: ${estimatedTimeout}ms for ${aiText.length} chars`);
         
         const ttsResponse = await axios.post(
           this.TTS_API_URL,
@@ -502,7 +505,7 @@ export class ChatService {
       let audioUrl: string | null = null;
       try {
         const response = await axios.post(
-          'http://45.13.132.111:5000/tts',
+          this.TTS_API_URL,
           { text: safeAiReply, voice: 'af_heart', voiceSpeed: '0.8' },
           { headers: { 'Content-Type': 'application/json' }, timeout: 60000 },
         );

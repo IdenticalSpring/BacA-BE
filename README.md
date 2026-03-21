@@ -45,6 +45,30 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## TTS configuration (vocabulary audio)
+
+Set these variables in `.env` to make TTS stable across network issues:
+
+```bash
+# Comma-separated list, server will try in order and auto-append built-in fallbacks
+TTS_BASE_URLS=http://localhost:5000,http://45.13.132.111:5000
+
+# Optional single URL (used when TTS_BASE_URLS is not set)
+TTS_BASE_URL=http://45.13.132.111:5000
+
+# Optional: enables external fallback to https://ttsfree.com/api/v1/tts
+API_TTS_KEY=your_ttsfree_api_key
+
+# Optional network tuning
+TTS_REQUEST_TIMEOUT_MS=45000
+TTS_VOICES_TIMEOUT_MS=15000
+TTS_RETRY_COUNT=1
+```
+
+Notes:
+- If all custom TTS endpoints fail and `API_TTS_KEY` is not set, `/homeworks/textToSpeech` returns `503`.
+- `/homeworks/textToSpeech/voices` returns default voice fallback when upstream voice endpoints are unavailable.
+
 ## Run tests
 
 ```bash
