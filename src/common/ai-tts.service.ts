@@ -4,6 +4,7 @@ import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { spawnSync } from 'child_process';
 
 const execFileAsync = promisify(execFile);
 
@@ -50,9 +51,28 @@ export class AiTtsService {
     return exists;
   }
 
+  private canExecutePython(): boolean {
+    const pythonPath = this.pythonBin;
+
+    if (path.isAbsolute(pythonPath)) {
+      return fs.existsSync(pythonPath);
+    }
+
+    const result = spawnSync(pythonPath, ['--version'], {
+      stdio: 'ignore',
+      shell: false,
+    });
+
+    return result.status === 0;
+  }
+
   isProviderReady(): { ok: boolean; detail?: string } {
     if (!this.ensureWorkerAvailable()) {
       return { ok: false, detail: `Worker script not found: ${this.workerScriptPath}` };
+    }
+
+    if (!this.canExecutePython()) {
+      return { ok: false, detail: `Python runtime not executable: ${this.pythonBin}` };
     }
 
     return { ok: true };
@@ -76,31 +96,31 @@ export class AiTtsService {
       return null;
     }
 
-    if (!fs.existsSync(this.outputDir)) {
-      fs.mkdirSync(this.outputDir, { recursive: true });
-    }
-
-    const extension = options?.outputFormat === 'wav' ? 'wav' : 'mp3';
-    const fileName = `tts-${randomUUID()}.${extension}`;
-    const outputPath = path.join(this.outputDir, fileName);
-
-    const args = [
-      this.workerScriptPath,
-      '--text',
-      safeText,
-      '--output',
-      outputPath,
-      '--provider',
-      options?.provider || 'auto',
-      '--voice',
-      options?.voiceId || this.defaultVoice,
-      '--lang',
-      options?.language || this.defaultLang,
-      '--rate',
-      this.defaultRate,
-    ];
-
     try {
+      if (!fs.existsSync(this.outputDir)) {
+        fs.mkdirSync(this.outputDir, { recursive: true });
+      }
+
+      const extension = options?.outputFormat === 'wav' ? 'wav' : 'mp3';
+      const fileName = `tts-${randomUUID()}.${extension}`;
+      const outputPath = path.join(this.outputDir, fileName);
+
+      const args = [
+        this.workerScriptPath,
+        '--text',
+        safeText,
+        '--output',
+        outputPath,
+        '--provider',
+        options?.provider || 'auto',
+        '--voice',
+        options?.voiceId || this.defaultVoice,
+        '--lang',
+        options?.language || this.defaultLang,
+        '--rate',
+        this.defaultRate,
+      ];
+
       const { stdout, stderr } = await execFileAsync(this.pythonBin, args, {
         timeout: this.ttsProcessTimeoutMs,
       });

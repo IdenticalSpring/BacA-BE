@@ -457,73 +457,83 @@ export class HomeWorkService {
   //   }
   // }
   async textToSpeech(textToSpeechDto: textToSpeechDto): Promise<string> {
-    const safeText = textToSpeechDto?.textToSpeech?.trim();
-    if (!safeText) {
-      throw new ServiceUnavailableException('TTS conversion failed: textToSpeech is empty');
-    }
-
-    const resolvedVoice = this.resolveRequestedVoice(textToSpeechDto.voice);
-    const cacheKey = this.getTtsCacheKey(safeText, resolvedVoice);
-    const cachedAudio = this.getCachedTtsAudio(cacheKey);
-    if (cachedAudio) {
-      return cachedAudio;
-    }
-
-    const errors: string[] = [];
-
-    const runLocalProvider = async (): Promise<string | null> => {
-      try {
-        const audio = await this.requestTtsAudioFromLocalProvider(
-          { ...textToSpeechDto, textToSpeech: safeText, voice: resolvedVoice },
-          resolvedVoice,
-        );
-        this.setCachedTtsAudio(cacheKey, audio);
-        return audio;
-      } catch (localError) {
-        const localMessage = this.extractTtsErrorMessage(localError);
-        errors.push(`local(edge-tts/gTTS) => ${localMessage}`);
-        this.logger.error(`Error converting text to speech via local provider: ${localMessage}`);
-        return null;
+    try {
+      const safeText = textToSpeechDto?.textToSpeech?.trim();
+      if (!safeText) {
+        throw new ServiceUnavailableException('TTS conversion failed: textToSpeech is empty');
       }
-    };
 
-    const runCustomServers = async (): Promise<string | null> => {
-      for (const baseUrl of this.ttsBaseUrls) {
+      const resolvedVoice = this.resolveRequestedVoice(textToSpeechDto.voice);
+      const cacheKey = this.getTtsCacheKey(safeText, resolvedVoice);
+      const cachedAudio = this.getCachedTtsAudio(cacheKey);
+      if (cachedAudio) {
+        return cachedAudio;
+      }
+
+      const errors: string[] = [];
+
+      const runLocalProvider = async (): Promise<string | null> => {
         try {
-          const audio = await this.requestTtsAudioFromCustomServer(
-            baseUrl,
+          const audio = await this.requestTtsAudioFromLocalProvider(
             { ...textToSpeechDto, textToSpeech: safeText, voice: resolvedVoice },
             resolvedVoice,
           );
           this.setCachedTtsAudio(cacheKey, audio);
           return audio;
-        } catch (error) {
-          const message = this.extractTtsErrorMessage(error);
-          errors.push(`${baseUrl}/tts => ${message}`);
-          this.logger.error(`Error converting text to speech via ${baseUrl}/tts: ${message}`);
+        } catch (localError) {
+          const localMessage = this.extractTtsErrorMessage(localError);
+          errors.push(`local(edge-tts/gTTS) => ${localMessage}`);
+          this.logger.error(`Error converting text to speech via local provider: ${localMessage}`);
+          return null;
         }
+      };
+
+      const runCustomServers = async (): Promise<string | null> => {
+        for (const baseUrl of this.ttsBaseUrls) {
+          try {
+            const audio = await this.requestTtsAudioFromCustomServer(
+              baseUrl,
+              { ...textToSpeechDto, textToSpeech: safeText, voice: resolvedVoice },
+              resolvedVoice,
+            );
+            this.setCachedTtsAudio(cacheKey, audio);
+            return audio;
+          } catch (error) {
+            const message = this.extractTtsErrorMessage(error);
+            errors.push(`${baseUrl}/tts => ${message}`);
+            this.logger.error(`Error converting text to speech via ${baseUrl}/tts: ${message}`);
+          }
+        }
+
+        return null;
+      };
+
+      const firstAttempt = this.ttsUseCustomServerFirst
+        ? await runCustomServers()
+        : await runLocalProvider();
+
+      if (firstAttempt) {
+        return firstAttempt;
       }
 
-      return null;
-    };
+      const secondAttempt = this.ttsUseCustomServerFirst
+        ? await runLocalProvider()
+        : await runCustomServers();
 
-    const firstAttempt = this.ttsUseCustomServerFirst
-      ? await runCustomServers()
-      : await runLocalProvider();
+      if (secondAttempt) {
+        return secondAttempt;
+      }
 
-    if (firstAttempt) {
-      return firstAttempt;
+      throw new ServiceUnavailableException(`TTS conversion failed: ${errors.join(' | ')}`);
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+
+      const message = this.extractTtsErrorMessage(error);
+      this.logger.error(`Unexpected TTS runtime error: ${message}`);
+      throw new ServiceUnavailableException(`TTS conversion failed: ${message}`);
     }
-
-    const secondAttempt = this.ttsUseCustomServerFirst
-      ? await runLocalProvider()
-      : await runCustomServers();
-
-    if (secondAttempt) {
-      return secondAttempt;
-    }
-
-    throw new ServiceUnavailableException(`TTS conversion failed: ${errors.join(' | ')}`);
   }
   async voices(): Promise<any> {
     const localProviderHealth = this.aiTtsService.isProviderReady();
