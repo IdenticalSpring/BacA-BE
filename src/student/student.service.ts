@@ -116,6 +116,7 @@ export class StudentService {
   ): Promise<Student> {
     const { classID, ...rest } = updateStudentDto;
     const student = await this.findOne(id);
+    const oldPassword = student.password;
 
     if (classID) {
       const classEntity = await this.classRepository.findOne({
@@ -131,9 +132,15 @@ export class StudentService {
 
     Object.assign(student, rest);
 
-    // Nếu có thay đổi password và password không rỗng, bật cờ hasCustomPassword
-    if (rest.password && rest.password.trim() !== '') {
-      student.hasCustomPassword = true;
+    // Kiểm tra xem mật khẩu gửi lên có thực sự thay đổi so với mật khẩu cũ không
+    if (rest.password !== undefined) {
+      if (rest.password.trim() !== '' && rest.password !== oldPassword) {
+        student.hasCustomPassword = true;
+      } else if (rest.password.trim() === '') {
+        // Nếu frontend gửi lên chuỗi rỗng do không nhập password mới,
+        // giữ nguyên lại mật khẩu cũ đã bị Object.assign đè lên
+        student.password = oldPassword;
+      }
     }
 
     return await this.studentRepository.save(student);

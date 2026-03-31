@@ -201,8 +201,9 @@ export class HomeWorkService {
   // }
   async textToSpeech(textToSpeechDto: textToSpeechDto): Promise<string> {
     try {
+      const baseUrl = process.env.TTS_BASE_URL || 'http://45.13.132.111:5000';
       const response = await axios.post(
-        'http://45.13.132.111:5000/tts',
+        `${baseUrl}/tts`,
         {
           text: textToSpeechDto.textToSpeech,
           voice: textToSpeechDto.voice ?? 'af_heart',
@@ -230,7 +231,8 @@ export class HomeWorkService {
   }
   async voices(): Promise<any> {
     try {
-      const response = await axios.get('http://45.13.132.111:5000/voices');
+      const baseUrl = process.env.TTS_BASE_URL || 'http://45.13.132.111:5000';
+      const response = await axios.get(`${baseUrl}/voices`);
       console.log(response.data);
 
       return response.data.voices; // Trả về buffer
