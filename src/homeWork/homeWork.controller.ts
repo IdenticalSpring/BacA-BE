@@ -87,4 +87,9 @@ export class HomeWorkController {
   async voices(): Promise<any> {
     return await this.homeworkService.voices();
   }
+
+  @Get('/textToSpeech/health')
+  async ttsHealth(): Promise<{ baseUrl: string; ok: boolean; detail?: string }> {
+    return await this.homeworkService.getTtsHealth();
+  }
 }
