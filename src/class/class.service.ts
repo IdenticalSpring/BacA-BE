@@ -133,6 +133,68 @@ export class ClassService {
     return await this.classRepository.save(classEntity);
   }
 
+  // Lock a class with a 4-digit PIN
+  async lockClass(
+    id: number,
+    classPin: string,
+  ): Promise<{ message: string }> {
+    if (!classPin || !/^\d{4}$/.test(classPin)) {
+      throw new BadRequestException('PIN must be exactly 4 digits');
+    }
+
+    const classEntity = await this.classRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!classEntity) {
+      throw new NotFoundException(`Class with ID ${id} not found`);
+    }
+
+    classEntity.isLocked = true;
+    classEntity.classPin = classPin;
+    await this.classRepository.save(classEntity);
+
+    return { message: 'Class locked successfully' };
+  }
+
+  // Unlock a class (remove PIN)
+  async unlockClass(id: number): Promise<{ message: string }> {
+    const classEntity = await this.classRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!classEntity) {
+      throw new NotFoundException(`Class with ID ${id} not found`);
+    }
+
+    classEntity.isLocked = false;
+    classEntity.classPin = null;
+    await this.classRepository.save(classEntity);
+
+    return { message: 'Class unlocked successfully' };
+  }
+
+  // Verify PIN for student access
+  async verifyPin(
+    id: number,
+    classPin: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const classEntity = await this.classRepository.findOne({
+      where: { id, isDelete: false },
+    });
+    if (!classEntity) {
+      throw new NotFoundException(`Class with ID ${id} not found`);
+    }
+
+    if (!classEntity.isLocked) {
+      return { success: true, message: 'Class is not locked' };
+    }
+
+    if (classEntity.classPin === classPin) {
+      return { success: true, message: 'PIN verified successfully' };
+    }
+
+    return { success: false, message: 'Incorrect PIN' };
+  }
+
   async remove(id: number): Promise<void> {
     const result = await this.classRepository.delete(id);
     if (result.affected === 0) {
@@ -148,3 +210,4 @@ export class ClassService {
     //   await this.classRepository.save(Class);
   }
 }
+

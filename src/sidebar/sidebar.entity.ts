@@ -9,7 +9,7 @@ export class Sidebar {
   name: string;
 
   @Column()
-  type: number; // 0: công cụ giảng dạy, 1: công cụ bài tập, 2: link drive
+  type: number; // 0: công cụ giảng dạy, 1: công cụ bài tập, 2: link trang học sinh, 3: link trang chủ
 
   @Column()
   imgUrl: string;

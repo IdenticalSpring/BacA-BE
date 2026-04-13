@@ -33,6 +33,12 @@ export class Class {
   accessId: string;
   @Column({ type: 'boolean', default: false })
   isDelete: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  isLocked: boolean;
+
+  @Column({ length: 4, nullable: true })
+  classPin: string;
   @OneToMany(() => ClassSchedule, (classSchedule) => classSchedule.class)
   classSchedules: ClassSchedule[];
   @OneToMany(

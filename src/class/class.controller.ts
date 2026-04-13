@@ -58,6 +58,36 @@ export class ClassController {
     return await this.classService.update(id, updateClassDto);
   }
 
+  // Lock class with a 4-digit PIN
+  @Put('lock/:id')
+  @UseGuards(AuthGuard)
+  @Roles('admin', 'teacher')
+  async lockClass(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { classPin: string },
+  ): Promise<{ message: string }> {
+    return await this.classService.lockClass(id, body.classPin);
+  }
+
+  // Unlock class (remove PIN)
+  @Put('unlock/:id')
+  @UseGuards(AuthGuard)
+  @Roles('admin', 'teacher')
+  async unlockClass(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ message: string }> {
+    return await this.classService.unlockClass(id);
+  }
+
+  // Verify PIN for student access
+  @Post('verify-pin/:id')
+  async verifyPin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { classPin: string },
+  ): Promise<{ success: boolean; message: string }> {
+    return await this.classService.verifyPin(id, body.classPin);
+  }
+
   @Delete(':id')
   @UseGuards(AuthGuard)
   @Roles('admin')
@@ -65,3 +95,4 @@ export class ClassController {
     return await this.classService.remove(id);
   }
 }
+

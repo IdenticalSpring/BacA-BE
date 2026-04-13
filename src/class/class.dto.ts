@@ -4,6 +4,8 @@ import {
   IsInt,
   IsOptional,
   IsBoolean,
+  Length,
+  Matches,
 } from 'class-validator';
 
 export class CreateClassDto {
@@ -20,6 +22,14 @@ export class CreateClassDto {
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  isLocked?: boolean;
+  @IsOptional()
+  @IsString()
+  @Length(4, 4)
+  @Matches(/^\d{4}$/, { message: 'classPin must be exactly 4 digits' })
+  classPin?: string;
 }
 
 export class UpdateClassDto {
@@ -37,4 +47,13 @@ export class UpdateClassDto {
   @IsOptional()
   @IsBoolean()
   isDelete?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  isLocked?: boolean;
+  @IsOptional()
+  @IsString()
+  @Length(4, 4)
+  @Matches(/^\d{4}$/, { message: 'classPin must be exactly 4 digits' })
+  classPin?: string;
 }
+
