@@ -5,9 +5,16 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import * as dotenv from 'dotenv';
+import * as crypto from 'crypto';
 
 // Tải .env trước khi AppModule khởi động (chỉ set nếu chưa có từ dotenv-cli)
 dotenv.config();
+
+// Polyfill global.crypto for @nestjs/schedule on Node < 19
+if (!globalThis.crypto) {
+  // @ts-ignore
+  globalThis.crypto = crypto;
+}
 
 async function bootstrap() {
   // const app = await NestFactory.create(AppModule);
