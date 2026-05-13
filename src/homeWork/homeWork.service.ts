@@ -455,7 +455,15 @@ export class HomeWorkService {
     });
 
     const frontendUrl = process.env.FRONTEND_URL || 'https://happyclass.com.vn';
-    const ogImage = `${frontendUrl}/logo.png`;
+    let ogImage = `${frontendUrl}/logo.png`;
+
+    // Cố gắng tìm ảnh đầu tiên trong mô tả (description)
+    if (homework?.description) {
+      const imgMatch = homework.description.match(/<img[^>]+src="([^">]+)"/);
+      if (imgMatch && imgMatch[1]) {
+        ogImage = imgMatch[1];
+      }
+    }
 
     // Fallback khi không tìm thấy bài tập
     if (!homework) {
