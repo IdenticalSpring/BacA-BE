@@ -448,6 +448,97 @@ export class HomeWorkService {
     homeWork.isDelete = true;
     await this.homeWorkRepository.save(homeWork);
   }
+
+  async generateShareHtml(id: number): Promise<string> {
+    const homework = await this.homeWorkRepository.findOne({
+      where: { id, isDelete: false },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://happyclass.com.vn';
+    const ogImage = `${frontendUrl}/logo.png`;
+
+    // Fallback khi không tìm thấy bài tập
+    if (!homework) {
+      return this.buildShareHtmlPage(
+        'Bài tập Happy Class',
+        'Hãy tham gia lớp học của chúng tôi!',
+        ogImage,
+        `${frontendUrl}/do-homework`,
+        id,
+      );
+    }
+
+    const title = homework.title || 'Bài tập Happy Class';
+
+    // Format ngày tạo
+    const dateStr = homework.date
+      ? new Date(homework.date).toLocaleDateString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+      : '';
+
+    const ogTitle = dateStr ? `${title} - ${dateStr}` : title;
+
+    // Strip HTML tags từ description, lấy 200 ký tự đầu
+    const plainDesc = (homework.description || '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 200);
+
+    const ogDescription = plainDesc || 'Bài tập trên Happy Class';
+    const redirectUrl = `${frontendUrl}/do-homework`;
+
+    return this.buildShareHtmlPage(ogTitle, ogDescription, ogImage, redirectUrl, id);
+  }
+
+  private buildShareHtmlPage(
+    title: string,
+    description: string,
+    image: string,
+    redirectUrl: string,
+    homeworkId: number,
+  ): string {
+    // Escape HTML để tránh XSS
+    const esc = (str: string) =>
+      str
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const apiBaseUrl = process.env.API_BASE_URL || 'https://api.happyclass.com.vn';
+    const fullRedirectUrl = `${redirectUrl}?hwId=${homeworkId}`;
+
+    return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta property="og:title" content="${esc(title)}" />
+  <meta property="og:description" content="${esc(description)}" />
+  <meta property="og:image" content="${image}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="${apiBaseUrl}/homeworks/share/${homeworkId}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Happy Class" />
+  <meta name="description" content="${esc(description)}" />
+  <title>${esc(title)} - Happy Class</title>
+  <meta http-equiv="refresh" content="0;url=${fullRedirectUrl}" />
+</head>
+<body>
+  <p>Đang chuyển hướng đến bài tập...</p>
+  <script>window.location.href="${fullRedirectUrl}";</script>
+</body>
+</html>`;
+  }
   // async textToSpeech(textToSpeechDto: textToSpeechDto): Promise<string> {
   //   try {
   //     const response = await axios.post(

@@ -6,10 +6,12 @@ import {
   Delete,
   Body,
   Param,
+  Res,
   ParseIntPipe,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { HomeWorkService } from './homeWork.service';
 import {
@@ -29,6 +31,17 @@ export class HomeWorkController {
   async findAll(): Promise<HomeWork[]> {
     return await this.homeworkService.findAll();
   }
+
+  @Get('share/:id')
+  async shareHomework(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const html = await this.homeworkService.generateShareHtml(id);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  }
+
   @Post('level')
   async findHomeWorkByLevelAndTeacherId(
     @Body() findHomeWorkByLevelAndTeacherId: findHomeWorkByLevelAndTeacherIdDto,

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule as NestScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { StudentModule } from './student/student.module';
@@ -57,6 +58,7 @@ import { MessageModule } from './message/message.module';
 import { ChatTopicModule } from './chat-topic/chat-topic.module';
 @Module({
   imports: [
+    NestScheduleModule.forRoot(),
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads',
