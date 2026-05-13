@@ -478,14 +478,28 @@ export class HomeWorkService {
 
     const title = homework.title || 'Bài tập Happy Class';
 
-    // Format ngày tạo
-    const dateStr = homework.date
-      ? new Date(homework.date).toLocaleDateString('vi-VN', {
+    // Format ngày tạo từ LessonBySchedule (nếu bài tập đã được gán)
+    let dateStr = '';
+    if (homework.date) {
+      dateStr = new Date(homework.date).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } else {
+      // Tìm ngày được gán trong LessonBySchedule
+      const lessonSchedule = await this.lessonByScheduleRepository.findOne({
+        where: { homeWorkId: id, isHomeWorkSent: true },
+        order: { date: 'DESC' },
+      });
+      if (lessonSchedule && lessonSchedule.date) {
+        dateStr = new Date(lessonSchedule.date).toLocaleDateString('vi-VN', {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',
-        })
-      : '';
+        });
+      }
+    }
 
     const ogTitle = dateStr ? `${title} - ${dateStr}` : title;
 
