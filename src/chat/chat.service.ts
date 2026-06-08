@@ -13,6 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { GeminiKeyRotator } from 'src/common/gemini-key-rotator';
 import { AiTtsService } from 'src/common/ai-tts.service';
+import { DeepSeekService } from 'src/common/deepseek.service';
 
 function inferAudioMimeFromUrl(url: string): string {
   const u = (url || "").toLowerCase();
@@ -78,6 +79,7 @@ export class ChatService {
     @Inject(forwardRef(() => GeminiService))
     private readonly geminiService: GeminiService,
     private readonly aiTtsService: AiTtsService,
+    private readonly deepSeekService: DeepSeekService,
   ) {}
 
   async createChat(dto: CreateChatDto): Promise<Chat> {
@@ -329,10 +331,14 @@ export class ChatService {
   private async callGeminiTextOnly(text: string): Promise<string> {
     const prompt = `You are a friendly English teacher. The student says: "${text}". Reply naturally and encouragingly in 1-2 short sentences, and include exactly ONE follow-up question only.`;
     try {
-      const rawReply = await this.geminiService.enhanceDescription(prompt);
+      const rawReply = await this.deepSeekService.generateText(prompt, {
+        temperature: 0.6,
+        maxTokens: 800,
+        timeoutMs: 45000,
+      });
       return this.enforceSingleQuestionReply(rawReply);
     } catch (e) {
-      this.logger.error(`Gemini Text Error: ${e.message}`);
+      this.logger.error(`DeepSeek Text Error: ${e.message}`);
       return "I hear you! That's very interesting. Can you tell me a bit more?";
     }
   }
@@ -391,7 +397,7 @@ export class ChatService {
     answer: string;
     audioUrl?: string | null;
   }): Promise<Chat | null> {
-    this.logger.log(`🧩 [AI] autoReplyForActiveTopic called for class ${data.classId}`);
+    this.logger.log(`[AI] autoReplyForActiveTopic called for class ${data.classId}`);
 
     try {
       const activeTopic = await this.chatTopicRepository.findOne({
@@ -399,7 +405,7 @@ export class ChatService {
         order: { createdAt: 'DESC' },
       });
       if (!activeTopic) {
-        this.logger.log('ℹ️ [AI] No active topic found');
+        this.logger.log('[AI] No active topic found');
         return null;
       }
 
@@ -440,31 +446,41 @@ export class ChatService {
         `- Do not use markdown formatting.`;
 
       const contents: any[] = [{ role: 'user', parts: [{ text: instruction }] }];
+      let hasAudioPart = false;
 
       if (data.audioUrl) {
         try {
           const { base64, mimeType } = await fetchAsBase64(data.audioUrl);
           this.logger.log(`[AI] Attaching audio -> mime=${mimeType}, bytes=${base64.length}`);
           contents[0].parts.push({ inlineData: { data: base64, mimeType } });
+          hasAudioPart = true;
         } catch (e) {
-          this.logger.warn('⚠️ [AI] Failed to fetch/attach audio; falling back to text-only:', e);
+          this.logger.warn('[AI] Failed to fetch/attach audio; falling back to DeepSeek text-only:', e);
         }
       }
 
-      this.logger.log('🚀 [AI] Sending to Gemini with rotating keys…');
-      const aiReply = await this.geminiRotator.generateWithRotation({
-        model: 'gemini-2.5-flash',
-        contents,
-        temperature: 0.6,
-      });
+      let aiReply: string;
+      if (hasAudioPart) {
+        this.logger.log('[AI] Sending audio reply request to Gemini with rotating keys...');
+        aiReply = await this.geminiRotator.generateWithRotation({
+          model: 'gemini-2.5-flash',
+          contents,
+          temperature: 0.6,
+        });
+      } else {
+        this.logger.log('[AI] Sending text reply request to DeepSeek...');
+        aiReply = await this.deepSeekService.generateText(instruction, {
+          temperature: 0.6,
+          maxTokens: 1000,
+          timeoutMs: 45000,
+        });
+      }
 
       const safeAiReply = this.enforceSingleQuestionReply(aiReply);
-
-      this.logger.log(`🤖 [AI] Gemini reply: ${safeAiReply?.substring(0, 100)}...`);
+      this.logger.log(`[AI] reply: ${safeAiReply?.substring(0, 100)}...`);
 
       if (!safeAiReply) return null;
 
-      // TTS Processing
       let audioUrl: string | null = null;
       try {
         audioUrl = await this.aiTtsService.synthesizeToAudioUrl(safeAiReply, {
@@ -472,7 +488,7 @@ export class ChatService {
         });
 
         if (audioUrl) {
-          this.logger.log(`✅ [AI] TTS audio ready: ${audioUrl}`);
+          this.logger.log(`[AI] TTS audio ready: ${audioUrl}`);
         }
       } catch (error) {
         this.logger.error('Error converting text to speech:', error?.message);
@@ -487,12 +503,10 @@ export class ChatService {
         audioUrl: audioUrl,
       });
 
-      // Return full Chat object instead of just message text
       return teacherChat;
     } catch (error) {
-      this.logger.error('❌ [AI] Error in AI auto-reply:', error);
+      this.logger.error('[AI] Error in AI auto-reply:', error);
       return null;
     }
   }
 }
-

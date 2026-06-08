@@ -23,6 +23,125 @@ export class LessonByScheduleService {
     private readonly scheduleRepository: Repository<Schedule>,
   ) {}
 
+  private parseDateOnly(value: Date | string): Date {
+    if (value instanceof Date) {
+      return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    }
+
+    const [year, month, day] = String(value).split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private formatDateOnly(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const next = new Date(date);
+    next.setDate(next.getDate() + days);
+    return next;
+  }
+
+  private addMonths(date: Date, months: number): Date {
+    const next = new Date(date);
+    next.setMonth(next.getMonth() + months);
+    return next;
+  }
+
+  private sortByDate(lessons: LessonBySchedule[]): LessonBySchedule[] {
+    return [...lessons].sort((a, b) => {
+      const aDate = this.parseDateOnly(a.date as any).getTime();
+      const bDate = this.parseDateOnly(b.date as any).getTime();
+      if (aDate !== bDate) return aDate - bDate;
+      return String(a.startTime || '').localeCompare(String(b.startTime || ''));
+    });
+  }
+
+  private async ensureClassScheduleExtended(
+    classID: number,
+    currentLessons: LessonBySchedule[],
+  ): Promise<LessonBySchedule[]> {
+    if (!currentLessons.length) return currentLessons;
+
+    const activeLessons = currentLessons.filter((lesson) => lesson.schedule);
+    if (!activeLessons.length) return currentLessons;
+
+    const sortedLessons = this.sortByDate(activeLessons);
+    let latestDate = this.parseDateOnly(sortedLessons[sortedLessons.length - 1].date as any);
+
+    const today = this.parseDateOnly(new Date());
+    const thresholdDate = this.addMonths(today, 3);
+    if (latestDate >= thresholdDate) {
+      return currentLessons;
+    }
+
+    const classEntity =
+      currentLessons[0].class ||
+      (await this.classRepository.findOne({
+        where: { id: classID, isDelete: false },
+      }));
+    if (!classEntity) return currentLessons;
+
+    const uniqueSchedules = Array.from(
+      new Map(
+        activeLessons
+          .filter((lesson) => lesson.schedule && !lesson.schedule.isDelete)
+          .map((lesson) => [lesson.schedule.id, lesson.schedule]),
+      ).values(),
+    );
+    if (!uniqueSchedules.length) return currentLessons;
+
+    const existingKeys = new Set(
+      currentLessons
+        .filter((lesson) => lesson.schedule)
+        .map(
+          (lesson) =>
+            `${lesson.schedule.id}|${this.formatDateOnly(this.parseDateOnly(lesson.date as any))}`,
+        ),
+    );
+
+    const lessonsToCreate: LessonBySchedule[] = [];
+    while (latestDate < thresholdDate) {
+      const startDate = this.addDays(latestDate, 1);
+      const endDate = this.addMonths(latestDate, 6);
+
+      for (let date = new Date(startDate); date <= endDate; date = this.addDays(date, 1)) {
+        for (const schedule of uniqueSchedules) {
+          if (date.getDay() !== schedule.dayOfWeek - 1) continue;
+
+          const dateText = this.formatDateOnly(date);
+          const key = `${schedule.id}|${dateText}`;
+          if (existingKeys.has(key)) continue;
+
+          existingKeys.add(key);
+          lessonsToCreate.push(
+            this.lessonByScheduleRepository.create({
+              class: classEntity,
+              schedule,
+              lessonID: null,
+              homeWorkId: null,
+              startTime: schedule.startTime,
+              endTime: schedule.endTime,
+              date: dateText as any,
+            }),
+          );
+        }
+      }
+
+      latestDate = endDate;
+    }
+
+    if (!lessonsToCreate.length) {
+      return currentLessons;
+    }
+
+    const createdLessons = await this.lessonByScheduleRepository.save(lessonsToCreate);
+    return this.sortByDate([...currentLessons, ...createdLessons]);
+  }
+
   async findAll(): Promise<LessonBySchedule[]> {
     return await this.lessonByScheduleRepository.find({
       where: { isDelete: false },
@@ -32,10 +151,12 @@ export class LessonByScheduleService {
   async findAllLessonByScheduleOfClass(
     classID: number,
   ): Promise<LessonBySchedule[]> {
-    return await this.lessonByScheduleRepository.find({
+    const lessons = await this.lessonByScheduleRepository.find({
       where: { class: { id: classID }, isDelete: false },
       relations: ['class', 'schedule'],
     });
+    const extendedLessons = await this.ensureClassScheduleExtended(classID, lessons);
+    return this.sortByDate(extendedLessons);
   }
   async findAllScheduleOfClass(classID: number): Promise<Schedule[]> {
     const lessons = await this.lessonByScheduleRepository.find({
@@ -156,6 +277,21 @@ export class LessonByScheduleService {
       throw new NotFoundException(`No schedules found for given IDs`);
     }
 
+    const existingLessons = await this.lessonByScheduleRepository.find({
+      where: { class: { id: In(classIds) }, isDelete: false },
+      relations: ['class', 'schedule'],
+    });
+    const existingKeys = new Set(
+      existingLessons
+        .filter((lesson) => lesson.class && lesson.schedule)
+        .map(
+          (lesson) =>
+            `${lesson.class.id}|${lesson.schedule.id}|${this.formatDateOnly(
+              this.parseDateOnly(lesson.date as any),
+            )}`,
+        ),
+    );
+
     for (const lessonDto of createManyDto.lessons) {
       const classEntity = classEntities.find(
         (cls) => cls.id === lessonDto.classID,
@@ -173,16 +309,27 @@ export class LessonByScheduleService {
           `Schedule with ID ${lessonDto.scheduleID} not found`,
         );
 
+      const dateText = this.formatDateOnly(this.parseDateOnly(lessonDto.date));
+      const key = `${lessonDto.classID}|${lessonDto.scheduleID}|${dateText}`;
+      if (existingKeys.has(key)) {
+        continue;
+      }
+      existingKeys.add(key);
+
       const lessonBySchedule = this.lessonByScheduleRepository.create({
         class: classEntity,
         schedule: schedule,
         lessonID: lessonDto.lessonID,
         startTime: lessonDto.startTime,
         endTime: lessonDto.endTime,
-        date: lessonDto.date,
+        date: dateText as any,
       });
 
       lessons.push(lessonBySchedule);
+    }
+
+    if (!lessons.length) {
+      return [];
     }
 
     return await this.lessonByScheduleRepository.save(lessons);

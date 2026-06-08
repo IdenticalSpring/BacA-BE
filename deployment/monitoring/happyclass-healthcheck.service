@@ -1,0 +1,11 @@
+[Unit]
+Description=HappyClass production healthcheck
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/happyclass-monitor.env
+ExecStart=/usr/bin/python3 /opt/happyclass-monitor/healthcheck.py
+Nice=5
+IOSchedulingClass=best-effort

@@ -7,6 +7,7 @@ import axios from 'axios';
 import { ChatTopic } from 'src/chat-topic/chat-topic.entity';
 import { ChatService } from 'src/chat/chat.service';
 import { ChatGateway } from 'src/chat/chat.gateway';
+import { DeepSeekService } from 'src/common/deepseek.service';
 
 @Injectable()
 export class GeminiService {
@@ -29,6 +30,7 @@ export class GeminiService {
     
     @Inject(forwardRef(() => ChatGateway))
     private readonly chatGateway: ChatGateway,
+    private readonly deepSeekService: DeepSeekService,
   ) {
     // Load all available API keys from .env
     this.apiKeys = [
@@ -167,185 +169,60 @@ export class GeminiService {
   }
 
   async enhanceDescription(description: string): Promise<string> {
-    const maxRetries = 3;
-    let lastError: Error;
+    try {
+      const contentPage = await this.contentPageRepository.findOne({
+        where: { id: 1 },
+      });
+      const defaultPrompt = `Create lesson content in detail for this English lesson. Topic and requirements: ${description}. Return the result without bold or italic.`;
+      const promptTemplate = contentPage?.promptDescription?.trim();
+      const prompt = promptTemplate
+        ? promptTemplate.includes('${description}')
+          ? promptTemplate.replace(/\$\{description\}/g, description)
+          : `${promptTemplate}\n\nInput:\n${description}`
+        : defaultPrompt;
 
-    // Proactive rotation for load balancing
-    this.proactiveRotate();
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const model = this.genAI.getGenerativeModel({
-          model: 'gemini-2.5-flash',
-          generationConfig: {
-            maxOutputTokens: 8192,
-            temperature: 0.7,
-          },
-        });
-
-        // Lấy prompt từ ContentPage
-        const contentPage = await this.contentPageRepository.findOne({
-          where: { id: 1 },
-        });
-        const defaultPrompt = `create lesson content in detail for this english lesson, its topic and requirements as follow:${description}. Return result without bold or italic`;
-        const prompt = contentPage?.promptDescription || defaultPrompt;
-
-        // Timeout protection
-        const timeoutPromise = new Promise<string>((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout after 60 seconds')), 60000);
-        });
-
-        const generatePromise = model.generateContent(prompt)
-          .then((result) => result.response.text());
-
-        const result = await Promise.race([generatePromise, timeoutPromise]);
-        
-        // Success - increment usage and return
-        this.incrementKeyUsage();
-        console.log(`✅ enhanceDescription successful with key #${this.currentKeyIndex + 1}`);
-        return result;
-      } catch (error) {
-        lastError = error;
-        console.error(`❌ enhanceDescription attempt ${attempt + 1} failed:`, error.message);
-
-        // Handle quota/rate limit errors
-        if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests')) {
-          this.markCurrentKeyAsFailed();
-          
-          if (this.apiKeys.length > 1 && attempt < maxRetries - 1) {
-            console.log(`🔄 Rotating to next key due to quota limit...`);
-            this.rotateApiKey();
-            continue; // Retry with new key
-          }
-        }
-
-        // Handle overload errors with exponential backoff
-        if (error.message.includes('503') || error.message.includes('overloaded')) {
-          if (attempt < maxRetries - 1) {
-            const delayMs = Math.pow(2, attempt) * 1000;
-            console.log(`⏳ Waiting ${delayMs}ms before retry...`);
-            await new Promise((resolve) => setTimeout(resolve, delayMs));
-            continue;
-          }
-        }
-
-        // If not retryable error, throw immediately
-        if (attempt === maxRetries - 1) {
-          throw this.formatError(error);
-        }
-      }
+      return await this.deepSeekService.generateText(prompt, {
+        temperature: 0.7,
+        maxTokens: 8192,
+        timeoutMs: 60000,
+      });
+    } catch (error) {
+      console.error('DeepSeek enhanceDescription failed:', error?.message || error);
+      throw this.deepSeekService.formatError(error);
     }
-
-    throw this.formatError(lastError);
   }
-
   async enhanceLessonPlan(
     lessonPlan: string,
     imageUrls: string[],
   ): Promise<string> {
-    const maxRetries = 3; // Tăng lên 3 để có nhiều cơ hội với key rotation
-    const models = [
-      'gemini-2.5-flash',     // Stable, less quota pressure
-      'gemini-2.0-flash', // Experimental backup
-    ];
-    let lastError: Error;
+    try {
+      const maxImages = 5;
+      const limitedImageUrls = imageUrls?.slice(0, maxImages) || [];
+      const imagesReference =
+        limitedImageUrls.length > 0
+          ? limitedImageUrls.map((url, index) => `Image ${index + 1}: ${url}`).join('\n')
+          : '';
 
-    // Proactive rotation for load balancing
-    this.proactiveRotate();
+      const contentPage = await this.contentPageRepository.findOne({
+        where: { id: 1 },
+      });
+      const defaultPrompt = `Create a lesson plan for an English lesson with the following requirements: ${lessonPlan}.${imagesReference ? ` Use the following images as references:\n${imagesReference}.` : ''} Return the result without bold or italic.`;
+      const prompt = contentPage?.promptLessonPlan
+        ? contentPage.promptLessonPlan
+            .replace(/\$\{lessonPlan\}/g, lessonPlan)
+            .replace(/\$\{imagesReference\}/g, imagesReference || 'No images provided')
+        : defaultPrompt;
 
-    for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
-      const currentModel = models[modelIndex];
-      
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-          const model = this.genAI.getGenerativeModel({
-            model: currentModel,
-            generationConfig: {
-              maxOutputTokens: 8192,
-              temperature: 0.7,
-            },
-          });
-
-          // Giới hạn số lượng ảnh để tránh timeout
-          const maxImages = 5;
-          const limitedImageUrls = imageUrls?.slice(0, maxImages) || [];
-
-          // Ghép danh sách URL ảnh
-          const imagesReference =
-            limitedImageUrls.length > 0
-              ? limitedImageUrls.map((url, index) => `Image ${index + 1}: ${url}`).join('\n')
-              : '';
-
-          // Lấy prompt từ ContentPage
-          const contentPage = await this.contentPageRepository.findOne({
-            where: { id: 1 },
-          });
-
-          // Tạo default prompt
-          const defaultPrompt = `Create a lesson plan for an English lesson with the following requirements: ${lessonPlan}.${imagesReference ? ` Use the following images as references:\n${imagesReference}.` : ''} Return the result without bold or italic.`;
-
-          // Sử dụng promptLessonPlan từ DB nếu có, thay thế các biến động
-          let prompt: string;
-          if (contentPage?.promptLessonPlan) {
-            prompt = contentPage.promptLessonPlan
-              .replace(/\$\{lessonPlan\}/g, lessonPlan)
-              .replace(/\$\{imagesReference\}/g, imagesReference || 'No images provided');
-          } else {
-            prompt = defaultPrompt;
-          }
-
-          // Thêm timeout wrapper
-          const timeoutPromise = new Promise<string>((_, reject) => {
-            setTimeout(() => reject(new Error('Gemini API timeout after 60 seconds')), 60000);
-          });
-
-          const generatePromise = model.generateContent(prompt).then((result) => result.response.text());
-
-          const response = await Promise.race([generatePromise, timeoutPromise]);
-
-          // Success - increment usage
-          this.incrementKeyUsage();
-          console.log(`✅ enhanceLessonPlan successful with key #${this.currentKeyIndex + 1}, model: ${currentModel}`);
-          return response;
-        } catch (error) {
-          lastError = error;
-
-          // Nếu là lỗi quota (429), thử rotate sang key khác
-          if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests')) {
-            console.error(`❌ Quota exceeded on key #${this.currentKeyIndex + 1}`);
-            this.markCurrentKeyAsFailed();
-            
-            if (this.apiKeys.length > 1) {
-              console.log(`🔄 Rotating to next key...`);
-              this.rotateApiKey();
-              // Retry với key mới
-              continue;
-            } else {
-              throw this.formatError(error);
-            }
-          }
-
-          // Nếu là lỗi 503 (overloaded), thử lại sau một khoảng thời gian
-          if (error.message.includes('503') || error.message.includes('overloaded')) {
-            if (attempt < maxRetries - 1) {
-              const delayMs = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
-              await new Promise((resolve) => setTimeout(resolve, delayMs));
-              continue;
-            }
-            // Nếu hết retry cho model này, thử model tiếp theo
-            break;
-          }
-
-          // Nếu không phải lỗi 503, throw ngay
-          throw this.formatError(error);
-        }
-      }
+      return await this.deepSeekService.generateText(prompt, {
+        temperature: 0.7,
+        maxTokens: 8192,
+        timeoutMs: 60000,
+      });
+    } catch (error) {
+      console.error('DeepSeek enhanceLessonPlan failed:', error?.message || error);
+      throw this.deepSeekService.formatError(error);
     }
-
-    // Nếu tất cả models và retries đều fail
-    throw this.formatError(lastError);
   }
-
   private formatError(error: any): Error {
     // Return more specific error messages
     if (error.message.includes('timeout')) {
@@ -371,6 +248,7 @@ export class GeminiService {
     const status = {
       totalKeys: this.apiKeys.length,
       currentKeyIndex: this.currentKeyIndex + 1,
+      deepSeek: this.deepSeekService.getStatus(),
       keyStatuses: this.apiKeys.map((_, index) => {
         const key = this.apiKeys[index];
         return {
@@ -477,13 +355,15 @@ export class GeminiService {
 
     let prompt = `
 You are a friendly English conversation partner helping ESL students practice speaking.
-Start the chat with a warm, natural greeting using the student's name.
-Then ask 2–3 engaging questions related to the given topic.
-Questions must fit the student's English level:
+Start the chat with a warm, natural greeting using the student's name, but do not ask a greeting question like "How are you?".
+Then ask exactly ONE engaging question related to the given topic.
+The message must contain exactly one question mark (?) in total.
+The question must fit the student's English level:
 - Beginner: short, simple, daily-life questions.
 - Intermediate: casual and slightly complex.
 - Advanced: deeper, discussion-type questions.
 
+Do not ask multiple questions. Do not list options as questions.
 Avoid bold, italics, or markdown formatting.
 Return only natural-sounding English dialogue.
 
@@ -491,6 +371,15 @@ Topic: ${topic}
 Student name: ${name}
 English level: ${level}
 `;
+
+    if (!imageUrl || imageUrl.trim().length === 0) {
+      const aiText = await this.deepSeekService.generateText(prompt, {
+        temperature: 0.6,
+        maxTokens: 800,
+        timeoutMs: 45000,
+      });
+      return this.enforceSingleQuestionReply(aiText);
+    }
 
     let imageParts = [];
     if (imageUrl && imageUrl.trim().length > 0) {
@@ -516,7 +405,7 @@ English level: ${level}
 
     const result = await model.generateContent([prompt, ...imageParts]);
     const response = await result.response;
-    return response.text();
+    return this.enforceSingleQuestionReply(response.text());
   }
 
   async replyToStudentAnswer(data: {
@@ -552,6 +441,27 @@ English level: ${level}
   - Do NOT use bold, italics, or markdown.
   If an audio clip is provided, use it to infer pronunciation, intent, or extra context.
   `.trim();
+
+    if (!data.audioUrl || data.audioUrl.trim().length === 0) {
+      const aiReply = this.enforceSingleQuestionReply(
+        await this.deepSeekService.generateText(prompt, {
+          temperature: 0.6,
+          maxTokens: 1000,
+          timeoutMs: 45000,
+        }),
+      );
+
+      const chat = await this.chatService.createChat({
+        classId: data.classId,
+        teacherId: data.teacherId,
+        studentId: data.studentId,
+        senderRole: 'teacher',
+        message: aiReply,
+      });
+      this.chatGateway.notifyNewChat(data.classId, chat);
+
+      return aiReply;
+    }
   
     // 3) assemble parts (text + optional audio)
     const parts: any[] = [{ text: prompt }];
