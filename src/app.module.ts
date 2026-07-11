@@ -56,6 +56,7 @@ import { extname } from 'path';
 import { ChatModule } from './chat/chat.module';
 import { MessageModule } from './message/message.module';
 import { ChatTopicModule } from './chat-topic/chat-topic.module';
+import { PresentationModule } from './presentation/presentation.module';
 @Module({
   imports: [
     NestScheduleModule.forRoot(),
@@ -141,6 +142,7 @@ import { ChatTopicModule } from './chat-topic/chat-topic.module';
     Student_vocabularyModule,
     QuestionModule,
     StudentQuestionAnswerModule,
+    PresentationModule,
   ],
   controllers: [AppController, UploadController],
   providers: [AppService],
