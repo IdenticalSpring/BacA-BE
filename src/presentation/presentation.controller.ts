@@ -34,7 +34,13 @@ import {
 import { PresentationService } from './presentation.service';
 
 @Controller('presentations')
-@UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
+@UsePipes(
+  new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  }),
+)
 export class PresentationController {
   constructor(private readonly presentationService: PresentationService) {}
 
@@ -48,8 +54,8 @@ export class PresentationController {
   @Post('tags')
   @UseGuards(AuthGuard)
   @Roles('teacher', 'admin')
-  createTag(@Body() dto: CreatePptTagDto) {
-    return this.presentationService.createTag(dto);
+  createTag(@Body() dto: CreatePptTagDto, @Req() req: any) {
+    return this.presentationService.createTag(dto, req.user);
   }
 
   @Post('ai/outline')
@@ -79,7 +85,6 @@ export class PresentationController {
     return this.presentationService.create(dto, req.user);
   }
 
-
   @Get('mine')
   @UseGuards(AuthGuard)
   @Roles('teacher', 'admin')
@@ -90,7 +95,10 @@ export class PresentationController {
   @Get('lesson/:lessonId')
   @UseGuards(AuthGuard)
   @Roles('teacher', 'admin')
-  findByLesson(@Param('lessonId', ParseIntPipe) lessonId: number, @Req() req: any) {
+  findByLesson(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Req() req: any,
+  ) {
     return this.presentationService.findAllByLesson(lessonId, req.user);
   }
 
@@ -160,14 +168,10 @@ export class PresentationController {
     return this.presentationService.uploadAsset(id, file, dto, req.user);
   }
 
-
   @Get(':id/shares')
   @UseGuards(AuthGuard)
   @Roles('teacher', 'admin')
-  findShares(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  findShares(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.presentationService.findShares(id, req.user);
   }
 

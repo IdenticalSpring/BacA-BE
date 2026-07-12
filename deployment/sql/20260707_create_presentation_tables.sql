@@ -1,4 +1,4 @@
-﻿-- Presentation/PPTist integration tables for HappyClass.
+-- Presentation/PPTist integration tables for HappyClass.
 -- Safe to run more than once. This script only creates new tables when missing.
 -- Run manually on production before restarting the backend with the PresentationModule enabled.
 CREATE TABLE IF NOT EXISTS `presentations` (
@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `presentations` (
   `metadataJson` longtext NULL,
   `status` varchar(20) NOT NULL DEFAULT 'draft',
   `language` varchar(20) NOT NULL DEFAULT 'vi',
+  `version` int NOT NULL DEFAULT 1,
   `thumbnailUrl` text NULL,
   `isDeleted` tinyint NOT NULL DEFAULT 0,
   `createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

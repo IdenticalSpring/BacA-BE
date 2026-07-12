@@ -56,6 +56,11 @@ export class SavePresentationDto {
   @IsOptional()
   @IsIn(['vi', 'en'])
   language?: 'vi' | 'en';
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  version?: number;
 
   @IsOptional()
   @IsString()

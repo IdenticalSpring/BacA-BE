@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -9,6 +10,7 @@ import { randomBytes } from 'crypto';
 import { EntityManager, Repository } from 'typeorm';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { DeepSeekService } from 'src/common/deepseek.service';
+import { Lesson } from 'src/lesson/lesson.entity';
 import { PresentationAsset } from './presentation-asset.entity';
 import { PresentationShare } from './presentation-share.entity';
 import { PresentationTag } from './presentation-tag.entity';
@@ -44,7 +46,11 @@ type AIPptSlide =
   | { type: 'cover'; data: { title: string; text: string } }
   | { type: 'contents'; data: { items: string[] }; offset?: number }
   | { type: 'transition'; data: { title: string; text: string } }
-  | { type: 'content'; data: { title: string; items: { title: string; text: string }[] }; offset?: number }
+  | {
+      type: 'content';
+      data: { title: string; items: { title: string; text: string }[] };
+      offset?: number;
+    }
   | { type: 'end' };
 
 @Injectable()
@@ -60,30 +66,67 @@ export class PresentationService {
     private readonly tagRepository: Repository<PptTag>,
     @InjectRepository(PresentationTag)
     private readonly presentationTagRepository: Repository<PresentationTag>,
+    @InjectRepository(Lesson)
+    private readonly lessonRepository: Repository<Lesson>,
     private readonly deepSeekService: DeepSeekService,
   ) {}
 
-  async create(dto: SavePresentationDto, user: AuthUser): Promise<Presentation> {
-    const normalized = await this.normalizeContent(dto);
-    const savedId = await this.presentationRepository.manager.transaction(async (manager) => {
-      const repository = manager.getRepository(Presentation);
-      const presentation = repository.create({
-        title: dto.title?.trim() || 'Untitled presentation',
-        lessonId: this.toNullableNumber(dto.lessonId),
-        lessonByScheduleId: this.toNullableNumber(dto.lessonByScheduleId),
-        ownerId: user?.userId || null,
-        ownerRole: user?.role || 'teacher',
-        contentJson: normalized.contentJson,
-        metadataJson: this.stringifyJson(dto.metadata, dto.metadataJson),
-        status: dto.status || 'draft',
-        language: dto.language || 'vi',
-        thumbnailUrl: dto.thumbnailUrl || null,
+  async create(
+    dto: SavePresentationDto,
+    user: AuthUser,
+  ): Promise<Presentation> {
+    await this.assertLessonAccess(dto.lessonId, user);
+
+    const lessonId = this.toNullableNumber(dto.lessonId);
+    if (lessonId && user?.userId) {
+      const existing = await this.presentationRepository.findOne({
+        where: {
+          lessonId,
+          ownerId: user.userId,
+          ownerRole: user.role || 'teacher',
+          isDeleted: false,
+        },
+        order: { updatedAt: 'DESC' },
       });
-      const saved = await repository.save(presentation);
-      await this.syncPresentationAssets(saved.id, normalized.assets, normalized.contentJson, manager);
-      await this.syncTags(saved.id, dto, manager);
-      return saved.id;
-    });
+      if (existing) {
+        return this.update(
+          existing.id,
+          { ...dto, version: existing.version || 1 },
+          user,
+        );
+      }
+    }
+
+    const normalized = await this.normalizeContent(dto);
+    const savedId = await this.presentationRepository.manager.transaction(
+      async (manager) => {
+        const repository = manager.getRepository(Presentation);
+        const presentation = repository.create({
+          title: dto.title?.trim() || 'Untitled presentation',
+          lessonId,
+          lessonByScheduleId: this.toNullableNumber(dto.lessonByScheduleId),
+          ownerId: user?.userId || null,
+          ownerRole: user?.role || 'teacher',
+          contentJson: normalized.contentJson,
+          metadataJson: this.stringifyJson(dto.metadata, dto.metadataJson),
+          status: dto.status || 'draft',
+          language: dto.language || 'vi',
+          version: 1,
+          thumbnailUrl: dto.thumbnailUrl || null,
+        });
+        const saved = await repository.save(presentation);
+        await this.syncPresentationAssets(
+          saved.id,
+          normalized.assets,
+          normalized.contentJson,
+          manager,
+        );
+        await this.syncTags(saved.id, dto, manager);
+        if (saved.status === 'published')
+          await this.assertHasTags(saved.id, manager);
+        return saved.id;
+      },
+    );
     return this.findOne(savedId);
   }
 
@@ -92,35 +135,73 @@ export class PresentationService {
     dto: SavePresentationDto,
     user: AuthUser,
   ): Promise<Presentation> {
+    const current = await this.findOneForManage(id, user);
+    if (dto.version !== undefined && dto.version !== (current.version || 1)) {
+      throw new ConflictException('Presentation version conflict');
+    }
+    await this.assertLessonAccess(dto.lessonId, user);
     const normalized = await this.normalizeContent(dto);
-    const updatedId = await this.presentationRepository.manager.transaction(async (manager) => {
-      const repository = manager.getRepository(Presentation);
-      const presentation = await repository.findOne({ where: { id, isDeleted: false } });
-      if (!presentation) throw new NotFoundException(`Presentation ${id} not found`);
-      this.assertCanManage(presentation, user);
 
-      if (dto.title !== undefined) presentation.title = dto.title.trim();
-      if (dto.lessonId !== undefined) presentation.lessonId = this.toNullableNumber(dto.lessonId);
-      if (dto.lessonByScheduleId !== undefined) presentation.lessonByScheduleId = this.toNullableNumber(dto.lessonByScheduleId);
-      if (dto.content !== undefined || dto.contentJson !== undefined) presentation.contentJson = normalized.contentJson;
-      if (dto.metadata !== undefined || dto.metadataJson !== undefined) {
-        presentation.metadataJson = this.stringifyJson(dto.metadata, dto.metadataJson);
-      }
-      if (dto.status !== undefined) presentation.status = dto.status;
-      if (dto.language !== undefined) presentation.language = dto.language;
-      if (dto.thumbnailUrl !== undefined) presentation.thumbnailUrl = dto.thumbnailUrl;
+    const updatedId = await this.presentationRepository.manager.transaction(
+      async (manager) => {
+        const repository = manager.getRepository(Presentation);
+        const presentation = await repository.findOne({
+          where: { id, isDeleted: false },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!presentation)
+          throw new NotFoundException(`Presentation ${id} not found`);
+        this.assertCanManage(presentation, user);
+        if (
+          dto.version !== undefined &&
+          dto.version !== (presentation.version || 1)
+        ) {
+          throw new ConflictException('Presentation version conflict');
+        }
 
-      const saved = await repository.save(presentation);
-      if (dto.content !== undefined || dto.contentJson !== undefined) {
-        await this.syncPresentationAssets(saved.id, normalized.assets, saved.contentJson, manager);
-      }
-      await this.syncTags(saved.id, dto, manager);
-      return saved.id;
-    });
+        if (dto.title !== undefined) presentation.title = dto.title.trim();
+        if (dto.lessonId !== undefined)
+          presentation.lessonId = this.toNullableNumber(dto.lessonId);
+        if (dto.lessonByScheduleId !== undefined)
+          presentation.lessonByScheduleId = this.toNullableNumber(
+            dto.lessonByScheduleId,
+          );
+        if (dto.content !== undefined || dto.contentJson !== undefined)
+          presentation.contentJson = normalized.contentJson;
+        if (dto.metadata !== undefined || dto.metadataJson !== undefined) {
+          presentation.metadataJson = this.stringifyJson(
+            dto.metadata,
+            dto.metadataJson,
+          );
+        }
+        if (dto.status !== undefined) presentation.status = dto.status;
+        if (dto.language !== undefined) presentation.language = dto.language;
+        if (dto.thumbnailUrl !== undefined)
+          presentation.thumbnailUrl = dto.thumbnailUrl;
+        presentation.version = (presentation.version || 1) + 1;
+
+        const saved = await repository.save(presentation);
+        if (dto.content !== undefined || dto.contentJson !== undefined) {
+          await this.syncPresentationAssets(
+            saved.id,
+            normalized.assets,
+            saved.contentJson,
+            manager,
+          );
+        }
+        await this.syncTags(saved.id, dto, manager);
+        if (saved.status === 'published')
+          await this.assertHasTags(saved.id, manager);
+        return saved.id;
+      },
+    );
     return this.findOne(updatedId);
   }
 
-  async findAllByLesson(lessonId: number, user: AuthUser): Promise<Presentation[]> {
+  async findAllByLesson(
+    lessonId: number,
+    user: AuthUser,
+  ): Promise<Presentation[]> {
     const where: any = { lessonId, isDeleted: false };
     if (user?.role !== 'admin') {
       where.ownerId = user?.userId || null;
@@ -133,11 +214,15 @@ export class PresentationService {
     });
   }
 
-
   async findMine(user: AuthUser): Promise<Presentation[]> {
-    if (!user?.userId) throw new ForbiddenException('Authenticated user is required');
+    if (!user?.userId)
+      throw new ForbiddenException('Authenticated user is required');
     return this.presentationRepository.find({
-      where: { ownerId: user.userId, ownerRole: user.role || 'teacher', isDeleted: false },
+      where: {
+        ownerId: user.userId,
+        ownerRole: user.role || 'teacher',
+        isDeleted: false,
+      },
       order: { updatedAt: 'DESC' },
       take: 100,
     });
@@ -186,7 +271,9 @@ export class PresentationService {
     await this.findOneForManage(presentationId, user);
 
     if (!/^(image|audio|video)\//i.test(file.mimetype || '')) {
-      throw new BadRequestException('Only image, audio, and video files are supported');
+      throw new BadRequestException(
+        'Only image, audio, and video files are supported',
+      );
     }
     if (file.size > 25 * 1024 * 1024) {
       throw new BadRequestException('Asset size must not exceed 25 MB');
@@ -212,6 +299,7 @@ export class PresentationService {
     user: AuthUser,
   ): Promise<PresentationShare> {
     await this.findOneForManage(presentationId, user);
+    await this.assertHasTags(presentationId);
     const share = this.shareRepository.create({
       presentationId,
       token: this.createShareToken(),
@@ -225,7 +313,10 @@ export class PresentationService {
     return this.shareRepository.save(share);
   }
 
-  async findShares(presentationId: number, user: AuthUser): Promise<PresentationShare[]> {
+  async findShares(
+    presentationId: number,
+    user: AuthUser,
+  ): Promise<PresentationShare[]> {
     await this.findOneForManage(presentationId, user);
     return this.shareRepository.find({
       where: { presentationId },
@@ -241,21 +332,31 @@ export class PresentationService {
     user: AuthUser,
   ): Promise<PresentationShare> {
     await this.findOneForManage(presentationId, user);
-    const share = await this.shareRepository.findOne({ where: { id: shareId, presentationId } });
+    const share = await this.shareRepository.findOne({
+      where: { id: shareId, presentationId },
+    });
     if (!share) throw new NotFoundException('Share link not found');
     if (dto.permission !== undefined) share.permission = dto.permission;
     if (dto.canDownload !== undefined) share.canDownload = dto.canDownload;
     if (dto.isActive !== undefined) share.isActive = dto.isActive;
-    if (dto.expiresAt !== undefined) share.expiresAt = this.toFutureDate(dto.expiresAt);
+    if (dto.expiresAt !== undefined)
+      share.expiresAt = this.toFutureDate(dto.expiresAt);
     return this.shareRepository.save(share);
   }
 
-  async revokeShare(presentationId: number, shareId: number, user: AuthUser): Promise<void> {
+  async revokeShare(
+    presentationId: number,
+    shareId: number,
+    user: AuthUser,
+  ): Promise<void> {
     await this.updateShare(presentationId, shareId, { isActive: false }, user);
   }
 
   async findShared(token: string): Promise<{
-    presentation: Presentation & { assets: PresentationAsset[]; tags: PptTag[] };
+    presentation: Presentation & {
+      assets: PresentationAsset[];
+      tags: PptTag[];
+    };
     share: PresentationShare;
   }> {
     const share = await this.findActiveShare(token);
@@ -271,53 +372,72 @@ export class PresentationService {
     if (share.permission !== 'edit_copy') {
       throw new ForbiddenException('This share link does not allow editing');
     }
-    if (!user?.userId) throw new ForbiddenException('Teacher or admin sign-in is required');
+    if (!user?.userId)
+      throw new ForbiddenException('Teacher or admin sign-in is required');
 
     const source = await this.findOne(share.presentationId);
-    const savedCopyId = await this.presentationRepository.manager.transaction(async (manager) => {
-      const presentationRepository = manager.getRepository(Presentation);
-      const assetRepository = manager.getRepository(PresentationAsset);
-      const copy = presentationRepository.create({
-        title: `${source.title} - Copy`,
-        lessonId: null,
-        lessonByScheduleId: null,
-        ownerId: user.userId,
-        ownerRole: user.role || 'teacher',
-        contentJson: source.contentJson,
-        metadataJson: source.metadataJson,
-        status: 'draft',
-        language: source.language,
-        thumbnailUrl: source.thumbnailUrl,
-      });
-      const savedCopy = await presentationRepository.save(copy);
-      const sourceAssets = await assetRepository.find({ where: { presentationId: source.id } });
-      if (sourceAssets.length) {
-        await assetRepository.save(sourceAssets.map((asset) => assetRepository.create({
-          presentationId: savedCopy.id,
-          assetType: asset.assetType,
-          url: asset.url,
-          originalName: asset.originalName,
-          mimeType: asset.mimeType,
-          size: asset.size,
-          metadataJson: asset.metadataJson,
-        })));
-      }
-      await this.copyTags(source.id, savedCopy.id, manager);
-      return savedCopy.id;
-    });
+    const savedCopyId = await this.presentationRepository.manager.transaction(
+      async (manager) => {
+        const presentationRepository = manager.getRepository(Presentation);
+        const assetRepository = manager.getRepository(PresentationAsset);
+        const copy = presentationRepository.create({
+          title: `${source.title} - Copy`,
+          lessonId: null,
+          lessonByScheduleId: null,
+          ownerId: user.userId,
+          ownerRole: user.role || 'teacher',
+          contentJson: source.contentJson,
+          metadataJson: source.metadataJson,
+          status: 'draft',
+          language: source.language,
+          thumbnailUrl: source.thumbnailUrl,
+        });
+        const savedCopy = await presentationRepository.save(copy);
+        const sourceAssets = await assetRepository.find({
+          where: { presentationId: source.id },
+        });
+        if (sourceAssets.length) {
+          await assetRepository.save(
+            sourceAssets.map((asset) =>
+              assetRepository.create({
+                presentationId: savedCopy.id,
+                assetType: asset.assetType,
+                url: asset.url,
+                originalName: asset.originalName,
+                mimeType: asset.mimeType,
+                size: asset.size,
+                metadataJson: asset.metadataJson,
+              }),
+            ),
+          );
+        }
+        await this.copyTags(source.id, savedCopy.id, manager);
+        return savedCopy.id;
+      },
+    );
     return this.findOne(savedCopyId);
   }
 
   async findTags(category?: string): Promise<PptTag[]> {
     const where: any = { isDeleted: false };
     if (category) where.category = category;
-    return this.tagRepository.find({ where, order: { category: 'ASC', name: 'ASC' } });
+    return this.tagRepository.find({
+      where,
+      order: { category: 'ASC', name: 'ASC' },
+    });
   }
 
-  async createTag(dto: CreatePptTagDto): Promise<PptTag> {
+  async createTag(dto: CreatePptTagDto, user: AuthUser): Promise<PptTag> {
     const name = dto.name?.trim();
     if (!name) throw new BadRequestException('Tag name is required');
-    return this.findOrCreateTag(name, dto.category || 'custom', dto.isSystem === true);
+    if (dto.isSystem === true && user?.role !== 'admin') {
+      throw new ForbiddenException('Only admins can create system tags');
+    }
+    return this.findOrCreateTag(
+      name,
+      dto.category || 'custom',
+      dto.isSystem === true,
+    );
   }
 
   async updateTags(
@@ -329,14 +449,17 @@ export class PresentationService {
       const presentation = await manager.getRepository(Presentation).findOne({
         where: { id: presentationId, isDeleted: false },
       });
-      if (!presentation) throw new NotFoundException(`Presentation ${presentationId} not found`);
+      if (!presentation)
+        throw new NotFoundException(`Presentation ${presentationId} not found`);
       this.assertCanManage(presentation, user);
       await this.syncTags(presentationId, dto, manager);
     });
     return this.getTagsForPresentation(presentationId);
   }
 
-  async generateOutline(dto: GeneratePresentationOutlineDto): Promise<{ outline: string }> {
+  async generateOutline(
+    dto: GeneratePresentationOutlineDto,
+  ): Promise<{ outline: string }> {
     const topic = dto.topic?.trim();
     if (!topic) throw new BadRequestException('Topic is required');
 
@@ -361,8 +484,10 @@ export class PresentationService {
     outline: string;
     slides: AIPptSlide[];
   }> {
-    const outline = dto.outline?.trim() || (await this.generateOutline(dto)).outline;
-    const topic = dto.topic?.trim() || dto.lessonName?.trim() || 'Lesson presentation';
+    const outline =
+      dto.outline?.trim() || (await this.generateOutline(dto)).outline;
+    const topic =
+      dto.topic?.trim() || dto.lessonName?.trim() || 'Lesson presentation';
     const language = dto.language === 'en' ? 'English' : 'Vietnamese';
     const tags = this.formatTagsForPrompt(dto.tags);
     const prompt = `Convert this lesson presentation outline into PPTist AIPPT JSON.\n\nLanguage: ${language}\nTopic: ${topic}\nStyle: ${dto.style || 'education'}\nTags: ${tags || 'none'}\n\nOutline:\n${outline}\n\nReturn only a valid JSON array. No markdown fences. No comments.\nEach item must match one of these shapes:\n{"type":"cover","data":{"title":"...","text":"..."}}\n{"type":"contents","data":{"items":["..."]}}\n{"type":"transition","data":{"title":"...","text":"..."}}\n{"type":"content","data":{"title":"...","items":[{"title":"...","text":"..."}]}}\n{"type":"end"}\n\nKeep each content slide to 2-4 items. Text should be short enough to fit on slides.`;
@@ -374,7 +499,8 @@ export class PresentationService {
         timeoutMs: 90000,
       });
       const slides = this.parseAiSlides(raw);
-      if (!slides.length) throw new BadRequestException('AI returned an invalid slide structure');
+      if (!slides.length)
+        throw new BadRequestException('AI returned an invalid slide structure');
       return { outline, slides };
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
@@ -382,12 +508,15 @@ export class PresentationService {
     }
   }
 
-  async rewriteText(dto: RewritePresentationTextDto): Promise<{ text: string }> {
+  async rewriteText(
+    dto: RewritePresentationTextDto,
+  ): Promise<{ text: string }> {
     const content = dto.content?.trim();
     if (!content) throw new BadRequestException('Content is required');
 
     const language = dto.language === 'en' ? 'English' : 'Vietnamese';
-    const command = dto.command?.trim() || 'Improve this text for a presentation slide';
+    const command =
+      dto.command?.trim() || 'Improve this text for a presentation slide';
     const prompt = `Rewrite the following presentation text.\n\nLanguage: ${language}\nCommand: ${command}\n\nText:\n${content}\n\nReturn only the rewritten text. Do not use markdown fences.`;
 
     try {
@@ -401,17 +530,58 @@ export class PresentationService {
       throw this.deepSeekService.formatError(error);
     }
   }
-  private async findOneForManage(id: number, user: AuthUser): Promise<Presentation> {
+  private async assertLessonAccess(
+    lessonId: unknown,
+    user: AuthUser,
+  ): Promise<void> {
+    const parsedLessonId = this.toNullableNumber(lessonId);
+    if (!parsedLessonId) return;
+    const lesson = await this.lessonRepository.findOne({
+      where: { id: parsedLessonId, isDelete: false },
+      relations: ['teacher'],
+    });
+    if (!lesson)
+      throw new NotFoundException(`Lesson ${parsedLessonId} not found`);
+    if (user?.role === 'admin') return;
+    if (!user?.userId || lesson.teacher?.id !== user.userId) {
+      throw new ForbiddenException(
+        'You can only attach a PPT to your own lesson',
+      );
+    }
+  }
+
+  private async assertHasTags(
+    presentationId: number,
+    manager: EntityManager = this.presentationRepository.manager,
+  ): Promise<void> {
+    const count = await manager
+      .getRepository(PresentationTag)
+      .count({ where: { presentationId } });
+    if (!count) {
+      throw new BadRequestException(
+        'Add at least one tag before sharing or publishing this presentation',
+      );
+    }
+  }
+
+  private async findOneForManage(
+    id: number,
+    user: AuthUser,
+  ): Promise<Presentation> {
     const presentation = await this.presentationRepository.findOne({
       where: { id, isDeleted: false },
     });
-    if (!presentation) throw new NotFoundException(`Presentation ${id} not found`);
+    if (!presentation)
+      throw new NotFoundException(`Presentation ${id} not found`);
     this.assertCanManage(presentation, user);
     return presentation;
   }
 
   private assertCanManage(presentation: Presentation, user: AuthUser): void {
-    if (!user?.userId || (user.role !== 'admin' && presentation.ownerId !== user.userId)) {
+    if (
+      !user?.userId ||
+      (user.role !== 'admin' && presentation.ownerId !== user.userId)
+    ) {
       throw new ForbiddenException('You can only edit your own presentation');
     }
   }
@@ -462,15 +632,25 @@ export class PresentationService {
     assets: NormalizedAsset[],
     depth = 0,
   ): Promise<unknown> {
-    if (depth > 100) throw new BadRequestException('Presentation content is too deeply nested');
+    if (depth > 100)
+      throw new BadRequestException(
+        'Presentation content is too deeply nested',
+      );
     if (typeof value === 'string') {
+      if (value.startsWith('blob:')) {
+        throw new BadRequestException(
+          'Temporary browser media must be uploaded before saving',
+        );
+      }
       const uploaded = await this.uploadDataUrlImage(value);
       if (!uploaded) return value;
       assets.push(uploaded);
       return uploaded.url;
     }
     if (Array.isArray(value)) {
-      return Promise.all(value.map((item) => this.replaceDataUrlImages(item, assets, depth + 1)));
+      return Promise.all(
+        value.map((item) => this.replaceDataUrlImages(item, assets, depth + 1)),
+      );
     }
     if (value && typeof value === 'object') {
       const result = {};
@@ -482,7 +662,9 @@ export class PresentationService {
     return value;
   }
 
-  private async uploadDataUrlImage(value: string): Promise<NormalizedAsset | null> {
+  private async uploadDataUrlImage(
+    value: string,
+  ): Promise<NormalizedAsset | null> {
     const match = value.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!match) return null;
 
@@ -516,7 +698,8 @@ export class PresentationService {
   }
 
   private allowPresentationDataUrlFallback(): boolean {
-    if (process.env.PRESENTATION_ALLOW_DATA_URL_FALLBACK === 'true') return true;
+    if (process.env.PRESENTATION_ALLOW_DATA_URL_FALLBACK === 'true')
+      return true;
     if (process.env.PRESENTATION_STRICT_IMAGE_UPLOAD === 'true') return false;
     return process.env.NODE_ENV !== 'production';
   }
@@ -530,22 +713,29 @@ export class PresentationService {
     const repository = manager.getRepository(PresentationAsset);
     const existing = await repository.find({ where: { presentationId } });
     const existingUrls = new Set(existing.map((asset) => asset.url));
-    const records = Array.from(new Map(assets.map((asset) => [asset.url, asset])).values())
+    const records = Array.from(
+      new Map(assets.map((asset) => [asset.url, asset])).values(),
+    )
       .filter((asset) => !existingUrls.has(asset.url))
-      .map((asset) => repository.create({
-        presentationId,
-        assetType: asset.assetType || this.getAssetType(asset.mimeType),
-        url: asset.url,
-        originalName: asset.originalName || null,
-        mimeType: asset.mimeType || null,
-        size: asset.size || null,
-        metadataJson: asset.metadata ? JSON.stringify(asset.metadata) : null,
-      }));
+      .map((asset) =>
+        repository.create({
+          presentationId,
+          assetType: asset.assetType || this.getAssetType(asset.mimeType),
+          url: asset.url,
+          originalName: asset.originalName || null,
+          mimeType: asset.mimeType || null,
+          size: asset.size || null,
+          metadataJson: asset.metadata ? JSON.stringify(asset.metadata) : null,
+        }),
+      );
     if (records.length) await repository.save(records);
 
     const referencedUrls = this.collectReferencedUrls(contentJson);
     const staleIds = existing
-      .filter((asset) => this.isEmbeddedContentAsset(asset) && !referencedUrls.has(asset.url))
+      .filter(
+        (asset) =>
+          this.isEmbeddedContentAsset(asset) && !referencedUrls.has(asset.url),
+      )
       .map((asset) => asset.id);
     if (staleIds.length) await repository.delete(staleIds);
   }
@@ -563,15 +753,23 @@ export class PresentationService {
         value.forEach((item) => visit(item, depth + 1));
         return;
       }
-      if (typeof value === 'object') Object.values(value).forEach((item) => visit(item, depth + 1));
+      if (typeof value === 'object')
+        Object.values(value).forEach((item) => visit(item, depth + 1));
     };
-    try { visit(JSON.parse(contentJson)); } catch { return urls; }
+    try {
+      visit(JSON.parse(contentJson));
+    } catch {
+      return urls;
+    }
     return urls;
   }
 
   private isEmbeddedContentAsset(asset: PresentationAsset): boolean {
     try {
-      return JSON.parse(asset.metadataJson || '{}')?.source === 'presentation-content-data-url';
+      return (
+        JSON.parse(asset.metadataJson || '{}')?.source ===
+        'presentation-content-data-url'
+      );
     } catch {
       return false;
     }
@@ -587,7 +785,9 @@ export class PresentationService {
     const tags = await this.resolveTags(dto, manager);
     await repository.delete({ presentationId });
     if (!tags.length) return;
-    await repository.save(tags.map((tag) => repository.create({ presentationId, tagId: tag.id })));
+    await repository.save(
+      tags.map((tag) => repository.create({ presentationId, tagId: tag.id })),
+    );
   }
 
   private async resolveTags(
@@ -606,9 +806,17 @@ export class PresentationService {
     const tags = Array.isArray(dto.tags) ? dto.tags : [];
     for (const tagInput of tags) {
       const name = typeof tagInput === 'string' ? tagInput : tagInput?.name;
-      const category = typeof tagInput === 'string' ? 'custom' : tagInput?.category || 'custom';
+      const category =
+        typeof tagInput === 'string'
+          ? 'custom'
+          : tagInput?.category || 'custom';
       if (!name?.trim()) continue;
-      const tag = await this.findOrCreateTag(name.trim(), category, false, manager);
+      const tag = await this.findOrCreateTag(
+        name.trim(),
+        category,
+        false,
+        manager,
+      );
       resolved.set(tag.id, tag);
     }
     return Array.from(resolved.values());
@@ -637,15 +845,23 @@ export class PresentationService {
     );
   }
 
-  private async getTagsForPresentation(presentationId: number): Promise<PptTag[]> {
-    const links = await this.presentationTagRepository.find({ where: { presentationId } });
-    if (!links.length) return [];
-    const tags = await this.tagRepository.findByIds(links.map((link) => link.tagId));
-    return tags.filter((tag) => !tag.isDeleted).sort((a, b) => {
-      const categoryCompare = a.category.localeCompare(b.category);
-      if (categoryCompare !== 0) return categoryCompare;
-      return a.name.localeCompare(b.name);
+  private async getTagsForPresentation(
+    presentationId: number,
+  ): Promise<PptTag[]> {
+    const links = await this.presentationTagRepository.find({
+      where: { presentationId },
     });
+    if (!links.length) return [];
+    const tags = await this.tagRepository.findByIds(
+      links.map((link) => link.tagId),
+    );
+    return tags
+      .filter((tag) => !tag.isDeleted)
+      .sort((a, b) => {
+        const categoryCompare = a.category.localeCompare(b.category);
+        if (categoryCompare !== 0) return categoryCompare;
+        return a.name.localeCompare(b.name);
+      });
   }
 
   private async copyTags(
@@ -654,12 +870,18 @@ export class PresentationService {
     manager: EntityManager,
   ) {
     const repository = manager.getRepository(PresentationTag);
-    const sourceLinks = await repository.find({ where: { presentationId: sourcePresentationId } });
+    const sourceLinks = await repository.find({
+      where: { presentationId: sourcePresentationId },
+    });
     if (!sourceLinks.length) return;
-    await repository.save(sourceLinks.map((link) => repository.create({
-      presentationId: targetPresentationId,
-      tagId: link.tagId,
-    })));
+    await repository.save(
+      sourceLinks.map((link) =>
+        repository.create({
+          presentationId: targetPresentationId,
+          tagId: link.tagId,
+        }),
+      ),
+    );
   }
 
   private parseAiSlides(raw: string): AIPptSlide[] {
@@ -684,19 +906,28 @@ export class PresentationService {
     if (!slide || typeof slide !== 'object') return false;
     if (slide.type === 'end') return true;
     if (slide.type === 'cover' || slide.type === 'transition') {
-      return typeof slide.data?.title === 'string' && typeof slide.data?.text === 'string';
+      return (
+        typeof slide.data?.title === 'string' &&
+        typeof slide.data?.text === 'string'
+      );
     }
     if (slide.type === 'contents') {
-      return Array.isArray(slide.data?.items) && slide.data.items.every((item: unknown) => typeof item === 'string');
+      return (
+        Array.isArray(slide.data?.items) &&
+        slide.data.items.every((item: unknown) => typeof item === 'string')
+      );
     }
     if (slide.type === 'content') {
-      return typeof slide.data?.title === 'string'
-        && Array.isArray(slide.data?.items)
-        && slide.data.items.every((item: any) => (
-          item
-          && typeof item.title === 'string'
-          && typeof item.text === 'string'
-        ));
+      return (
+        typeof slide.data?.title === 'string' &&
+        Array.isArray(slide.data?.items) &&
+        slide.data.items.every(
+          (item: any) =>
+            item &&
+            typeof item.title === 'string' &&
+            typeof item.text === 'string',
+        )
+      );
     }
     return false;
   }
@@ -707,31 +938,45 @@ export class PresentationService {
       .map((line) => line.replace(/^[-#\d.\s]+/, '').trim())
       .filter(Boolean)
       .slice(0, 8);
-    const agenda = lines.length ? lines.slice(0, 5) : ['Warm up', 'Key vocabulary', 'Practice', 'Wrap up'];
+    const agenda = lines.length
+      ? lines.slice(0, 5)
+      : ['Warm up', 'Key vocabulary', 'Practice', 'Wrap up'];
     const contentLines = lines.length ? lines : agenda;
 
     return [
       { type: 'cover', data: { title: topic, text: 'Lesson presentation' } },
       { type: 'contents', data: { items: agenda } },
-      ...contentLines.slice(0, 5).map((line): AIPptSlide => ({
-        type: 'content',
-        data: {
-          title: line,
-          items: [
-            { title: 'Goal', text: `Understand and use: ${line}` },
-            { title: 'Practice', text: 'Ask students to answer, compare, and explain.' },
-            { title: 'Check', text: 'Review one example together before moving on.' },
-          ],
-        },
-      })),
+      ...contentLines.slice(0, 5).map(
+        (line): AIPptSlide => ({
+          type: 'content',
+          data: {
+            title: line,
+            items: [
+              { title: 'Goal', text: `Understand and use: ${line}` },
+              {
+                title: 'Practice',
+                text: 'Ask students to answer, compare, and explain.',
+              },
+              {
+                title: 'Check',
+                text: 'Review one example together before moving on.',
+              },
+            ],
+          },
+        }),
+      ),
       { type: 'end' },
     ];
   }
 
-  private formatTagsForPrompt(tags?: Array<string | { name: string; category?: string }>): string {
+  private formatTagsForPrompt(
+    tags?: Array<string | { name: string; category?: string }>,
+  ): string {
     if (!Array.isArray(tags)) return '';
     return tags
-      .map((tag) => (typeof tag === 'string' ? tag : `${tag.category || 'tag'}:${tag.name}`))
+      .map((tag) =>
+        typeof tag === 'string' ? tag : `${tag.category || 'tag'}:${tag.name}`,
+      )
       .filter(Boolean)
       .join(', ');
   }
@@ -751,23 +996,31 @@ export class PresentationService {
       .slice(0, 120);
   }
 
-
   private validatePresentationContent(content: unknown): void {
     if (!content || typeof content !== 'object' || Array.isArray(content)) {
       throw new BadRequestException('Presentation content must be an object');
     }
     const slides = (content as { slides?: unknown }).slides;
     if (!Array.isArray(slides) || !slides.length) {
-      throw new BadRequestException('Presentation content must contain at least one slide');
+      throw new BadRequestException(
+        'Presentation content must contain at least one slide',
+      );
     }
     if (slides.length > 100) {
-      throw new BadRequestException('Presentation cannot contain more than 100 slides');
+      throw new BadRequestException(
+        'Presentation cannot contain more than 100 slides',
+      );
     }
   }
 
   private ensureContentSize(content: unknown): void {
-    const bytes = Buffer.byteLength(typeof content === 'string' ? content : JSON.stringify(content), 'utf8');
-    const maxBytes = Number(process.env.PRESENTATION_MAX_CONTENT_BYTES || 25 * 1024 * 1024);
+    const bytes = Buffer.byteLength(
+      typeof content === 'string' ? content : JSON.stringify(content),
+      'utf8',
+    );
+    const maxBytes = Number(
+      process.env.PRESENTATION_MAX_CONTENT_BYTES || 25 * 1024 * 1024,
+    );
     if (bytes > maxBytes) {
       throw new BadRequestException('Presentation content is too large');
     }

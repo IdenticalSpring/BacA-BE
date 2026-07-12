@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PresentationService } from './presentation.service';
 
 describe('PresentationService', () => {
@@ -6,11 +10,32 @@ describe('PresentationService', () => {
     find: jest.fn(),
     manager: { transaction: jest.fn(), getRepository: jest.fn() },
   };
-  const assetRepository: any = { find: jest.fn(), create: jest.fn(), save: jest.fn() };
-  const shareRepository: any = { find: jest.fn(), findOne: jest.fn(), create: jest.fn(), save: jest.fn() };
-  const tagRepository: any = { manager: { getRepository: jest.fn() }, find: jest.fn(), findByIds: jest.fn() };
-  const presentationTagRepository: any = { find: jest.fn(), save: jest.fn(), delete: jest.fn() };
-  const deepSeekService: any = { generateText: jest.fn(), formatError: jest.fn((error) => error) };
+  const assetRepository: any = {
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+  const shareRepository: any = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+  const tagRepository: any = {
+    manager: { getRepository: jest.fn() },
+    find: jest.fn(),
+    findByIds: jest.fn(),
+  };
+  const presentationTagRepository: any = {
+    find: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
+  };
+  const lessonRepository: any = { findOne: jest.fn() };
+  const deepSeekService: any = {
+    generateText: jest.fn(),
+    formatError: jest.fn((error) => error),
+  };
 
   let service: PresentationService;
 
@@ -22,6 +47,7 @@ describe('PresentationService', () => {
       shareRepository,
       tagRepository,
       presentationTagRepository,
+      lessonRepository,
       deepSeekService,
     );
   });
@@ -39,41 +65,52 @@ describe('PresentationService', () => {
   });
 
   it('rejects unauthenticated personal-library requests', async () => {
-    await expect(service.findMine({ role: 'teacher' })).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.findMine({ role: 'teacher' })).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 
   it('rejects malformed AI output instead of returning fallback slides', async () => {
     deepSeekService.generateText.mockResolvedValue('not a JSON slide list');
 
-    await expect(service.generateSlides({ topic: 'Vocabulary', outline: 'One slide' }))
-      .rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.generateSlides({ topic: 'Vocabulary', outline: 'One slide' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects incomplete AI slide data', async () => {
-    deepSeekService.generateText.mockResolvedValue(JSON.stringify([{ type: 'cover' }]));
+    deepSeekService.generateText.mockResolvedValue(
+      JSON.stringify([{ type: 'cover' }]),
+    );
 
-    await expect(service.generateSlides({ topic: 'Vocabulary', outline: 'One slide' }))
-      .rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.generateSlides({ topic: 'Vocabulary', outline: 'One slide' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('accepts only valid AI slide structures', async () => {
-    deepSeekService.generateText.mockResolvedValue(JSON.stringify([
-      { type: 'cover', data: { title: 'Vocabulary', text: 'Warm up' } },
-      { type: 'end' },
-    ]));
+    deepSeekService.generateText.mockResolvedValue(
+      JSON.stringify([
+        { type: 'cover', data: { title: 'Vocabulary', text: 'Warm up' } },
+        { type: 'end' },
+      ]),
+    );
 
-    await expect(service.generateSlides({ topic: 'Vocabulary', outline: 'One slide' }))
-      .resolves.toEqual({
-        outline: 'One slide',
-        slides: [
-          { type: 'cover', data: { title: 'Vocabulary', text: 'Warm up' } },
-          { type: 'end' },
-        ],
-      });
+    await expect(
+      service.generateSlides({ topic: 'Vocabulary', outline: 'One slide' }),
+    ).resolves.toEqual({
+      outline: 'One slide',
+      slides: [
+        { type: 'cover', data: { title: 'Vocabulary', text: 'Warm up' } },
+        { type: 'end' },
+      ],
+    });
   });
 
   it('rejects an unsupported asset before calling persistent storage', async () => {
-    const findOneForManage = jest.spyOn(service as any, 'findOneForManage').mockResolvedValue({});
+    const findOneForManage = jest
+      .spyOn(service as any, 'findOneForManage')
+      .mockResolvedValue({});
     const file: any = {
       mimetype: 'application/pdf',
       size: 1024,
@@ -81,8 +118,9 @@ describe('PresentationService', () => {
       originalname: 'document.pdf',
     };
 
-    await expect(service.uploadAsset(1, file, {}, { userId: 42, role: 'teacher' }))
-      .rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.uploadAsset(1, file, {}, { userId: 42, role: 'teacher' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(findOneForManage).toHaveBeenCalled();
   });
 
@@ -92,9 +130,16 @@ describe('PresentationService', () => {
       create: jest.fn((value) => value),
       save: jest.fn().mockResolvedValue({ id: 7, name: 'vocabulary' }),
     };
-    const manager: any = { getRepository: jest.fn().mockReturnValue(transactionRepository) };
+    const manager: any = {
+      getRepository: jest.fn().mockReturnValue(transactionRepository),
+    };
 
-    await (service as any).findOrCreateTag('vocabulary', 'skill', false, manager);
+    await (service as any).findOrCreateTag(
+      'vocabulary',
+      'skill',
+      false,
+      manager,
+    );
 
     expect(transactionRepository.save).toHaveBeenCalledWith({
       name: 'vocabulary',
@@ -102,5 +147,44 @@ describe('PresentationService', () => {
       category: 'skill',
       isSystem: false,
     });
+  });
+  it('allows only admins to create system tags', async () => {
+    await expect(
+      service.createTag(
+        { name: 'Official', category: 'skill', isSystem: true },
+        { userId: 42, role: 'teacher' },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('requires a tag before creating a share link', async () => {
+    jest.spyOn(service as any, 'findOneForManage').mockResolvedValue({ id: 1 });
+    presentationRepository.manager.getRepository.mockReturnValue({
+      count: jest.fn().mockResolvedValue(0),
+    });
+
+    await expect(
+      service.createShare(
+        1,
+        { permission: 'read', canDownload: false },
+        { userId: 42, role: 'teacher' },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects a stale presentation version before saving', async () => {
+    jest.spyOn(service as any, 'findOneForManage').mockResolvedValue({
+      id: 1,
+      ownerId: 42,
+      version: 3,
+    });
+
+    await expect(
+      service.update(
+        1,
+        { title: 'Stale update', version: 2 },
+        { userId: 42, role: 'teacher' },
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });

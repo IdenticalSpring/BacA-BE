@@ -38,6 +38,9 @@ export class Presentation {
   @Column({ length: 20, default: 'vi' })
   language: string;
 
+  @Column({ type: 'int', default: 1 })
+  version: number;
+
   @Column({ type: 'text', nullable: true })
   thumbnailUrl: string;
 
