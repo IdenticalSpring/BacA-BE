@@ -36,11 +36,19 @@ describe('PresentationService', () => {
     generateText: jest.fn(),
     formatError: jest.fn((error) => error),
   };
+  const imageStorageService: any = {
+    store: jest.fn(),
+  };
 
   let service: PresentationService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    imageStorageService.store.mockResolvedValue({
+      url: 'https://api.example.test/uploads/presentations/image.png',
+      mimeType: 'image/png',
+      size: 12,
+    });
     service = new PresentationService(
       presentationRepository,
       assetRepository,
@@ -49,6 +57,7 @@ describe('PresentationService', () => {
       presentationTagRepository,
       lessonRepository,
       deepSeekService,
+      imageStorageService,
     );
   });
 
@@ -122,6 +131,66 @@ describe('PresentationService', () => {
       service.uploadAsset(1, file, {}, { userId: 42, role: 'teacher' }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(findOneForManage).toHaveBeenCalled();
+  });
+
+  it('stores embedded slide images locally and replaces their data URLs', async () => {
+    const png = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.from('slide-image'),
+    ]);
+    const dataUrl = `data:image/png;base64,${png.toString('base64')}`;
+
+    const normalized = await (service as any).normalizeContent({
+      content: {
+        slides: [
+          { id: 'slide-1', elements: [{ type: 'image', src: dataUrl }] },
+        ],
+      },
+    });
+
+    expect(imageStorageService.store).toHaveBeenCalledWith(png, 'image/png');
+    expect(JSON.parse(normalized.contentJson).slides[0].elements[0].src).toBe(
+      'https://api.example.test/uploads/presentations/image.png',
+    );
+    expect(normalized.assets).toEqual([
+      expect.objectContaining({
+        url: 'https://api.example.test/uploads/presentations/image.png',
+        mimeType: 'image/png',
+        assetType: 'image',
+      }),
+    ]);
+  });
+
+  it('uses local presentation storage for uploaded image assets', async () => {
+    jest.spyOn(service as any, 'findOneForManage').mockResolvedValue({ id: 1 });
+    assetRepository.create.mockImplementation((value) => value);
+    assetRepository.save.mockImplementation(async (value) => value);
+    const buffer = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.from('uploaded-image'),
+    ]);
+    const file: any = {
+      mimetype: 'image/png',
+      size: buffer.length,
+      buffer,
+      originalname: 'lesson.png',
+    };
+
+    const asset = await service.uploadAsset(
+      1,
+      file,
+      {},
+      { userId: 42, role: 'teacher' },
+    );
+
+    expect(imageStorageService.store).toHaveBeenCalledWith(buffer, 'image/png');
+    expect(asset).toEqual(
+      expect.objectContaining({
+        presentationId: 1,
+        url: 'https://api.example.test/uploads/presentations/image.png',
+        mimeType: 'image/png',
+      }),
+    );
   });
 
   it('creates new tags through the active transaction repository', async () => {

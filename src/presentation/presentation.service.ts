@@ -12,6 +12,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { DeepSeekService } from 'src/common/deepseek.service';
 import { Lesson } from 'src/lesson/lesson.entity';
 import { PresentationAsset } from './presentation-asset.entity';
+import { PresentationImageStorageService } from './presentation-image-storage.service';
 import { PresentationShare } from './presentation-share.entity';
 import { PresentationTag } from './presentation-tag.entity';
 import { Presentation } from './presentation.entity';
@@ -69,6 +70,7 @@ export class PresentationService {
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
     private readonly deepSeekService: DeepSeekService,
+    private readonly imageStorageService: PresentationImageStorageService,
   ) {}
 
   async create(
@@ -280,14 +282,18 @@ export class PresentationService {
     }
 
     const buffer = this.getFileBuffer(file);
-    const url = await CloudinaryService.uploadBuffer(buffer);
+    const storedImage = file.mimetype?.startsWith('image/')
+      ? await this.imageStorageService.store(buffer, file.mimetype)
+      : null;
+    const url =
+      storedImage?.url || (await CloudinaryService.uploadBuffer(buffer));
     const asset = this.assetRepository.create({
       presentationId,
       assetType: this.getAssetType(file.mimetype),
       url,
       originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
+      mimeType: storedImage?.mimeType || file.mimetype,
+      size: storedImage?.size || file.size,
       metadataJson: this.stringifyJson(dto?.metadata, dto?.metadataJson),
     });
     return this.assetRepository.save(asset);
@@ -648,9 +654,11 @@ export class PresentationService {
       return uploaded.url;
     }
     if (Array.isArray(value)) {
-      return Promise.all(
-        value.map((item) => this.replaceDataUrlImages(item, assets, depth + 1)),
-      );
+      const result = [];
+      for (const item of value) {
+        result.push(await this.replaceDataUrlImages(item, assets, depth + 1));
+      }
+      return result;
     }
     if (value && typeof value === 'object') {
       const result = {};
@@ -672,36 +680,15 @@ export class PresentationService {
     const buffer = Buffer.from(match[2], 'base64');
     if (!buffer.length) return null;
 
-    try {
-      const url = await CloudinaryService.uploadBuffer(buffer);
-      return {
-        url,
-        mimeType,
-        size: buffer.length,
-        assetType: 'image',
-        originalName: 'embedded-slide-image',
-        metadata: { source: 'presentation-content-data-url' },
-      };
-    } catch (error) {
-      const message = (error as Error)?.message || 'Unknown error';
-      if (this.allowPresentationDataUrlFallback()) {
-        console.warn(
-          'Presentation image upload failed; keeping embedded data URL in non-production/fallback mode:',
-          message,
-        );
-        return null;
-      }
-      throw new BadRequestException(
-        'Presentation image upload failed. Please check Cloudinary configuration.',
-      );
-    }
-  }
-
-  private allowPresentationDataUrlFallback(): boolean {
-    if (process.env.PRESENTATION_ALLOW_DATA_URL_FALLBACK === 'true')
-      return true;
-    if (process.env.PRESENTATION_STRICT_IMAGE_UPLOAD === 'true') return false;
-    return process.env.NODE_ENV !== 'production';
+    const stored = await this.imageStorageService.store(buffer, mimeType);
+    return {
+      url: stored.url,
+      mimeType: stored.mimeType,
+      size: stored.size,
+      assetType: 'image',
+      originalName: 'embedded-slide-image',
+      metadata: { source: 'presentation-content-data-url' },
+    };
   }
 
   private async syncPresentationAssets(

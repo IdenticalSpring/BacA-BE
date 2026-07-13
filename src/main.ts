@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as bodyParser from 'body-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
+import { join, sep } from 'path';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import * as dotenv from 'dotenv';
 import * as crypto from 'crypto';
@@ -21,6 +21,17 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
+    setHeaders: (response, filePath) => {
+      const presentationSegment = `${sep}presentations${sep}`;
+      if (!filePath.includes(presentationSegment)) return;
+      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      response.setHeader('X-Content-Type-Options', 'nosniff');
+      response.setHeader(
+        'Cache-Control',
+        'public, max-age=31536000, immutable',
+      );
+    },
   });
   app.useWebSocketAdapter(new IoAdapter(app));
   // Cho phép CORS
@@ -41,7 +52,7 @@ async function bootstrap() {
   });
   app.use(bodyParser.json({ limit: '100mb' }));
   app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
-  
+
   const port = process.env.PORT ?? 8000;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}`);

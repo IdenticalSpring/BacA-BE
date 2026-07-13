@@ -8,6 +8,7 @@ import { PresentationAsset } from './presentation-asset.entity';
 import { PresentationShare } from './presentation-share.entity';
 import { PresentationTag } from './presentation-tag.entity';
 import { PresentationController } from './presentation.controller';
+import { PresentationImageStorageService } from './presentation-image-storage.service';
 import { Presentation } from './presentation.entity';
 import { PresentationService } from './presentation.service';
 import { PptTag } from './ppt-tag.entity';
@@ -26,7 +27,11 @@ import { PptTag } from './ppt-tag.entity';
     CloudinaryModule,
   ],
   controllers: [PresentationController],
-  providers: [PresentationService, DeepSeekService],
+  providers: [
+    PresentationService,
+    PresentationImageStorageService,
+    DeepSeekService,
+  ],
   exports: [TypeOrmModule, PresentationService],
 })
 export class PresentationModule {}
