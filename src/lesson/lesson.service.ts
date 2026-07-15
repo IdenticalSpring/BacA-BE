@@ -13,7 +13,6 @@ import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import * as readline from 'readline';
 import { Teacher } from 'src/teacher/teacher.entity';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
 dotenv.config();
 @Injectable()
@@ -144,7 +143,6 @@ export class LessonService {
   //   let mp3Url: string | null = null;
   //   if (mp3File) {
   //     console.log('Uploading MP3 file...');
-  //     mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
   //     console.log('MP3 uploaded:', mp3Url);
   //   }
   //   // Tạo class và gán teacher
@@ -182,7 +180,6 @@ export class LessonService {
   //   let mp3Url: string | null = null;
   //   if (mp3File) {
   //     console.log('Uploading MP3 file...');
-  //     mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
   //     console.log('MP3 uploaded:', mp3Url);
   //   }
   //   if (mp3Url) {

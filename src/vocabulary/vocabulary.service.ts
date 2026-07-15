@@ -9,7 +9,6 @@ import {
   FindByStudentAndHomework,
   UpdateVocabularyDto,
 } from './vocabulary.dto';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Student } from 'src/student/student.entity';
 dotenv.config();
 @Injectable()
@@ -145,7 +144,6 @@ export class VocabularyService {
   //   let mp3Url: string | null = null;
   //   if (mp3File) {
   //     console.log('Uploading MP3 file...');
-  //     mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
   //     console.log('MP3 uploaded:', mp3Url);
   //   }
   //   const vocabularyEntity = this.vocabularyRepository.create({
@@ -194,7 +192,6 @@ export class VocabularyService {
   //       let mp3Url: string | null = null;
   //       if (mp3Files[index] && mp3Files[index].size > 0) {
   //         console.log('Uploading MP3 file...');
-  //         mp3Url = await CloudinaryService.uploadBuffer(mp3Files[index].buffer);
   //         console.log('MP3 uploaded:', mp3Url);
   //       }
   //       const vocabularyEntity = this.vocabularyRepository.create({
@@ -245,7 +242,6 @@ export class VocabularyService {
   //     let mp3Url: string | null = null;
   //     if (mp3Files[index] && mp3Files[index].size > 0) {
   //       console.log('Uploading MP3 file...');
-  //       mp3Url = await CloudinaryService.uploadBuffer(mp3Files[index].buffer);
   //       console.log('MP3 uploaded:', mp3Url);
   //     }
 
@@ -377,7 +373,6 @@ export class VocabularyService {
   //   let mp3Url: string | null = null;
   //   if (mp3File) {
   //     console.log('Uploading MP3 file...');
-  //     mp3Url = await CloudinaryService.uploadBuffer(mp3File.buffer);
   //     console.log('MP3 uploaded:', mp3Url);
   //   }
   //   if (mp3Url) {

@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { Student } from './student.entity';
 import { CreateStudentDto, UpdateStudentDto } from './student.dto';
 import { Class } from 'src/class/class.entity';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationService } from 'src/notification/notification.service';
 import { CreateNotificationDto } from 'src/notification/notification.dto';  
@@ -16,7 +15,6 @@ export class StudentService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
-    private readonly cloudinaryService: CloudinaryService,
     private readonly notificationService: NotificationService,
     private jwtService: JwtService,
   ) {}
@@ -128,7 +126,7 @@ export class StudentService {
       student.class = classEntity;
     }
 
-    // Đã xóa logic upload file và Cloudinary
+    // Đã xóa logic upload file khỏi service cập nhật học viên.
 
     Object.assign(student, rest);
 

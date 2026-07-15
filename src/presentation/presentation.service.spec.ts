@@ -39,6 +39,9 @@ describe('PresentationService', () => {
   const imageStorageService: any = {
     store: jest.fn(),
   };
+  const mediaStorageService: any = {
+    store: jest.fn(),
+  };
 
   let service: PresentationService;
 
@@ -49,6 +52,11 @@ describe('PresentationService', () => {
       mimeType: 'image/png',
       size: 12,
     });
+    mediaStorageService.store.mockResolvedValue({
+      url: 'https://api.example.test/uploads/presentations/audio.mp3',
+      mimeType: 'audio/mpeg',
+      size: 16,
+    });
     service = new PresentationService(
       presentationRepository,
       assetRepository,
@@ -58,6 +66,7 @@ describe('PresentationService', () => {
       lessonRepository,
       deepSeekService,
       imageStorageService,
+      mediaStorageService,
     );
   });
 
@@ -189,6 +198,40 @@ describe('PresentationService', () => {
         presentationId: 1,
         url: 'https://api.example.test/uploads/presentations/image.png',
         mimeType: 'image/png',
+      }),
+    );
+  });
+
+  it('uses local presentation storage for uploaded audio assets', async () => {
+    jest.spyOn(service as any, 'findOneForManage').mockResolvedValue({ id: 1 });
+    assetRepository.create.mockImplementation((value) => value);
+    assetRepository.save.mockImplementation(async (value) => value);
+    const buffer = Buffer.from('uploaded-audio');
+    const file: any = {
+      mimetype: 'audio/mpeg',
+      size: buffer.length,
+      buffer,
+      originalname: 'lesson.mp3',
+    };
+
+    const asset = await service.uploadAsset(
+      1,
+      file,
+      {},
+      { userId: 42, role: 'teacher' },
+    );
+
+    expect(mediaStorageService.store).toHaveBeenCalledWith(
+      buffer,
+      'audio/mpeg',
+    );
+    expect(imageStorageService.store).not.toHaveBeenCalled();
+    expect(asset).toEqual(
+      expect.objectContaining({
+        presentationId: 1,
+        assetType: 'audio',
+        url: 'https://api.example.test/uploads/presentations/audio.mp3',
+        mimeType: 'audio/mpeg',
       }),
     );
   });

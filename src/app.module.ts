@@ -16,7 +16,6 @@ import { TeacherTestCommentModule } from './teachertestcomment/teachertestcommen
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UploadController } from './upload/upload.controller';
-import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ClassScheduleModule } from './classSchedule/classSchedule.module';
 import { Schedule } from './schedule/schedule.entity';
 import { Class } from './class/class.entity';
@@ -121,7 +120,6 @@ import { PresentationModule } from './presentation/presentation.module';
     TestResultModule,
     TestTypeModule,
     TeacherTestCommentModule,
-    CloudinaryModule,
     CheckinModule,
     TestModule,
     ClassTestScheduleModule,

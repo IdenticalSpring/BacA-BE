@@ -7,7 +7,6 @@ import { Lesson } from 'src/lesson/lesson.entity';
 import { LessonModule } from 'src/lesson/lesson.module';
 import { HomeWork } from 'src/homeWork/homeWork.entity';
 import { HomeWorkModule } from 'src/homeWork/homeWork.module';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Module({
   imports: [
@@ -15,7 +14,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
     forwardRef(() => LessonModule),
     forwardRef(() => HomeWorkModule),
   ],
-  providers: [TeacherService, CloudinaryService],
+  providers: [TeacherService],
   controllers: [TeacherController],
   exports: [TypeOrmModule, TeacherService],
 })

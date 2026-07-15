@@ -6,7 +6,6 @@ import {
   CreateUserNotificationDto,
   UpdateUserNotificationDto,
 } from './user_notification.dto';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Notification } from 'src/notification/notification.entity';
 import { Student } from 'src/student/student.entity';
 

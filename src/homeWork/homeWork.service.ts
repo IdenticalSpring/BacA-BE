@@ -17,7 +17,6 @@ import {
 } from './homeWork.dto';
 import * as dotenv from 'dotenv';
 import { Teacher } from 'src/teacher/teacher.entity';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import axios from 'axios';
 import { LessonBySchedule } from 'src/lesson_by_schedule/lesson_by_schedule.entity';
 import { AiTtsService } from 'src/common/ai-tts.service';

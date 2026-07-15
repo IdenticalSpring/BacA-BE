@@ -8,11 +8,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
 import { EntityManager, Repository } from 'typeorm';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { DeepSeekService } from 'src/common/deepseek.service';
 import { Lesson } from 'src/lesson/lesson.entity';
 import { PresentationAsset } from './presentation-asset.entity';
 import { PresentationImageStorageService } from './presentation-image-storage.service';
+import { PresentationMediaStorageService } from './presentation-media-storage.service';
 import { PresentationShare } from './presentation-share.entity';
 import { PresentationTag } from './presentation-tag.entity';
 import { Presentation } from './presentation.entity';
@@ -71,6 +71,7 @@ export class PresentationService {
     private readonly lessonRepository: Repository<Lesson>,
     private readonly deepSeekService: DeepSeekService,
     private readonly imageStorageService: PresentationImageStorageService,
+    private readonly mediaStorageService: PresentationMediaStorageService,
   ) {}
 
   async create(
@@ -282,18 +283,16 @@ export class PresentationService {
     }
 
     const buffer = this.getFileBuffer(file);
-    const storedImage = file.mimetype?.startsWith('image/')
+    const storedAsset = file.mimetype?.startsWith('image/')
       ? await this.imageStorageService.store(buffer, file.mimetype)
-      : null;
-    const url =
-      storedImage?.url || (await CloudinaryService.uploadBuffer(buffer));
+      : await this.mediaStorageService.store(buffer, file.mimetype);
     const asset = this.assetRepository.create({
       presentationId,
       assetType: this.getAssetType(file.mimetype),
-      url,
+      url: storedAsset.url,
       originalName: file.originalname,
-      mimeType: storedImage?.mimeType || file.mimetype,
-      size: storedImage?.size || file.size,
+      mimeType: storedAsset.mimeType,
+      size: storedAsset.size,
       metadataJson: this.stringifyJson(dto?.metadata, dto?.metadataJson),
     });
     return this.assetRepository.save(asset);

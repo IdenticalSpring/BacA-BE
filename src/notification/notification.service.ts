@@ -7,7 +7,6 @@ import {
   UpdateNotificationDto,
 } from './notification.dto';
 import { Class } from 'src/class/class.entity';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { truncate } from 'fs';
 
 @Injectable()
@@ -17,7 +16,6 @@ export class NotificationService {
     private readonly notificationRepository: Repository<Notification>,
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
-    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async findAll(): Promise<Notification[]> {

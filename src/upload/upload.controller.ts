@@ -1,56 +1,34 @@
 import {
+  BadRequestException,
   Controller,
   Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { FilesService } from '../files/files.service';
 
 @Controller('upload')
 export class UploadController {
-  constructor(private readonly cloudinaryService: CloudinaryService) {}
+  constructor(private readonly filesService: FilesService) {}
 
+  // Compatibility alias for already-deployed or cached clients.
+  // Files are stored under the VPS uploads directory; no external service is called.
   @Post('cloudinary')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadToCloudinary(@UploadedFile() file: any): Promise<{}> {
-    try {
-      if (!file) {
-        console.error('Không có file được upload!');
-        throw new Error('No file uploaded');
-      }
-
-      console.log('Received file:', file.originalname);
-
-      // Upload buffer trực tiếp lên Cloudinary
-      const url = await CloudinaryService.uploadBuffer(file.buffer);
-
-      console.log('Upload thành công:', url);
-      return { url };
-    } catch (error) {
-      console.error('Lỗi trong upload.controller.ts:', error);
-      throw new Error(`Upload failed: ${error.message}`);
-    }
+  uploadLegacyFile(@UploadedFile() file: Express.Multer.File): { url: string } {
+    if (!file) throw new BadRequestException('No file uploaded');
+    const storedFile = this.filesService.saveFile(file);
+    return { url: storedFile.url };
   }
+
   @Post('avatar/')
   @UseInterceptors(FileInterceptor('avatar'))
-  async uploadToCloudinaryForAvatar(@UploadedFile() avatar: any): Promise<{}> {
-    try {
-      if (!avatar) {
-        console.error('Không có file được upload!');
-        throw new Error('No file uploaded');
-      }
-
-      console.log('Received file:', avatar.originalname);
-
-      // Upload buffer trực tiếp lên Cloudinary
-      const url = await CloudinaryService.uploadBuffer(avatar.buffer);
-
-      console.log('Upload thành công:', url);
-      return { url };
-    } catch (error) {
-      console.error('Lỗi trong upload.controller.ts:', error);
-      throw new Error(`Upload failed: ${error.message}`);
-    }
+  uploadLegacyAvatar(@UploadedFile() avatar: Express.Multer.File): {
+    url: string;
+  } {
+    if (!avatar) throw new BadRequestException('No file uploaded');
+    const storedFile = this.filesService.saveFile(avatar);
+    return { url: storedFile.url };
   }
 }

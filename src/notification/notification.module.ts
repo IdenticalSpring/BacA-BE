@@ -4,10 +4,9 @@ import { Notification } from './notification.entity';
 import { NotificationService } from './notification.service';
 import { NotificationController } from './notification.controller';
 import { Class } from 'src/class/class.entity';
-import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Notification, Class]), CloudinaryModule],
+  imports: [TypeOrmModule.forFeature([Notification, Class])],
   providers: [NotificationService],
   controllers: [NotificationController],
   exports: [NotificationService],

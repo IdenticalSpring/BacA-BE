@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from 'src/auth/auth.module';
-import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { DeepSeekService } from 'src/common/deepseek.service';
 import { Lesson } from 'src/lesson/lesson.entity';
 import { PresentationAsset } from './presentation-asset.entity';
@@ -9,6 +8,7 @@ import { PresentationShare } from './presentation-share.entity';
 import { PresentationTag } from './presentation-tag.entity';
 import { PresentationController } from './presentation.controller';
 import { PresentationImageStorageService } from './presentation-image-storage.service';
+import { PresentationMediaStorageService } from './presentation-media-storage.service';
 import { Presentation } from './presentation.entity';
 import { PresentationService } from './presentation.service';
 import { PptTag } from './ppt-tag.entity';
@@ -24,12 +24,12 @@ import { PptTag } from './ppt-tag.entity';
       Lesson,
     ]),
     AuthModule,
-    CloudinaryModule,
   ],
   controllers: [PresentationController],
   providers: [
     PresentationService,
     PresentationImageStorageService,
+    PresentationMediaStorageService,
     DeepSeekService,
   ],
   exports: [TypeOrmModule, PresentationService],
