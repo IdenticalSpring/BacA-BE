@@ -97,9 +97,10 @@ export class PresentationController {
   @Roles('teacher', 'admin')
   findByLesson(
     @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Query('classId', new ParseIntPipe({ optional: true })) classId: number,
     @Req() req: any,
   ) {
-    return this.presentationService.findAllByLesson(lessonId, req.user);
+    return this.presentationService.findAllByLesson(lessonId, req.user, classId);
   }
 
   @Get('share/:token')

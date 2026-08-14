@@ -7,9 +7,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { DeepSeekService } from 'src/common/deepseek.service';
 import { Lesson } from 'src/lesson/lesson.entity';
+import { Class } from 'src/class/class.entity';
 import { PresentationAsset } from './presentation-asset.entity';
 import { PresentationImageStorageService } from './presentation-image-storage.service';
 import { PresentationMediaStorageService } from './presentation-media-storage.service';
@@ -69,6 +70,8 @@ export class PresentationService {
     private readonly presentationTagRepository: Repository<PresentationTag>,
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(Class)
+    private readonly classRepository: Repository<Class>,
     private readonly deepSeekService: DeepSeekService,
     private readonly imageStorageService: PresentationImageStorageService,
     private readonly mediaStorageService: PresentationMediaStorageService,
@@ -79,16 +82,20 @@ export class PresentationService {
     user: AuthUser,
   ): Promise<Presentation> {
     await this.assertLessonAccess(dto.lessonId, user);
+    await this.assertClassAccess(dto.classId, user);
 
     const lessonId = this.toNullableNumber(dto.lessonId);
+    const classId = this.toNullableNumber(dto.classId);
     if (lessonId && user?.userId) {
+      const existingWhere: any = {
+        lessonId,
+        ownerId: user.userId,
+        ownerRole: user.role || 'teacher',
+        isDeleted: false,
+      };
+      if (classId) existingWhere.classId = classId;
       const existing = await this.presentationRepository.findOne({
-        where: {
-          lessonId,
-          ownerId: user.userId,
-          ownerRole: user.role || 'teacher',
-          isDeleted: false,
-        },
+        where: existingWhere,
         order: { updatedAt: 'DESC' },
       });
       if (existing) {
@@ -108,6 +115,7 @@ export class PresentationService {
           title: dto.title?.trim() || 'Untitled presentation',
           lessonId,
           lessonByScheduleId: this.toNullableNumber(dto.lessonByScheduleId),
+          classId,
           ownerId: user?.userId || null,
           ownerRole: user?.role || 'teacher',
           contentJson: normalized.contentJson,
@@ -143,6 +151,7 @@ export class PresentationService {
       throw new ConflictException('Presentation version conflict');
     }
     await this.assertLessonAccess(dto.lessonId, user);
+    await this.assertClassAccess(dto.classId, user);
     const normalized = await this.normalizeContent(dto);
 
     const updatedId = await this.presentationRepository.manager.transaction(
@@ -169,6 +178,8 @@ export class PresentationService {
           presentation.lessonByScheduleId = this.toNullableNumber(
             dto.lessonByScheduleId,
           );
+        if (dto.classId !== undefined)
+          presentation.classId = this.toNullableNumber(dto.classId);
         if (dto.content !== undefined || dto.contentJson !== undefined)
           presentation.contentJson = normalized.contentJson;
         if (dto.metadata !== undefined || dto.metadataJson !== undefined) {
@@ -204,8 +215,13 @@ export class PresentationService {
   async findAllByLesson(
     lessonId: number,
     user: AuthUser,
+    classId?: number,
   ): Promise<Presentation[]> {
     const where: any = { lessonId, isDeleted: false };
+    if (classId) {
+      await this.assertClassAccess(classId, user);
+      where.classId = classId;
+    }
     if (user?.role !== 'admin') {
       where.ownerId = user?.userId || null;
       where.ownerRole = user?.role || 'teacher';
@@ -217,10 +233,12 @@ export class PresentationService {
     });
   }
 
-  async findMine(user: AuthUser): Promise<Presentation[]> {
+  async findMine(
+    user: AuthUser,
+  ): Promise<Array<Presentation & { classInfo: object | null }>> {
     if (!user?.userId)
       throw new ForbiddenException('Authenticated user is required');
-    return this.presentationRepository.find({
+    const presentations = await this.presentationRepository.find({
       where: {
         ownerId: user.userId,
         ownerRole: user.role || 'teacher',
@@ -228,6 +246,30 @@ export class PresentationService {
       },
       order: { updatedAt: 'DESC' },
       take: 100,
+    });
+    const classIds = [
+      ...new Set(
+        presentations
+          .map((presentation) => presentation.classId)
+          .filter((classId): classId is number => Boolean(classId)),
+      ),
+    ];
+    const classes = classIds.length
+      ? await this.classRepository.find({ where: { id: In(classIds) } })
+      : [];
+    const classMap = new Map(classes.map((item) => [item.id, item]));
+
+    return presentations.map((presentation) => {
+      const classEntity = classMap.get(presentation.classId);
+      return Object.assign(presentation, {
+        classInfo: classEntity
+          ? {
+              id: classEntity.id,
+              name: classEntity.name,
+              accessId: classEntity.accessId,
+            }
+          : null,
+      });
     });
   }
 
@@ -389,6 +431,7 @@ export class PresentationService {
           title: `${source.title} - Copy`,
           lessonId: null,
           lessonByScheduleId: null,
+          classId: null,
           ownerId: user.userId,
           ownerRole: user.role || 'teacher',
           contentJson: source.contentJson,
@@ -551,6 +594,26 @@ export class PresentationService {
     if (!user?.userId || lesson.teacher?.id !== user.userId) {
       throw new ForbiddenException(
         'You can only attach a PPT to your own lesson',
+      );
+    }
+  }
+
+  private async assertClassAccess(
+    classId: unknown,
+    user: AuthUser,
+  ): Promise<void> {
+    const parsedClassId = this.toNullableNumber(classId);
+    if (!parsedClassId) return;
+    const classEntity = await this.classRepository.findOne({
+      where: { id: parsedClassId, isDelete: false },
+      relations: ['teacher'],
+    });
+    if (!classEntity)
+      throw new NotFoundException(`Class ${parsedClassId} not found`);
+    if (user?.role === 'admin') return;
+    if (!user?.userId || classEntity.teacher?.id !== user.userId) {
+      throw new ForbiddenException(
+        'You can only attach a PPT to your own class',
       );
     }
   }

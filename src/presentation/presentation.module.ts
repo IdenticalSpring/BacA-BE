@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from 'src/auth/auth.module';
 import { DeepSeekService } from 'src/common/deepseek.service';
 import { Lesson } from 'src/lesson/lesson.entity';
+import { Class } from 'src/class/class.entity';
 import { PresentationAsset } from './presentation-asset.entity';
 import { PresentationShare } from './presentation-share.entity';
 import { PresentationTag } from './presentation-tag.entity';
@@ -22,6 +23,7 @@ import { PptTag } from './ppt-tag.entity';
       PptTag,
       PresentationTag,
       Lesson,
+      Class,
     ]),
     AuthModule,
   ],

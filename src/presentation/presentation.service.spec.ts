@@ -32,6 +32,7 @@ describe('PresentationService', () => {
     delete: jest.fn(),
   };
   const lessonRepository: any = { findOne: jest.fn() };
+  const classRepository: any = { find: jest.fn(), findOne: jest.fn() };
   const deepSeekService: any = {
     generateText: jest.fn(),
     formatError: jest.fn((error) => error),
@@ -64,6 +65,7 @@ describe('PresentationService', () => {
       tagRepository,
       presentationTagRepository,
       lessonRepository,
+      classRepository,
       deepSeekService,
       imageStorageService,
       mediaStorageService,
@@ -86,6 +88,26 @@ describe('PresentationService', () => {
     await expect(service.findMine({ role: 'teacher' })).rejects.toBeInstanceOf(
       ForbiddenException,
     );
+  });
+
+  it('adds safe class labels to the personal presentation library', async () => {
+    presentationRepository.find.mockResolvedValue([
+      { id: 8, classId: 67, title: 'RM663 lesson' },
+      { id: 9, classId: null, title: 'Personal PPT' },
+    ]);
+    classRepository.find.mockResolvedValue([
+      { id: 67, name: 'RM663', accessId: 'RM663' },
+    ]);
+
+    const result = await service.findMine({ userId: 42, role: 'teacher' });
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 8,
+        classInfo: { id: 67, name: 'RM663', accessId: 'RM663' },
+      }),
+      expect.objectContaining({ id: 9, classInfo: null }),
+    ]);
   });
 
   it('rejects malformed AI output instead of returning fallback slides', async () => {

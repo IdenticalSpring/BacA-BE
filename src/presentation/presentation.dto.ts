@@ -32,6 +32,12 @@ export class SavePresentationDto {
   lessonByScheduleId?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  classId?: number;
+
+  @IsOptional()
   @IsObject()
   content?: Record<string, unknown>;
 

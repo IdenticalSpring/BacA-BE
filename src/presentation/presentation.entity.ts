@@ -20,6 +20,9 @@ export class Presentation {
   @Column({ type: 'int', nullable: true })
   lessonByScheduleId: number;
 
+  @Column({ type: 'int', nullable: true })
+  classId: number;
+
   @Column({ length: 20, default: 'teacher' })
   ownerRole: string;
 

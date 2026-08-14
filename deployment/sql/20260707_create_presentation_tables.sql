@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS `presentations` (
   `title` varchar(180) NOT NULL,
   `lessonId` int NULL,
   `lessonByScheduleId` int NULL,
+  `classId` int NULL,
   `ownerRole` varchar(20) NOT NULL DEFAULT 'teacher',
   `ownerId` int NULL,
   `contentJson` longtext NULL,
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS `presentations` (
   PRIMARY KEY (`id`),
   KEY `idx_presentations_lessonId` (`lessonId`),
   KEY `idx_presentations_lessonByScheduleId` (`lessonByScheduleId`),
+  KEY `idx_presentations_classId` (`classId`),
   KEY `idx_presentations_owner` (`ownerRole`, `ownerId`),
   KEY `idx_presentations_deleted_updated` (`isDeleted`, `updatedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

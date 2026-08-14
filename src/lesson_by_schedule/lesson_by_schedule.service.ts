@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { LessonBySchedule } from './lesson_by_schedule.entity';
 import {
   CreateLessonByScheduleDto,
@@ -60,6 +60,41 @@ export class LessonByScheduleService {
     });
   }
 
+  private lessonSlotKey(
+    classId: number,
+    scheduleId: number,
+    date: Date | string,
+  ): string {
+    return `${classId}|${scheduleId}|${this.formatDateOnly(
+      this.parseDateOnly(date),
+    )}`;
+  }
+
+  /**
+   * Serialize schedule generation for the same class.
+   *
+   * Production already contains historical duplicate rows, so a database
+   * unique constraint would be unsafe. Locking the owning class row lets us
+   * re-check the current slots inside the transaction without modifying any
+   * existing lesson_by_schedule data.
+   */
+  private async lockActiveClasses(
+    manager: EntityManager,
+    classIds: number[],
+  ): Promise<Class[]> {
+    const uniqueClassIds = [...new Set(classIds)].sort((a, b) => a - b);
+    if (!uniqueClassIds.length) return [];
+
+    return manager
+      .getRepository(Class)
+      .createQueryBuilder('classEntity')
+      .where('classEntity.id IN (:...classIds)', { classIds: uniqueClassIds })
+      .andWhere('classEntity.isDelete = :isDelete', { isDelete: false })
+      .orderBy('classEntity.id', 'ASC')
+      .setLock('pessimistic_write')
+      .getMany();
+  }
+
   private async ensureClassScheduleExtended(
     classID: number,
     currentLessons: LessonBySchedule[],
@@ -78,68 +113,96 @@ export class LessonByScheduleService {
       return currentLessons;
     }
 
-    const classEntity =
-      currentLessons[0].class ||
-      (await this.classRepository.findOne({
-        where: { id: classID, isDelete: false },
-      }));
-    if (!classEntity) return currentLessons;
+    return this.lessonByScheduleRepository.manager.transaction(
+      async (manager) => {
+        const [classEntity] = await this.lockActiveClasses(manager, [classID]);
+        if (!classEntity) return currentLessons;
 
-    const uniqueSchedules = Array.from(
-      new Map(
-        activeLessons
-          .filter((lesson) => lesson.schedule && !lesson.schedule.isDelete)
-          .map((lesson) => [lesson.schedule.id, lesson.schedule]),
-      ).values(),
-    );
-    if (!uniqueSchedules.length) return currentLessons;
+        // Re-read after obtaining the class lock. A concurrent request may
+        // have extended the schedule while this request was waiting.
+        const transactionRepository = manager.getRepository(LessonBySchedule);
+        const lockedLessons = await transactionRepository.find({
+          where: { class: { id: classID }, isDelete: false },
+          relations: ['class', 'schedule'],
+        });
+        const lockedActiveLessons = lockedLessons.filter(
+          (lesson) => lesson.schedule && !lesson.schedule.isDelete,
+        );
+        if (!lockedActiveLessons.length) return this.sortByDate(lockedLessons);
 
-    const existingKeys = new Set(
-      currentLessons
-        .filter((lesson) => lesson.schedule)
-        .map(
-          (lesson) =>
-            `${lesson.schedule.id}|${this.formatDateOnly(this.parseDateOnly(lesson.date as any))}`,
-        ),
-    );
-
-    const lessonsToCreate: LessonBySchedule[] = [];
-    while (latestDate < thresholdDate) {
-      const startDate = this.addDays(latestDate, 1);
-      const endDate = this.addMonths(latestDate, 6);
-
-      for (let date = new Date(startDate); date <= endDate; date = this.addDays(date, 1)) {
-        for (const schedule of uniqueSchedules) {
-          if (date.getDay() !== schedule.dayOfWeek - 1) continue;
-
-          const dateText = this.formatDateOnly(date);
-          const key = `${schedule.id}|${dateText}`;
-          if (existingKeys.has(key)) continue;
-
-          existingKeys.add(key);
-          lessonsToCreate.push(
-            this.lessonByScheduleRepository.create({
-              class: classEntity,
-              schedule,
-              lessonID: null,
-              homeWorkId: null,
-              startTime: schedule.startTime,
-              endTime: schedule.endTime,
-              date: dateText as any,
-            }),
-          );
+        const lockedSortedLessons = this.sortByDate(lockedActiveLessons);
+        latestDate = this.parseDateOnly(
+          lockedSortedLessons[lockedSortedLessons.length - 1].date as any,
+        );
+        if (latestDate >= thresholdDate) {
+          return this.sortByDate(lockedLessons);
         }
-      }
 
-      latestDate = endDate;
-    }
+        const uniqueSchedules = Array.from(
+          new Map(
+            lockedActiveLessons.map((lesson) => [
+              lesson.schedule.id,
+              lesson.schedule,
+            ]),
+          ).values(),
+        );
+        const existingKeys = new Set(
+          lockedLessons
+            .filter((lesson) => lesson.schedule)
+            .map((lesson) =>
+              this.lessonSlotKey(
+                classID,
+                lesson.schedule.id,
+                lesson.date as any,
+              ),
+            ),
+        );
 
-    if (!lessonsToCreate.length) {
-      return currentLessons;
-    }
+        const lessonsToCreate: LessonBySchedule[] = [];
+        while (latestDate < thresholdDate) {
+          const startDate = this.addDays(latestDate, 1);
+          const endDate = this.addMonths(latestDate, 6);
 
-    const createdLessons = await this.lessonByScheduleRepository.save(lessonsToCreate);
-    return this.sortByDate([...currentLessons, ...createdLessons]);
+          for (
+            let date = new Date(startDate);
+            date <= endDate;
+            date = this.addDays(date, 1)
+          ) {
+            for (const schedule of uniqueSchedules) {
+              if (date.getDay() !== schedule.dayOfWeek - 1) continue;
+
+              const dateText = this.formatDateOnly(date);
+              const key = this.lessonSlotKey(classID, schedule.id, dateText);
+              if (existingKeys.has(key)) continue;
+
+              existingKeys.add(key);
+              lessonsToCreate.push(
+                transactionRepository.create({
+                  class: classEntity,
+                  schedule,
+                  lessonID: null,
+                  homeWorkId: null,
+                  startTime: schedule.startTime,
+                  endTime: schedule.endTime,
+                  date: dateText as any,
+                }),
+              );
+            }
+          }
+
+          latestDate = endDate;
+        }
+
+        if (!lessonsToCreate.length) {
+          return this.sortByDate(lockedLessons);
+        }
+
+        const createdLessons = await transactionRepository.save(
+          lessonsToCreate,
+        );
+        return this.sortByDate([...lockedLessons, ...createdLessons]);
+      },
+    );
   }
 
   async findAll(): Promise<LessonBySchedule[]> {
@@ -256,28 +319,50 @@ export class LessonByScheduleService {
   async createMany(
     createManyDto: CreateManyLessonsDto,
   ): Promise<LessonBySchedule[]> {
+    return this.lessonByScheduleRepository.manager.transaction((manager) =>
+      this.createManyWithinManager(createManyDto, manager),
+    );
+  }
+
+  private async createManyWithinManager(
+    createManyDto: CreateManyLessonsDto,
+    manager: EntityManager,
+  ): Promise<LessonBySchedule[]> {
+    if (!createManyDto.lessons.length) return [];
+
     const lessons = [];
 
     // Lấy danh sách class và schedule
-    const classIds = createManyDto.lessons.map((l) => l.classID);
-    const classEntities = await this.classRepository.findBy({
-      id: In(classIds),
-    });
+    const classIds = [...new Set(createManyDto.lessons.map((l) => l.classID))];
+    const classEntities = await this.lockActiveClasses(manager, classIds);
 
-    if (classEntities.length === 0) {
-      throw new NotFoundException(`No classes found for given IDs`);
+    const missingClassId = classIds.find(
+      (id) => !classEntities.some((classEntity) => classEntity.id === id),
+    );
+    if (missingClassId !== undefined) {
+      throw new NotFoundException(
+        `Class with ID ${missingClassId} not found`,
+      );
     }
 
-    const scheduleIds = createManyDto.lessons.map((l) => l.scheduleID);
-    const scheduleEntities = await this.scheduleRepository.findBy({
-      id: In(scheduleIds),
+    const scheduleIds = [
+      ...new Set(createManyDto.lessons.map((l) => l.scheduleID)),
+    ];
+    const scheduleEntities = await manager.getRepository(Schedule).find({
+      where: { id: In(scheduleIds), isDelete: false },
     });
 
-    if (scheduleEntities.length === 0) {
-      throw new NotFoundException(`No schedules found for given IDs`);
+    const missingScheduleId = scheduleIds.find(
+      (id) => !scheduleEntities.some((schedule) => schedule.id === id),
+    );
+    if (missingScheduleId !== undefined) {
+      throw new NotFoundException(
+        `Schedule with ID ${missingScheduleId} not found`,
+      );
     }
 
-    const existingLessons = await this.lessonByScheduleRepository.find({
+    const transactionRepository = manager.getRepository(LessonBySchedule);
+    const existingLessons = await transactionRepository.find({
       where: { class: { id: In(classIds) }, isDelete: false },
       relations: ['class', 'schedule'],
     });
@@ -316,7 +401,7 @@ export class LessonByScheduleService {
       }
       existingKeys.add(key);
 
-      const lessonBySchedule = this.lessonByScheduleRepository.create({
+      const lessonBySchedule = transactionRepository.create({
         class: classEntity,
         schedule: schedule,
         lessonID: lessonDto.lessonID,
@@ -332,7 +417,7 @@ export class LessonByScheduleService {
       return [];
     }
 
-    return await this.lessonByScheduleRepository.save(lessons);
+    return await transactionRepository.save(lessons);
   }
 
   async update(
