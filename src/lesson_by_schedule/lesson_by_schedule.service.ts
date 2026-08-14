@@ -11,6 +11,7 @@ import {
 } from './lesson_by_schedule.dto';
 import { Class } from '../class/class.entity';
 import { Schedule } from '../schedule/schedule.entity';
+import { ClassSchedule } from '../classSchedule/classSchedule.entity';
 
 @Injectable()
 export class LessonByScheduleService {
@@ -21,6 +22,8 @@ export class LessonByScheduleService {
     private readonly classRepository: Repository<Class>,
     @InjectRepository(Schedule)
     private readonly scheduleRepository: Repository<Schedule>,
+    @InjectRepository(ClassSchedule)
+    private readonly classScheduleRepository: Repository<ClassSchedule>,
   ) {}
 
   private parseDateOnly(value: Date | string): Date {
@@ -28,7 +31,10 @@ export class LessonByScheduleService {
       return new Date(value.getFullYear(), value.getMonth(), value.getDate());
     }
 
-    const [year, month, day] = String(value).split('T')[0].split('-').map(Number);
+    const [year, month, day] = String(value)
+      .split('T')[0]
+      .split('-')
+      .map(Number);
     return new Date(year, month - 1, day);
   }
 
@@ -95,21 +101,71 @@ export class LessonByScheduleService {
       .getMany();
   }
 
+  private async findActiveClassSchedules(
+    repository: Repository<ClassSchedule>,
+    classID: number,
+  ): Promise<Schedule[]> {
+    const classSchedules = await repository.find({
+      where: {
+        class: { id: classID, isDelete: false },
+        schedule: { isDelete: false },
+        isDelete: false,
+      },
+      relations: ['class', 'schedule'],
+    });
+
+    return Array.from(
+      new Map(
+        classSchedules
+          .filter((item) => item.schedule && !item.schedule.isDelete)
+          .map((item) => [item.schedule.id, item.schedule]),
+      ).values(),
+    );
+  }
+
+  private findLatestScheduleDate(
+    lessons: LessonBySchedule[],
+    scheduleId: number,
+  ): Date | null {
+    const matchingDates = lessons
+      .filter((lesson) => lesson.schedule?.id === scheduleId)
+      .map((lesson) => this.parseDateOnly(lesson.date as any));
+    if (!matchingDates.length) return null;
+
+    return matchingDates.reduce((latest, date) =>
+      date > latest ? date : latest,
+    );
+  }
+
+  private schedulesNeedExtension(
+    schedules: Schedule[],
+    lessons: LessonBySchedule[],
+    thresholdDate: Date,
+  ): boolean {
+    return schedules.some((schedule) => {
+      const latestDate = this.findLatestScheduleDate(lessons, schedule.id);
+      return !latestDate || latestDate < thresholdDate;
+    });
+  }
+
   private async ensureClassScheduleExtended(
     classID: number,
     currentLessons: LessonBySchedule[],
   ): Promise<LessonBySchedule[]> {
-    if (!currentLessons.length) return currentLessons;
-
-    const activeLessons = currentLessons.filter((lesson) => lesson.schedule);
-    if (!activeLessons.length) return currentLessons;
-
-    const sortedLessons = this.sortByDate(activeLessons);
-    let latestDate = this.parseDateOnly(sortedLessons[sortedLessons.length - 1].date as any);
-
     const today = this.parseDateOnly(new Date());
     const thresholdDate = this.addMonths(today, 3);
-    if (latestDate >= thresholdDate) {
+    const configuredSchedules = await this.findActiveClassSchedules(
+      this.classScheduleRepository,
+      classID,
+    );
+    if (
+      !configuredSchedules.length ||
+      !this.schedulesNeedExtension(
+        configuredSchedules,
+        currentLessons,
+        thresholdDate,
+      )
+    ) {
       return currentLessons;
     }
 
@@ -125,27 +181,20 @@ export class LessonByScheduleService {
           where: { class: { id: classID }, isDelete: false },
           relations: ['class', 'schedule'],
         });
-        const lockedActiveLessons = lockedLessons.filter(
-          (lesson) => lesson.schedule && !lesson.schedule.isDelete,
+        const activeSchedules = await this.findActiveClassSchedules(
+          manager.getRepository(ClassSchedule),
+          classID,
         );
-        if (!lockedActiveLessons.length) return this.sortByDate(lockedLessons);
-
-        const lockedSortedLessons = this.sortByDate(lockedActiveLessons);
-        latestDate = this.parseDateOnly(
-          lockedSortedLessons[lockedSortedLessons.length - 1].date as any,
-        );
-        if (latestDate >= thresholdDate) {
+        if (
+          !activeSchedules.length ||
+          !this.schedulesNeedExtension(
+            activeSchedules,
+            lockedLessons,
+            thresholdDate,
+          )
+        ) {
           return this.sortByDate(lockedLessons);
         }
-
-        const uniqueSchedules = Array.from(
-          new Map(
-            lockedActiveLessons.map((lesson) => [
-              lesson.schedule.id,
-              lesson.schedule,
-            ]),
-          ).values(),
-        );
         const existingKeys = new Set(
           lockedLessons
             .filter((lesson) => lesson.schedule)
@@ -159,16 +208,25 @@ export class LessonByScheduleService {
         );
 
         const lessonsToCreate: LessonBySchedule[] = [];
-        while (latestDate < thresholdDate) {
-          const startDate = this.addDays(latestDate, 1);
-          const endDate = this.addMonths(latestDate, 6);
+        for (const schedule of activeSchedules) {
+          let latestDate = this.findLatestScheduleDate(
+            lockedLessons,
+            schedule.id,
+          );
 
-          for (
-            let date = new Date(startDate);
-            date <= endDate;
-            date = this.addDays(date, 1)
-          ) {
-            for (const schedule of uniqueSchedules) {
+          // A newly configured schedule with no generated rows starts from
+          // today. Existing schedules continue after their own latest date.
+          if (!latestDate) latestDate = this.addDays(today, -1);
+
+          while (latestDate < thresholdDate) {
+            const startDate = this.addDays(latestDate, 1);
+            const endDate = this.addMonths(latestDate, 6);
+
+            for (
+              let date = new Date(startDate);
+              date <= endDate;
+              date = this.addDays(date, 1)
+            ) {
               if (date.getDay() !== schedule.dayOfWeek - 1) continue;
 
               const dateText = this.formatDateOnly(date);
@@ -188,18 +246,17 @@ export class LessonByScheduleService {
                 }),
               );
             }
-          }
 
-          latestDate = endDate;
+            latestDate = endDate;
+          }
         }
 
         if (!lessonsToCreate.length) {
           return this.sortByDate(lockedLessons);
         }
 
-        const createdLessons = await transactionRepository.save(
-          lessonsToCreate,
-        );
+        const createdLessons =
+          await transactionRepository.save(lessonsToCreate);
         return this.sortByDate([...lockedLessons, ...createdLessons]);
       },
     );
@@ -218,7 +275,10 @@ export class LessonByScheduleService {
       where: { class: { id: classID }, isDelete: false },
       relations: ['class', 'schedule'],
     });
-    const extendedLessons = await this.ensureClassScheduleExtended(classID, lessons);
+    const extendedLessons = await this.ensureClassScheduleExtended(
+      classID,
+      lessons,
+    );
     return this.sortByDate(extendedLessons);
   }
   async findAllScheduleOfClass(classID: number): Promise<Schedule[]> {
@@ -340,9 +400,7 @@ export class LessonByScheduleService {
       (id) => !classEntities.some((classEntity) => classEntity.id === id),
     );
     if (missingClassId !== undefined) {
-      throw new NotFoundException(
-        `Class with ID ${missingClassId} not found`,
-      );
+      throw new NotFoundException(`Class with ID ${missingClassId} not found`);
     }
 
     const scheduleIds = [
